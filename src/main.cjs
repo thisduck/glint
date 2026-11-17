@@ -194,12 +194,13 @@ app.whenReady().then(() => {
     if (!win.isDestroyed()) win.show();
   }
   handle("showStudio", restoreStudio);
-  handle("recordingMenu", () => {
+  handle("recordingMenu", (showToolbar) => {
     if (!library.open || closeRecordingMenu)
       throw Error("Recording unavailable.");
     closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(
       () => win.webContents.send("stopRecording"),
       () => win.webContents.send("toggleRecording"),
+      showToolbar===true,
     );
   });
   handle("recordingStatus",(paused,ms)=>closeRecordingMenu?.update(paused,ms));

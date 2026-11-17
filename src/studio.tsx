@@ -10,6 +10,8 @@ const api = window.desk;
 export function Studio({ profile, refreshProfile, lock, fail }) {
   const [source, choose] = useState<CaptureSource | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [toolbar,setToolbar]=useState<boolean|null>(null);
+  const showToolbar=toolbar ?? Boolean(source?.id.startsWith("window:"));
   const mic = Boolean(profile.micEnabled);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const deviceRevision = useRef(0);
@@ -313,7 +315,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         throw Error(
           "Capture ended before recording started. Choose a capture source again.",
         );
-      await api.recordingMenu();
+      await api.recordingMenu(showToolbar);
       if (failure) throw failure;
       startedAt = performance.now();
       r.start(1000);
@@ -426,6 +428,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 bg-paper px-5 py-4">
           <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-2"><input type="checkbox" checked={showToolbar} disabled={!!busy || phase!=="idle"} onChange={e=>setToolbar(e.target.checked)}/>Floating controls</label>
+            {showToolbar && source?.id.startsWith("screen:") && <small>Controls may appear in full-display recordings.</small>}
             <MicrophoneCheckbox
               checked={mic}
               disabled={!!busy || phase !== "idle"}
