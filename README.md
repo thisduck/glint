@@ -31,15 +31,7 @@ Official downloads carry glint’s desktop OAuth configuration. Users sign in to
 
 In a Google Cloud project, enable Google Drive API and Google Picker API. Configure the OAuth consent screen. For an external app in testing, add each Google account as a test user. Create a **Desktop app** OAuth client and an API key restricted to the Google Picker API. Copy the numeric project number from the same project.
 
-Export these variables in the shell that starts the app:
-
-```sh
-export GOOGLE_CLIENT_ID='your-desktop-client-id'
-export GOOGLE_CLIENT_SECRET='your-desktop-client-secret'
-export GOOGLE_PICKER_KEY='your-picker-api-key'
-export GOOGLE_PROJECT_NUMBER='your-numeric-project-number'
-pnpm start
-```
+For local development, copy `.env.example` to `.env` in the project root and fill in the four Google settings. Restart `pnpm start` after editing the file. Shell variables take precedence. The local file is ignored by Git.
 
 For a public release, use a production Desktop OAuth client, configure the consent screen for external users, and complete Google’s applicable publishing requirements. Supply all four settings from release secrets and run `pnpm package:mac` on a Mac. This builds a ZIP for the current architecture in `release/`. The package command requires all four settings and includes only those settings in the app. Runtime environment overrides must belong to one project. Local recording works without Google configuration.
 
