@@ -185,8 +185,8 @@ app.whenReady().then(() => {
   handle("filmstrip", (id) =>
     require("./filmstrip.cjs").filmstrip(library, id),
   );
-  handle("trimRecording", (id, start, end) =>
-    require("./trim.cjs").trimRecording(library, id, start, end),
+  handle("trimRecording", (id, start, end,cuts) =>
+    require("./trim.cjs").trimRecording(library, id, start, end,cuts),
   );
   handle("renameRecording", (id, title) => library.rename(id, title));
   handle("end", (id, complete = true, durationMs, issue) => {

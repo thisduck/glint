@@ -186,9 +186,9 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
         video={video}
         player={player}
         busy={busy}
-        onSave={(start, end) =>
+        onSave={(start, end,cuts) =>
           run("Trim", async () => {
-            const id = await api.trimRecording(video.id, start, end);
+            const id = await api.trimRecording(video.id, start, end,cuts);
             await refresh();
             onOpen(id);
           })

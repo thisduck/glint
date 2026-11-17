@@ -24,8 +24,13 @@ export function ClipEditor({ video, player, busy, onSave }) {
   const rail = useRef<HTMLDivElement>(null);
   const dragging = useRef<Marker | null>(null);
   const previewEnd = useRef<number | null>(null);
+  const [cutMode,setCutMode] = useState(false);
+  const [cuts,setCuts] = useState<[number,number][]>([]);
+  const skip = useRef<[number,number][]>([]);
   const out = end ?? duration;
 
+  const remaining = duration-cuts.reduce((sum,[a,b])=>sum+b-a,0);
+  const canCut = remaining-(out-start)>0.05 && !cuts.some(([a,b])=>start<b && out>a);
   useEffect(() => {
     let active = true;
     const media = player.current;
@@ -55,6 +60,10 @@ export function ClipEditor({ video, player, busy, onSave }) {
     load();
     let frame;
     function sync() {
+      if (previewEnd.current !== null) {
+        const gap = skip.current.find(([a,b])=>media.currentTime>=a && media.currentTime<b);
+        if (gap) media.currentTime=gap[1];
+      }
       if (
         previewEnd.current !== null &&
         media.currentTime >= previewEnd.current
@@ -151,8 +160,9 @@ export function ClipEditor({ video, player, busy, onSave }) {
       media.pause();
       return;
     }
-    media.currentTime = start;
-    previewEnd.current = out;
+    skip.current = cutMode ? cuts : [];
+    media.currentTime = cutMode ? 0 : start;
+    previewEnd.current = cutMode ? duration : out;
     setPreviewing(true);
     try {
       await media.play();
@@ -168,16 +178,19 @@ export function ClipEditor({ video, player, busy, onSave }) {
     <section aria-label="Clip editor" className="destination p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-base font-semibold">
-          <Scissors size={16} /> Trim clip
+          <Scissors size={16} /> Edit clip
         </h3>
         {duration > 0 && (
           <span className="text-sm tabular-nums text-muted">
-            {time(out - start)} selected
+            {time(cutMode ? remaining : out-start)} {cutMode ? "after cuts" : "selected"}
           </span>
         )}
       </div>
+      <div className="mt-3 flex gap-1" aria-label="Edit mode">{["Trim ends","Cut sections"].map((label,i)=><button key={label} disabled={!!busy} aria-pressed={Number(cutMode)===i} className="aria-pressed:bg-tint" onClick={()=>{
+        player.current.pause();setCutMode(Boolean(i));
+      }}>{label}</button>)}</div>
       <p className="mt-1 text-sm text-muted">
-        Drag the edges to set your clip. Click the frames to scrub.
+        {cutMode ? "Drag the edges around a section to remove, then add the cut." : "Drag the edges to set your clip. Click the frames to scrub."}
       </p>
       {duration > 0 ? (
         <>
@@ -221,6 +234,7 @@ export function ClipEditor({ video, player, busy, onSave }) {
                 className="pointer-events-none absolute inset-y-0 border-y-[3px] border-accent"
                 style={{ left: percent(start), right: percent(duration - out) }}
               />
+              {cutMode && cuts.map(([a,b])=><div key={a} className="pointer-events-none absolute inset-y-0 border-x border-red-400 bg-red-900/70" style={{left:percent(a),width:percent(b-a)}}/>)}
               <div
                 {...slider("playhead", "Playhead", position, 0, duration)}
                 data-marker="playhead"
@@ -258,6 +272,10 @@ export function ClipEditor({ video, player, busy, onSave }) {
               <span>{time(out)} out</span>
             </div>
           </div>
+          {cutMode && <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button disabled={!!busy || !canCut} onClick={()=>{player.current.pause();setCuts([...cuts,[start,out] as [number,number]].sort((a,b)=>a[0]-b[0]));}}>Add cut</button>
+            {cuts.map(([a,b])=><button key={a} disabled={!!busy} aria-label={"Undo cut from "+time(a)+" to "+time(b)} onClick={()=>{player.current.pause();setCuts(cuts.filter(r=>r[0]!==a));}}>{time(a)}–{time(b)} ×</button>)}
+          </div>}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
               disabled={!!busy}
@@ -269,9 +287,10 @@ export function ClipEditor({ video, player, busy, onSave }) {
             </button>
             <button
               className="quiet"
-              disabled={!!busy || (start === 0 && out === duration)}
+              disabled={!!busy || (cutMode ? !cuts.length : start === 0 && out === duration)}
               onClick={() => {
                 move("playhead", 0);
+                if(cutMode)setCuts([]);
                 setStart(0);
                 setEnd(null);
               }}
@@ -280,10 +299,11 @@ export function ClipEditor({ video, player, busy, onSave }) {
             </button>
             <button
               className="ml-auto border-0 bg-accent font-semibold text-white hover:bg-deep"
-              disabled={!!busy || (start === 0 && out === duration)}
+              disabled={!!busy || (cutMode ? !cuts.length : start === 0 && out === duration)}
               onClick={() => {
                 player.current.pause();
-                onSave(start, out);
+                if(cutMode)onSave(0,duration,cuts);
+                else onSave(start,out);
               }}
             >
               {busy === "Trim" ? "Saving clip…" : "Save clip as copy"}

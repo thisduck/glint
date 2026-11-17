@@ -4,7 +4,7 @@ const { randomUUID } = require("node:crypto");
 const { execFile } = require("node:child_process");
 const run = require("node:util").promisify(execFile);
 
-async function trimRecording(library, id, start, end) {
+async function trimRecording(library, id, start, end, cuts = []) {
   const original = library.db
     .prepare("SELECT * FROM videos WHERE id=? AND ready=1")
     .get(id);
@@ -17,6 +17,25 @@ async function trimRecording(library, id, start, end) {
     (original.durationMs && end > Math.ceil(original.durationMs / 1000))
   )
     throw Error("Choose an end time after the start and within the recording.");
+  if (!Array.isArray(cuts) || cuts.length > 100) throw Error("Invalid cut list.");
+  let previous = start;
+  let removed = 0;
+  for (const range of cuts) {
+    if (!Array.isArray(range) || range.length !== 2) throw Error("Invalid cut range.");
+    const [a,b] = range;
+    if (!Number.isFinite(a) || !Number.isFinite(b) || a < previous || b <= a || b > end)
+      throw Error("Cut ranges must be ordered and inside the recording.");
+    removed += b-a;
+    previous = b;
+  }
+  if (end-start-removed < 0.001) throw Error("Keep part of the recording.");
+  const editArgs = ["-ss",String(start),"-t",String(end-start)];
+  if (cuts.length) {
+    const exclude = cuts.map(([a,b]) => "gte(t,"+a+")*lt(t,"+b+")").join("+");
+    const offsets = cuts.map(([a,b]) => "gte(T,"+b+")*"+(b-a)).join("+");
+    const filter = "select='not("+exclude+")',setpts='PTS-("+offsets+")/TB'";
+    editArgs.splice(0,editArgs.length,"-vf",filter,"-af","a"+filter.replace(",setpts",",asetpts"),"-fps_mode","vfr");
+  }
   const binary = require("./ffmpeg.cjs").ffmpegBinary();
   const copy = randomUUID();
   const output = library.file(copy);
@@ -30,10 +49,7 @@ async function trimRecording(library, id, start, end) {
       "-nostats",
       "-i",
       library.file(id),
-      "-ss",
-      String(start),
-      "-t",
-      String(end - start),
+      ...editArgs,
       "-map",
       "0:v:0",
       "-map",
@@ -63,7 +79,7 @@ async function trimRecording(library, id, start, end) {
         original.account,
         original.folder,
         original.privacy,
-        (original.title || "Recording").slice(0, 150) + " · trim",
+        (original.title || "Recording").slice(0, 150) + (cuts.length ? " · cut" : " · trim"),
         durationMs,
       );
     return copy;

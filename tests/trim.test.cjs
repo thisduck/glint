@@ -34,6 +34,9 @@ test(
     lib.rename(id, "Walkthrough");
     await assert.rejects(trimRecording(lib, id, 1, 0), /end time/);
     const copy = await trimRecording(lib, id, 0.5, 1.5);
+    const cut = await trimRecording(lib,id,0,2,[[0.4,0.8],[1.2,1.5]]);
+    assert.ok(Math.abs(lib.list(1).find(v=>v.id===cut).durationMs-1300)<=110);
+    await assert.rejects(trimRecording(lib,id,0,2,[[0,2]]),/Keep part/);
     const edited = lib.list(1).find((v) => v.id === copy);
     assert.equal(edited.title, "Walkthrough · trim");
     assert.ok(edited.durationMs >= 900 && edited.durationMs <= 1100);
