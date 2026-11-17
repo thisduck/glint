@@ -232,6 +232,12 @@ class Google {
     } while (pageToken);
     return grants;
   }
+  async trashFile(id,account) {
+    const token = await this.access(account);
+    return json(files+"/"+encodeURIComponent(id)+"?supportsAllDrives=true&fields=trashed",{
+      method:"PATCH",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({trashed:true})
+    });
+  }
   async changeLink(id, headers, enabled) {
     const grants = (await this.filePermissions(id,headers)).filter(p=>p.type==="anyone" && !p.deleted && !p.view);
     if (enabled && !grants.length) return this.enableLink(id,headers);

@@ -274,3 +274,19 @@ test("changing one file's link preserves named grants and respects inherited acc
   await assert.rejects(g.changeLink("clip",{},false),/containing folder/);
   assert.equal(calls.length,1);
 });
+
+test("failed trash keeps the recording; successful trash clears the row and its cached assets",async t=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"glint-trash-"));
+  t.after(()=>fs.rmSync(dir,{recursive:true}));
+  const lib=new Library(new Store(":memory:"),dir);
+  new Uploads(lib,{});
+  const id=lib.begin(1);lib.append(id,[1]);lib.end(id);
+  fs.writeFileSync(path.join(dir,id+".timeline.jpg"),"cache");
+  lib.db.prepare("INSERT INTO upload_ids VALUES(?,?)").run(id,"cloud");
+  await assert.rejects(lib.trash(id,async()=>{throw Error("busy");}),/busy/);
+  assert.equal(lib.list(1).length,1);
+  await lib.trash(id,async file=>fs.renameSync(file,path.join(dir,"trashed.webm")));
+  assert.equal(lib.list(1).length,0);
+  assert.equal(fs.existsSync(path.join(dir,id+".timeline.jpg")),false);
+  assert.equal(lib.db.prepare("SELECT * FROM upload_ids").all().length,0);
+});

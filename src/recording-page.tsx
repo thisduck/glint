@@ -6,6 +6,8 @@ import { ClipEditor } from "./clip-editor";
 
 const api = window.desk;
 export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
+  const [deleting,setDeleting]=useState(false);
+  const [alsoDrive,setAlsoDrive]=useState(false);
   const [changingAccess,setChangingAccess]=useState(false);
   const [details, setDetails] = useState(null);
   const [issue, setIssue] = useState("");
@@ -252,6 +254,16 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
           </button>
         </div>
       )}
+      <div className="my-5 border-t border-line pt-4">
+        {deleting ? <div className="grid justify-items-start gap-3">
+          <h3 className="font-semibold">Move this recording to Trash?</h3>
+          <p className="text-muted">Removes the recording from glint and moves the local video to this Mac’s Trash.</p>
+          {video.remote && <label className="flex items-center gap-2"><input type="checkbox" checked={alsoDrive} disabled={!!busy} onChange={e=>setAlsoDrive(e.target.checked)}/>Also move the uploaded video to Drive Trash</label>}
+          <div className="flex gap-2"><button disabled={!!busy || pending} onClick={()=>run("Delete",async()=>{
+            player.current.pause();await api.deleteRecording(video.id,alsoDrive);onBack();await refresh();
+          })}>Move to Trash</button><button disabled={!!busy} onClick={()=>{setDeleting(false);setAlsoDrive(false);}}>Cancel</button></div>
+        </div> : <button className="quiet" disabled={!!busy || pending} onClick={()=>setDeleting(true)}>Delete recording…</button>}
+      </div>
       {(issue || video.captureIssue || video.uploadError || lookupError) && (
         <details open className="destination p-4">
           <summary className="cursor-pointer font-medium">

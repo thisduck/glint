@@ -133,6 +133,10 @@ app.whenReady().then(() => {
       link: info.webViewLink,
     };
   }
+  handle("deleteRecording",(id,alsoDrive)=>editFile(id,async video=>{
+    if(alsoDrive===true && video.remote) await google.trashFile(video.remote,video.account);
+    await library.trash(id,file=>shell.trashItem(file));
+  }));
   handle("driveDetails", driveDetails);
   handle("setFileAccess",(id,privacy)=>editFile(id,async video=>{
     if(!["folder","private","link"].includes(privacy)) throw Error("Unknown access setting.");
