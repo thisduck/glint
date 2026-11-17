@@ -148,6 +148,7 @@ app.whenReady().then(() => {
   });
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
+  handle("trimRecording",(id,start,end) => require("./trim.cjs").trimRecording(library,id,start,end));
   handle("renameRecording",(id,title) => library.rename(id,title));
   handle("end", (id, complete = true,durationMs) => {
     library.end(id, complete,durationMs);

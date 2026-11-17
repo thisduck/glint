@@ -312,7 +312,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     }
   }
   const finished = videos.find(v => v.id === preview);
-  if (finished) return <RecordingPage key={finished.id} video={finished} profile={profile} onBack={() => play("")} refresh={refresh} />;
+  if (finished) return <RecordingPage key={finished.id} video={finished} onOpen={play} profile={profile} onBack={() => play("")} refresh={refresh} />;
   return (
     <>
       <h2 className="mb-4 mt-7 font-display text-2xl font-medium tracking-tight">Recording studio</h2>

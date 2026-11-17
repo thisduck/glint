@@ -11,6 +11,7 @@ const methods = [
   "append",
   "end",
   "renameRecording",
+  "trimRecording",
   "list",
   "setAutoUpload",
   "setPrivacy",

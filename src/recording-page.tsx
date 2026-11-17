@@ -2,12 +2,14 @@ import React, {useState, useEffect} from "react";
 import {ArrowLeft, Check, Copy, HardDrive, Cloud} from "lucide-react";
 
 const api = window.desk;
-export function RecordingPage({video,profile,onBack,refresh}) {
+export function RecordingPage({video,profile,onOpen,onBack,refresh}) {
   const [details,setDetails] = useState(null);
   const [issue,setIssue] = useState("");
   const [lookupError,setLookupError] = useState("");
   const [checking,checkAgain] = useState(0);
   const [busy,setBusy] = useState("");
+  const [start,setStart] = useState("0");
+  const [end,setEnd] = useState(video.durationMs ? String(video.durationMs/1000) : "");
   const [editing,setEditing] = useState(false);
   const [title,setTitle] = useState("");
   const [copied,setCopied] = useState(false);
@@ -71,6 +73,18 @@ export function RecordingPage({video,profile,onBack,refresh}) {
       </>}
     </dl>
     {video.remote && <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-muted"><p>Open in Drive to check playback.</p><button className="quiet" onClick={()=>checkAgain(n=>n+1)}>Refresh status</button></div>}
+    <details className="destination p-4">
+      <summary className="cursor-pointer font-medium">Trim recording</summary>
+      <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={e => {
+        e.preventDefault();
+        run("Trim",async()=>{const id=await api.trimRecording(video.id,Number(start),Number(end)); await refresh(); onOpen(id);});
+      }}>
+        <label>Start (seconds)<input className="mt-1 block w-28" required type="number" min="0" step="any" value={start} onChange={e=>setStart(e.target.value)}/></label>
+        <label>End (seconds)<input className="mt-1 block w-28" required type="number" min="0" step="any" value={end} onChange={e=>setEnd(e.target.value)}/></label>
+        <button disabled={!!busy || Number(end)<=Number(start)}>{busy === "Trim" ? "Creating copy…" : "Save trimmed copy"}</button>
+      </form>
+      <p className="mt-2 text-sm text-muted">Saves a new local recording in {profile.name}.</p>
+    </details>
     {(issue || video.uploadError || lookupError) && <p role="alert" className="mt-3">{issue || video.uploadError || lookupError}</p>}
   </section>;
 }
