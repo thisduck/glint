@@ -184,18 +184,12 @@ class Google {
             "<",
             "\\u003c",
           );
+          // Picker embeds docs.google.com. Send the loopback origin, while
+          // keeping the session-specific URL path out of cross-origin requests.
+          res.setHeader("Referrer-Policy", "origin");
           res.setHeader("Content-Type", "text/html;charset=utf-8");
-          res.end(`<!doctype html><title>Choose a folder · glint</title><p>Choose a Google Drive folder for glint.</p><script src="https://apis.google.com/js/api.js"></script><script>
-        const config=${args};
-        gapi.load('picker',()=>{const p=google.picker;
-          const view=new p.DocsView(p.ViewId.FOLDERS).setIncludeFolders(true).setSelectFolderEnabled(true);
-          new p.PickerBuilder().addView(view).setDeveloperKey(config.key).setAppId(config.project)
-          .setOAuthToken(config.token).setOrigin(location.origin).setCallback(async data=>{
-            if(data.action===p.Action.PICKED||data.action===p.Action.CANCEL){
-              await fetch(location.pathname+'?id='+encodeURIComponent(data.docs?.[0]?.id||''),{method:'POST'});
-              document.body.textContent='Return to glint.';
-            }}).build().setVisible(true)
-        });</script>`);
+          const pageHtml = fs.readFileSync(require("node:path").join(__dirname, "google-picker.html"), "utf8");
+          res.end(pageHtml.replace("/* GOOGLE_CONFIGURATION */ null", () => args));
         },
       };
     });
