@@ -6,7 +6,7 @@ function desktopCamera(area,initial,place){
   const win=new BrowserWindow({type:"panel",frame:false,transparent:true,resizable:false,hasShadow:false,show:false,alwaysOnTop:true,skipTaskbar:true,acceptFirstMouse:true,
     webPreferences:{sandbox:true,preload:path.join(__dirname,"desktop-camera-preload.cjs")}});
   let layout=initial,gesture,loaded=false;
-  const shortest=Math.min(area.width,area.height),pad=shortest*0.025;
+  let shortest=Math.min(area.width,area.height),pad=shortest*0.025;
   function update(point){
     if(!point || win.isDestroyed())return;
     layout=point;
@@ -34,7 +34,7 @@ function desktopCamera(area,initial,place){
   win.setContentProtection(true);
   update(initial);
   win.loadFile(path.join(__dirname,"desktop-camera.html")).then(()=>{loaded=true;}).catch(()=>{if(!win.isDestroyed())win.destroy();});
-  return {update,portrait(frame){
+  return {update,setArea(next){area=next;shortest=Math.min(area.width,area.height);pad=shortest*0.025;update(layout);},portrait(frame){
     if(loaded&&!win.isDestroyed()){
       win.webContents.send("portrait",frame);
       if(!win.isVisible())win.showInactive();

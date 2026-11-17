@@ -217,15 +217,44 @@ app.whenReady().then(() => {
     selected = null;
     cb({ video });
   });
-  let recordingArea;
+  let recordingArea,outline,followTimer;
+  function clearOutline(){
+    clearTimeout(followTimer);
+    if(outline && !outline.isDestroyed())outline.destroy();
+    outline=null;
+  }
   handle("countdown", async id => {
     const {captureBounds,countdownBounds}=require("./capture-bounds.cjs");
     const displays=require("electron").screen.getAllDisplays();
-    recordingArea=await captureBounds(listedSources.get(id),displays);
-    return require("./countdown.cjs").countdown(win,countdownBounds(recordingArea,displays));
+    const target=listedSources.get(id);
+    recordingArea=await captureBounds(target,displays);
+    const card=countdownBounds(recordingArea,displays);
+    clearOutline();
+    outline=await require("./capture-outline.cjs").captureOutline(recordingArea);
+    try{
+      const proceed=await require("./countdown.cjs").countdown(win,card);
+      if(!proceed || !id.startsWith("window:"))clearOutline();
+      else {
+        const current=outline;
+        async function follow(){
+          if(current!==outline)return;
+          try{
+            const next=await captureBounds(target,require("electron").screen.getAllDisplays());
+            if(current!==outline)return;
+            if(["x","y","width","height"].some(k=>recordingArea[k]!==next[k])){
+              recordingArea=next;current.setBounds(next);closeRecordingMenu?.setArea(next);
+            }
+          }catch{if(current===outline)clearOutline();return;}
+          followTimer=setTimeout(follow,1000);
+        }
+        followTimer=setTimeout(follow,1000);
+      }
+      return proceed;
+    }catch(error){clearOutline();throw error;}
   });
   let closeRecordingMenu;
   function restoreStudio() {
+    clearOutline();
     closeRecordingMenu?.close();
     closeRecordingMenu = null;
     if (!win.isDestroyed()) win.show();
@@ -285,7 +314,7 @@ app.whenReady().then(() => {
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("render-process-gone", restoreStudio);
-  win.on("closed", () => closeRecordingMenu?.close());
+  win.on("closed", () => {clearOutline();closeRecordingMenu?.close();});
   win.loadFile(path.join(__dirname, "index.html"));
 });
 app.on("window-all-closed", () => app.quit());

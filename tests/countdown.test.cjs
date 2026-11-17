@@ -11,6 +11,7 @@ test("countdown hides the studio, cancels on Escape and releases the global key"
       overlay = this;
       this.webContents = new EventEmitter();
     }
+    setAlwaysOnTop() {}
     setVisibleOnAllWorkspaces() {}
     async loadFile() {}
     showInactive() {

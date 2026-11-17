@@ -106,7 +106,7 @@ function recordingMenu(
     tick();
     timer = setInterval(tick, 1000);
     return {
-      close,portrait:frame=>toolbar.portrait(frame),
+      close,setArea:area=>toolbar.setArea(area),portrait:frame=>toolbar.portrait(frame),
       update(value, ms) {
         paused = value;
         base = ms;

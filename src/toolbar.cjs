@@ -65,6 +65,7 @@ function recordingToolbar(commands) {
       if (!win.isDestroyed()) win.destroy();
     });
   return {
+    setArea(next){if(portraitOptions)portraitOptions.area=next;bubble?.setArea(next);},
     showCamera,
     show() {
       visible = true;
