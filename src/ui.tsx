@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { Studio } from "./studio";
-import { mirrors, MirrorShapes, Mirror } from "./mirrors";
+import { symbols, LogoShapes, Logo } from "./logos";
 const api = window.desk;
 const themes = [
   { id: "lilac", name: "Lilac", font: "Baskerville" },
@@ -16,7 +16,7 @@ function App() {
     () => themes.find((t) => t.id === localStorage.appearance)?.id || "cobalt",
   );
   const [mark, setMark] = useState(() =>
-    mirrors.includes(localStorage.mirror) ? localStorage.mirror : "Wall mirror",
+    symbols.includes(localStorage.logo) ? localStorage.logo : symbols[0],
   );
   const [profiles, setProfiles] = useState([]),
     [id, select] = useState(Number(localStorage.profile) || 1);
@@ -54,8 +54,8 @@ function App() {
     >
       <aside className="flex flex-col border-b border-line bg-rail p-5 md:min-h-screen md:border-b-0 md:border-r md:py-8">
         <h1 className="mb-6 flex items-center gap-2 text-[29px] font-display font-medium leading-none tracking-tight md:mb-12">
-          <MirrorShapes />
-          <Mirror name={mark} />
+          <LogoShapes />
+          <Logo name={mark} />
           cinderella
         </h1>
         <h2 className="mb-2 px-2 text-xs font-semibold tracking-wide text-muted">
@@ -145,18 +145,18 @@ function App() {
             ))}
           </div>
           <fieldset className="mt-3 grid grid-cols-2 gap-1">
-            <legend className="py-2 font-semibold">Mirror logo</legend>
-            {mirrors.map((name) => (
+            <legend className="py-2 font-semibold">Logo symbol</legend>
+            {symbols.map((name) => (
               <button
                 key={name}
                 aria-pressed={mark === name}
                 onClick={() => {
                   setMark(name);
-                  localStorage.mirror = name;
+                  localStorage.logo = name;
                 }}
                 className="flex flex-col items-center justify-center gap-1 px-1 text-xs aria-pressed:bg-tint"
               >
-                <Mirror name={name} />
+                <Logo name={name} />
                 {name}
               </button>
             ))}
