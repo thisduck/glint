@@ -46,39 +46,60 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   const previewVideo = useRef<HTMLVideoElement>(null);
   const mounted = useRef(true);
   function releaseCapture() {
-    const stream=capture.current;
-    capture.current=null;
-    stream?.getTracks().forEach(track=>{track.onended=null;track.stop()});
+    const stream = capture.current;
+    capture.current = null;
+    stream?.getTracks().forEach((track) => {
+      track.onended = null;
+      track.stop();
+    });
   }
-  useEffect(()=>{
-    mounted.current=true;
-    return ()=>{mounted.current=false;releaseCapture()};
-  },[]);
-  useEffect(()=>{
-    if(previewVideo.current) previewVideo.current.srcObject=capture.current;
-  },[source,phase]);
-  async function selectSource(item:CaptureSource){
-    setPickerOpen(false);setPhase("previewing");lock(true);setNotice("");fail("");
-    try{
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      releaseCapture();
+    };
+  }, []);
+  useEffect(() => {
+    if (previewVideo.current) previewVideo.current.srcObject = capture.current;
+  }, [source, phase]);
+  async function selectSource(item: CaptureSource) {
+    setPickerOpen(false);
+    setPhase("previewing");
+    lock(true);
+    setNotice("");
+    fail("");
+    try {
       await api.source(item.id);
-      const stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
-      const track=stream.getVideoTracks()[0];
-      if(!mounted.current || !track || track.readyState==="ended"){
-        stream.getTracks().forEach(t=>t.stop());
-        if(mounted.current)throw Error("No video arrived from this source. Choose it again or check Screen Recording access.");
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false,
+      });
+      const track = stream.getVideoTracks()[0];
+      if (!mounted.current || !track || track.readyState === "ended") {
+        stream.getTracks().forEach((t) => t.stop());
+        if (mounted.current)
+          throw Error(
+            "No video arrived from this source. Choose it again or check Screen Recording access.",
+          );
         return;
       }
-      releaseCapture();capture.current=stream;
-      track.onended=()=>{
-        releaseCapture();choose(null);
+      releaseCapture();
+      capture.current = stream;
+      track.onended = () => {
+        releaseCapture();
+        choose(null);
         setNotice("Screen sharing ended. Choose another screen or window.");
-        if(recorder.current?.state==="recording")recorder.current.stop();
+        if (recorder.current?.state === "recording") recorder.current.stop();
       };
       choose(item);
-    } catch(e){
-      fail("Could not preview this source. "+e.message);
+    } catch (e) {
+      fail("Could not preview this source. " + e.message);
     } finally {
-      if(mounted.current){setPhase("idle");lock(false);}
+      if (mounted.current) {
+        setPhase("idle");
+        lock(false);
+      }
     }
   }
   async function start() {
@@ -90,16 +111,19 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     lock(true);
     fail("");
     function reset() {
-      releaseCapture();choose(null);
+      releaseCapture();
+      choose(null);
       tracks.forEach((t) => t.stop());
       recorder.current = null;
       setPhase("idle");
       lock(false);
     }
     try {
-      const display=capture.current;
-      if(!display || display.getVideoTracks()[0]?.readyState!=="live")
-        throw Error("The selected source is no longer sharing. Choose a screen or window again.");
+      const display = capture.current;
+      if (!display || display.getVideoTracks()[0]?.readyState !== "live")
+        throw Error(
+          "The selected source is no longer sharing. Choose a screen or window again.",
+        );
       tracks.push(...display.getTracks());
       if (mic)
         tracks.push(
@@ -146,7 +170,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         }
       };
       const videoTrack = display.getVideoTracks()[0];
-      if (!videoTrack || videoTrack.readyState === "ended") throw Error("Capture ended before recording started. Choose a capture source again.");
+      if (!videoTrack || videoTrack.readyState === "ended")
+        throw Error(
+          "Capture ended before recording started. Choose a capture source again.",
+        );
       r.start(1000);
       setPhase("recording");
     } catch (e) {
@@ -169,7 +196,15 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       <section className="overflow-hidden rounded-xl border border-line bg-paper">
         <div className="stage">
           {source ? (
-            <video aria-label="Selected capture source preview" ref={previewVideo} autoPlay muted playsInline poster={source.thumbnail ?? undefined} className="max-h-44 max-w-full rounded-md object-contain"/>
+            <video
+              aria-label="Selected capture source preview"
+              ref={previewVideo}
+              autoPlay
+              muted
+              playsInline
+              poster={source.thumbnail ?? undefined}
+              className="max-h-44 max-w-full rounded-md object-contain"
+            />
           ) : (
             <svg
               viewBox="0 0 92 65"
@@ -211,13 +246,25 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             <span role="status">Recording in progress</span>
           )}
           {!!source && phase === "idle" && (
-            <button
-              className="refresh"
-              disabled={!!busy}
-              onClick={() => setPickerOpen(true)}
-            >
-              Change
-            </button>
+            <div className="flex gap-3">
+              <button
+                className="refresh"
+                disabled={!!busy}
+                onClick={() => setPickerOpen(true)}
+              >
+                Change
+              </button>
+              <button
+                className="refresh"
+                disabled={!!busy}
+                onClick={() => {
+                  releaseCapture();
+                  choose(null);
+                }}
+              >
+                End preview
+              </button>
+            </div>
           )}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 bg-paper px-5 py-4">

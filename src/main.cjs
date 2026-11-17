@@ -80,22 +80,36 @@ app.whenReady().then(() => {
     return copy ? clipboard.writeText(url) : shell.openExternal(url);
   });
   handle("sources", async () => {
-    const items = await sources({width:400,height:225});
-    if (process.platform === "darwin" && ["restricted","denied"].includes(systemPreferences.getMediaAccessStatus("screen"))) {
-      throw Error("Screen capture access is disabled. Allow Screen Recording in macOS System Settings, then relaunch glint.");
+    const items = await sources({ width: 400, height: 225 });
+    if (
+      process.platform === "darwin" &&
+      ["restricted", "denied"].includes(
+        systemPreferences.getMediaAccessStatus("screen"),
+      )
+    ) {
+      throw Error(
+        "Screen capture access is disabled. Allow Screen Recording in macOS System Settings, then relaunch glint.",
+      );
     }
-    listedSources = new Map(items.map(({id,name})=>[id,{id,name}]));
-    return items.map(({id,name,thumbnail})=>({id,name,thumbnail:thumbnail.isEmpty()?null:thumbnail.toDataURL()}));
+    listedSources = new Map(items.map(({ id, name }) => [id, { id, name }]));
+    return items.map(({ id, name, thumbnail }) => ({
+      id,
+      name,
+      thumbnail: thumbnail.isEmpty() ? null : thumbnail.toDataURL(),
+    }));
   });
-  handle("source", id => {
+  handle("source", (id) => {
     selected = listedSources.get(id);
     if (!selected) throw Error("Choose a capture source again.");
   });
   session.defaultSession.setDisplayMediaRequestHandler((req, cb) => {
-    if(req.frame !== win.webContents.mainFrame || !selected){cb(null);return;}
+    if (req.frame !== win.webContents.mainFrame || !selected) {
+      cb(null);
+      return;
+    }
     const video = selected;
-    selected=null;
-    cb({video});
+    selected = null;
+    cb({ video });
   });
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
