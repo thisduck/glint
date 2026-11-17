@@ -131,11 +131,11 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     <>
       {busy && <p role="status">{busy}</p>}
       {notice && <p role="status">{notice}</p>}
-      <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+      <section className="overflow-hidden rounded-xl border border-line bg-paper">
         <div className="stage">
           <svg
             viewBox="0 0 92 65"
-            className="h-16 w-24"
+            className="h-12 w-[68px]"
             fill="none"
             aria-hidden="true"
           >
@@ -224,7 +224,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           </button>
         </div>
       </section>
-      <details className="destination border-b border-line">
+      <details className="destination">
         <summary>
           <strong>Destination</strong>
           <span>
@@ -273,7 +273,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           </button>
         </fieldset>
       </details>
-      <section className="library mt-10">
+      <section className="library mt-6 border-t border-line pt-6">
         <h2 className="mb-4 font-display text-2xl font-medium tracking-tight">
           Recordings
         </h2>
