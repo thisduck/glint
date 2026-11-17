@@ -32,8 +32,14 @@ const methods = [
   "reveal",
 ];
 contextBridge.exposeInMainWorld("desk", {
-  sendPortrait(frame){ipcRenderer.send("cameraPortrait",frame);},
-  onPortraitRequest(callback){const listener=()=>callback();ipcRenderer.on("portraitRequest",listener);return ()=>ipcRenderer.removeListener("portraitRequest",listener);},
+  sendPortrait(frame) {
+    ipcRenderer.send("cameraPortrait", frame);
+  },
+  onPortraitRequest(callback) {
+    const listener = () => callback();
+    ipcRenderer.on("portraitRequest", listener);
+    return () => ipcRenderer.removeListener("portraitRequest", listener);
+  },
   onCameraPosition(callback) {
     const listener = (_, point) => callback(point);
     ipcRenderer.on("cameraPosition", listener);

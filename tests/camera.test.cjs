@@ -16,3 +16,17 @@ test("camera bubble fits landscape and portrait captures in all four corners", a
         assert.equal(b.y > height / 2, !!y);
       }
 });
+
+test("camera diameter changes without pushing the bubble beyond the recorded edges", async () => {
+  const { bubbleBounds } = await import("../src/camera.mjs");
+  for (const [scale, diameter] of [
+    [0.1, 100],
+    [0.36, 360],
+    [0.48, 480],
+  ]) {
+    const box = bubbleBounds(1600, 1000, { x: 1, y: 1, scale });
+    assert.equal(box.size, diameter);
+    assert.equal(box.x + box.size, 1575);
+    assert.equal(box.y + box.size, 975);
+  }
+});

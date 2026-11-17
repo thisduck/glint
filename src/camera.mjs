@@ -1,6 +1,8 @@
 // Position is normalized across the travel available to the circular inset.
 export function bubbleBounds(width, height, position) {
-  const size = Math.min(width, height) * Math.min(0.48,Math.max(0.1,position.scale ?? 0.23)),
+  const size =
+      Math.min(width, height) *
+      Math.min(0.48, Math.max(0.1, position.scale ?? 0.23)),
     pad = Math.min(width, height) * 0.025;
   return {
     size,
@@ -77,14 +79,24 @@ export async function cameraComposition(display, position, onEnded) {
     draw();
     output = canvas.captureStream(30);
     timer = setInterval(draw, 1000 / 30);
-    const preview=document.createElement("canvas");
-    preview.width=preview.height=224;
-    const previewContext=preview.getContext("2d");
-    function portrait(){
-      if(!available || camera.readyState<2)return null;
-      const crop=Math.min(camera.videoWidth,camera.videoHeight);
-      previewContext.drawImage(camera,(camera.videoWidth-crop)/2,(camera.videoHeight-crop)/2,crop,crop,0,0,224,224);
-      return preview.toDataURL("image/jpeg",0.75);
+    const preview = document.createElement("canvas");
+    preview.width = preview.height = 224;
+    const previewContext = preview.getContext("2d");
+    function portrait() {
+      if (!available || camera.readyState < 2) return null;
+      const crop = Math.min(camera.videoWidth, camera.videoHeight);
+      previewContext.drawImage(
+        camera,
+        (camera.videoWidth - crop) / 2,
+        (camera.videoHeight - crop) / 2,
+        crop,
+        crop,
+        0,
+        0,
+        224,
+        224,
+      );
+      return preview.toDataURL("image/jpeg", 0.75);
     }
     return { stream: output, close, portrait };
   } catch (error) {

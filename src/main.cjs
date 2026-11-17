@@ -197,7 +197,8 @@ app.whenReady().then(() => {
     for (const id of listedSources.keys()) {
       if (types.includes(id.split(":")[0])) listedSources.delete(id);
     }
-    for (const { id, name,display_id } of items) listedSources.set(id, { id, name,display_id });
+    for (const { id, name, display_id } of items)
+      listedSources.set(id, { id, name, display_id });
     return items.map(({ id, name, thumbnail }) => ({
       id,
       name,
@@ -217,40 +218,57 @@ app.whenReady().then(() => {
     selected = null;
     cb({ video });
   });
-  let recordingArea,outline,followTimer;
-  function clearOutline(){
+  let recordingArea, outline, followTimer;
+  function clearOutline() {
     clearTimeout(followTimer);
-    if(outline && !outline.isDestroyed())outline.destroy();
-    outline=null;
+    if (outline && !outline.isDestroyed()) outline.destroy();
+    outline = null;
   }
-  handle("countdown", async id => {
-    const {captureBounds,countdownBounds}=require("./capture-bounds.cjs");
-    const displays=require("electron").screen.getAllDisplays();
-    const target=listedSources.get(id);
-    recordingArea=await captureBounds(target,displays);
-    const card=countdownBounds(recordingArea,displays);
+  handle("countdown", async (id) => {
+    const { captureBounds, countdownBounds } = require("./capture-bounds.cjs");
+    const displays = require("electron").screen.getAllDisplays();
+    const target = listedSources.get(id);
+    recordingArea = await captureBounds(target, displays);
+    const card = countdownBounds(recordingArea, displays);
     clearOutline();
-    outline=await require("./capture-outline.cjs").captureOutline(recordingArea);
-    try{
-      const proceed=await require("./countdown.cjs").countdown(win,card);
-      if(!proceed || !id.startsWith("window:"))clearOutline();
+    outline = await require("./capture-outline.cjs").captureOutline(
+      recordingArea,
+    );
+    try {
+      const proceed = await require("./countdown.cjs").countdown(win, card);
+      if (!proceed || !id.startsWith("window:")) clearOutline();
       else {
-        const current=outline;
-        async function follow(){
-          if(current!==outline)return;
-          try{
-            const next=await captureBounds(target,require("electron").screen.getAllDisplays());
-            if(current!==outline)return;
-            if(["x","y","width","height"].some(k=>recordingArea[k]!==next[k])){
-              recordingArea=next;current.setBounds(next);closeRecordingMenu?.setArea(next);
+        const current = outline;
+        async function follow() {
+          if (current !== outline) return;
+          try {
+            const next = await captureBounds(
+              target,
+              require("electron").screen.getAllDisplays(),
+            );
+            if (current !== outline) return;
+            if (
+              ["x", "y", "width", "height"].some(
+                (k) => recordingArea[k] !== next[k],
+              )
+            ) {
+              recordingArea = next;
+              current.setBounds(next);
+              closeRecordingMenu?.setArea(next);
             }
-          }catch{if(current===outline)clearOutline();return;}
-          followTimer=setTimeout(follow,1000);
+          } catch {
+            if (current === outline) clearOutline();
+            return;
+          }
+          followTimer = setTimeout(follow, 1000);
         }
-        followTimer=setTimeout(follow,1000);
+        followTimer = setTimeout(follow, 1000);
       }
       return proceed;
-    }catch(error){clearOutline();throw error;}
+    } catch (error) {
+      clearOutline();
+      throw error;
+    }
   });
   let closeRecordingMenu;
   function restoreStudio() {
@@ -260,7 +278,7 @@ app.whenReady().then(() => {
     if (!win.isDestroyed()) win.show();
   }
   handle("showStudio", restoreStudio);
-  handle("recordingMenu", (showToolbar, cameraOn, position,windowCapture) => {
+  handle("recordingMenu", (showToolbar, cameraOn, position, windowCapture) => {
     if (!library.open || closeRecordingMenu)
       throw Error("Recording unavailable.");
     closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(
@@ -271,11 +289,21 @@ app.whenReady().then(() => {
         ? (point) => win.webContents.send("cameraPosition", point)
         : null,
       position || { x: 1, y: 1 },
-      {desktop:windowCapture===true,area:recordingArea,request:()=>win.webContents.send("portraitRequest")},
+      {
+        desktop: windowCapture === true,
+        area: recordingArea,
+        request: () => win.webContents.send("portraitRequest"),
+      },
     );
   });
-  ipcMain.on("cameraPortrait",(event,frame)=>{
-    if(event.senderFrame===win.webContents.mainFrame && typeof frame==="string" && frame.length<200000 && frame.startsWith("data:image/jpeg;base64,"))closeRecordingMenu?.portrait(frame);
+  ipcMain.on("cameraPortrait", (event, frame) => {
+    if (
+      event.senderFrame === win.webContents.mainFrame &&
+      typeof frame === "string" &&
+      frame.length < 200000 &&
+      frame.startsWith("data:image/jpeg;base64,")
+    )
+      closeRecordingMenu?.portrait(frame);
   });
   handle("recordingStatus", (paused, ms) =>
     closeRecordingMenu?.update(paused, ms),
@@ -314,7 +342,10 @@ app.whenReady().then(() => {
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("render-process-gone", restoreStudio);
-  win.on("closed", () => {clearOutline();closeRecordingMenu?.close();});
+  win.on("closed", () => {
+    clearOutline();
+    closeRecordingMenu?.close();
+  });
   win.loadFile(path.join(__dirname, "index.html"));
 });
 app.on("window-all-closed", () => app.quit());

@@ -15,7 +15,7 @@ Choose a profile, click **Choose screen or window**, select the capture source, 
 
 ### Capture preview and recording
 
-A reported issue showed “The capture source closed” immediately after pressing Start, sometimes with a missing thumbnail. glint now opens a muted preview when you select a source and records from that same stream. Press **Start recording** to prepare the microphone and hide the studio for a three-second countdown. Press **Esc** or click **Cancel** to return to the preview. Recording begins when the countdown finishes. The menu bar shows a red dot and elapsed time. Choose **Stop recording** there or press **⌘⇧9** when the shortcut is available.
+A reported issue showed “The capture source closed” immediately after pressing Start, sometimes with a missing thumbnail. glint now opens a muted preview when you select a source and records from that same stream. Press **Start recording** to prepare the microphone and hide the studio for a three-second countdown. Press **Esc** or click **Cancel** to return to the preview. The countdown appears over the selected screen or window. A border marks the source during the countdown and follows a captured window during recording. Recording begins when the countdown finishes. The menu bar shows a red dot and elapsed time. Choose **Stop recording** there or press **⌘⇧9** when the shortcut is available.
 
 ## Connect Google Drive
 
@@ -57,7 +57,7 @@ In the destination panel, open **Manage accounts** to reconnect an email or disc
 
 ### Camera and recording controls
 
-Turn on **Camera bubble** before or after choosing a screen or window. Drag on the preview to place it. During recording you can drag the dot in the floating toolbar or choose a corner from the menu bar. The camera is composited into the saved video.
+Turn on **Camera bubble** before or after choosing a screen or window. Drag on the preview to place it. Set **Bubble size** in the preview. During window recording, drag the live desktop camera to move it or drag its corner grip to resize. The floating toolbar and the menu bar also have placement and size controls. For full-display capture the desktop camera stays hidden initially, and **Show desktop camera bubble** opens it. The camera is composited into the saved video.
 
 Drag the floating toolbar by its grip. Use **Pause**, **Resume**, **Stop**, or **Hide**. The menu bar can restore the toolbar. Floating controls default to visible for a window capture and hidden for a whole display, where macOS can capture floating windows.
 

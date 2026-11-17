@@ -1,10 +1,10 @@
 const { BrowserWindow, globalShortcut } = require("electron");
 const path = require("node:path");
 
-async function countdown(studio,bounds) {
+async function countdown(studio, bounds) {
   const overlay = new BrowserWindow({
     ...bounds,
-    type:"panel",
+    type: "panel",
     frame: false,
     transparent: true,
     resizable: false,
@@ -14,7 +14,7 @@ async function countdown(studio,bounds) {
     show: false,
     webPreferences: { sandbox: true },
   });
-  overlay.setAlwaysOnTop(true,"screen-saver");
+  overlay.setAlwaysOnTop(true, "screen-saver");
   overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   let escapeRegistered = false;
   let timer;

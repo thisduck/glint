@@ -41,7 +41,7 @@ function recordingMenu(
   try {
     let position = initialPosition;
     function place(point) {
-      position = {...position,...point};
+      position = { ...position, ...point };
       moveCamera(position);
       tick();
     }
@@ -50,8 +50,8 @@ function recordingMenu(
       stop: onStop,
       position: moveCamera ? place : null,
       initialPosition,
-      captureArea:portraitOptions?.area,
-      portraitOptions:moveCamera ? portraitOptions : null,
+      captureArea: portraitOptions?.area,
+      portraitOptions: moveCamera ? portraitOptions : null,
     });
     if (showToolbar) toolbar.show();
     registered = globalShortcut.register(shortcut, onStop);
@@ -63,8 +63,22 @@ function recordingMenu(
         Menu.buildFromTemplate([
           ...(moveCamera
             ? [
-                {label:"Show desktop camera bubble",click:()=>toolbar.showCamera()},
-                {label:"Camera size",submenu:[["Small",0.15],["Medium",0.23],["Large",0.36],["Extra large",0.48]].map(([label,scale])=>({label,click:()=>place({scale})}))},
+                {
+                  label: "Show desktop camera bubble",
+                  click: () => toolbar.showCamera(),
+                },
+                {
+                  label: "Camera size",
+                  submenu: [
+                    ["Small", 0.15],
+                    ["Medium", 0.23],
+                    ["Large", 0.36],
+                    ["Extra large", 0.48],
+                  ].map(([label, scale]) => ({
+                    label,
+                    click: () => place({ scale }),
+                  })),
+                },
                 {
                   label: "Camera position",
                   submenu: [
@@ -106,7 +120,9 @@ function recordingMenu(
     tick();
     timer = setInterval(tick, 1000);
     return {
-      close,setArea:area=>toolbar.setArea(area),portrait:frame=>toolbar.portrait(frame),
+      close,
+      setArea: (area) => toolbar.setArea(area),
+      portrait: (frame) => toolbar.portrait(frame),
       update(value, ms) {
         paused = value;
         base = ms;

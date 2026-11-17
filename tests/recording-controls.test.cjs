@@ -80,6 +80,10 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
     paused: true,
     position: { x: 1, y: 1 },
   });
+  const cameraMenu = menu.find((item) => item.label === "Camera size");
+  cameraMenu.submenu.find((item) => item.label === "Large").click();
+  toolbarCommands.position({ x: 0.25, y: 0.75 });
+  assert.deepEqual(toolbarState.position, { x: 0.25, y: 0.75, scale: 0.36 });
   menu.find((item) => item.label === "Resume recording").click();
   controls.update(false, 4500);
   now += 2000;
