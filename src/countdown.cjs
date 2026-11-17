@@ -1,10 +1,9 @@
 const { BrowserWindow, globalShortcut } = require("electron");
 const path = require("node:path");
 
-async function countdown(studio) {
+async function countdown(studio,bounds) {
   const overlay = new BrowserWindow({
-    width: 158,
-    height: 132,
+    ...bounds,
     frame: false,
     transparent: true,
     resizable: false,

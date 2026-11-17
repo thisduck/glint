@@ -342,7 +342,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       }
       const stream = new MediaStream(tracks);
       const r = new MediaRecorder(stream, { mimeType: "video/webm" });
-      if (!(await api.countdown())) {
+      if (!(await api.countdown(source.id))) {
         microphone?.close();
         await api.showStudio();
         setPhase("idle");

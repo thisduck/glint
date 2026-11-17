@@ -197,7 +197,7 @@ app.whenReady().then(() => {
     for (const id of listedSources.keys()) {
       if (types.includes(id.split(":")[0])) listedSources.delete(id);
     }
-    for (const { id, name } of items) listedSources.set(id, { id, name });
+    for (const { id, name,display_id } of items) listedSources.set(id, { id, name,display_id });
     return items.map(({ id, name, thumbnail }) => ({
       id,
       name,
@@ -217,7 +217,13 @@ app.whenReady().then(() => {
     selected = null;
     cb({ video });
   });
-  handle("countdown", () => require("./countdown.cjs").countdown(win));
+  let recordingArea;
+  handle("countdown", async id => {
+    const {captureBounds,countdownBounds}=require("./capture-bounds.cjs");
+    const displays=require("electron").screen.getAllDisplays();
+    recordingArea=await captureBounds(listedSources.get(id),displays);
+    return require("./countdown.cjs").countdown(win,countdownBounds(recordingArea,displays));
+  });
   let closeRecordingMenu;
   function restoreStudio() {
     closeRecordingMenu?.close();
@@ -236,7 +242,7 @@ app.whenReady().then(() => {
         ? (point) => win.webContents.send("cameraPosition", point)
         : null,
       position || { x: 1, y: 1 },
-      {desktop:windowCapture===true,request:()=>win.webContents.send("portraitRequest")},
+      {desktop:windowCapture===true,area:recordingArea,request:()=>win.webContents.send("portraitRequest")},
     );
   });
   ipcMain.on("cameraPortrait",(event,frame)=>{
