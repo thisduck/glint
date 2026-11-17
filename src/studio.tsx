@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChoiceSelect, MicrophoneCheckbox } from "./components/ui/controls";
 
 import { Folder, HardDrive } from "lucide-react";
-import { RecordingThumbnail } from "./recording-thumbnail";
+import { RecordingLibrary } from "./recording-library";
 import { RecordingPage } from "./recording-page";
 import { cameraComposition } from "./camera.mjs";
 import { openMicrophone } from "./microphone.mjs";
@@ -846,91 +846,12 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         </div>
         {destinationError && <p role="alert">{destinationError}</p>}
       </section>
-      <section className="library mt-6 border-t border-line pt-6">
-        <h2 className="mb-4 font-display text-2xl font-medium tracking-tight">
-          Recordings
-        </h2>
-        {!videos.length && (
-          <small className="block rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
-            No recordings in {profile.name} yet.
-          </small>
-        )}
-        {videos.map((v) => (
-          <article key={v.id}>
-            <button
-              className="group flex min-w-0 flex-1 items-center gap-3 border-transparent bg-transparent p-1 text-left"
-              aria-label={
-                "View recording: " +
-                (v.title || new Date(v.created).toLocaleString())
-              }
-              disabled={!!busy || phase !== "idle"}
-              onClick={() => {
-                releaseCapture();
-                choose(null);
-                play(v.id);
-              }}
-            >
-              <RecordingThumbnail video={v} />
-              <span className="min-w-0">
-                <span className="block truncate font-semibold">
-                  {v.title || "Screen recording"}
-                </span>
-                <time
-                  className="mt-1 block text-xs text-muted"
-                  dateTime={v.created}
-                >
-                  {new Date(v.created).toLocaleString(undefined, {
-                    dateStyle: "medium",
-                    timeStyle: "short",
-                  })}
-                </time>
-              </span>
-            </button>
-            {v.remote ? (
-              <>
-                <button
-                  onClick={() =>
-                    api
-                      .share(v.id, true)
-                      .then(() => setNotice("Link copied"))
-                      .catch((e) => fail(e.message))
-                  }
-                >
-                  Copy link
-                </button>
-                <button
-                  onClick={() =>
-                    api.share(v.id, false).catch((e) => fail(e.message))
-                  }
-                >
-                  Open in Drive
-                </button>
-              </>
-            ) : (
-              <button
-                disabled={
-                  !!busy ||
-                  phase !== "idle" ||
-                  v.uploadState === "pending" ||
-                  !(v.folder || profile.folder)
-                }
-                onClick={() =>
-                  action("Uploading…", async () => {
-                    await api.upload(v.id);
-                    await refresh();
-                  })
-                }
-              >
-                {v.uploadState === "pending"
-                  ? "Uploading…"
-                  : v.uploadState === "failed"
-                    ? "Retry Drive upload"
-                    : "Save to Drive"}
-              </button>
-            )}
-          </article>
-        ))}
-      </section>
+      <RecordingLibrary videos={videos} profile={profile} disabled={!!busy || phase!=="idle"}
+        onOpen={id=>{releaseCapture();choose(null);play(id);}}
+        onCopy={id=>api.share(id,true).then(()=>setNotice("Link copied")).catch(e=>fail(e.message))}
+        onViewDrive={id=>api.share(id,false).catch(e=>fail(e.message))}
+        onUpload={id=>action("Uploading…",async()=>{await api.upload(id);await refresh();})}/>
+
     </>
   );
 }
