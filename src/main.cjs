@@ -189,7 +189,7 @@ app.whenReady().then(() => {
   handle("countdown", () => require("./countdown.cjs").countdown(win));
   let closeRecordingMenu;
   function restoreStudio() {
-    closeRecordingMenu?.();
+    closeRecordingMenu?.close();
     closeRecordingMenu = null;
     if (!win.isDestroyed()) win.show();
   }
@@ -197,10 +197,12 @@ app.whenReady().then(() => {
   handle("recordingMenu", () => {
     if (!library.open || closeRecordingMenu)
       throw Error("Recording unavailable.");
-    closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(() =>
-      win.webContents.send("stopRecording"),
+    closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(
+      () => win.webContents.send("stopRecording"),
+      () => win.webContents.send("toggleRecording"),
     );
   });
+  handle("recordingStatus",(paused,ms)=>closeRecordingMenu?.update(paused,ms));
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
   handle("filmstrip", (id) =>
@@ -235,7 +237,7 @@ app.whenReady().then(() => {
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("render-process-gone", restoreStudio);
-  win.on("closed", () => closeRecordingMenu?.());
+  win.on("closed", () => closeRecordingMenu?.close());
   win.loadFile(path.join(__dirname, "index.html"));
 });
 app.on("window-all-closed", () => app.quit());

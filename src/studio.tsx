@@ -122,10 +122,15 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   useEffect(
     () =>
       api.onStopRecording(() => {
-        if (recorder.current?.state === "recording") recorder.current.stop();
+        if (recorder.current && recorder.current.state !== "inactive") recorder.current.stop();
       }),
     [],
   );
+  useEffect(()=>api.onRecordingToggle?.(()=>{
+    const r=recorder.current;
+    if(r?.state==="recording")r.pause();
+    else if(r?.state==="paused")r.resume();
+  }),[]);
   async function refresh() {
     setVideos(await api.list(profile.id));
   }
@@ -200,7 +205,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         releaseCapture();
         choose(null);
         setNotice("Screen sharing ended. Choose another screen or window.");
-        if (recorder.current?.state === "recording") recorder.current.stop();
+        if (recorder.current && recorder.current.state !== "inactive") recorder.current.stop();
       };
       choose(item);
     } catch (e) {
@@ -213,7 +218,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     }
   }
   async function start() {
-    let startedAt,
+    let activeMs=0, startedAt,
       microphone,
       writeFailed = false;
     let tracks = [],
@@ -247,7 +252,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           () => setNotice("Using the system default microphone."),
           (error) => {
             failure = error;
-            if (recorder.current?.state === "recording")
+            if (recorder.current && recorder.current.state !== "inactive")
               recorder.current.stop();
           },
         );
@@ -278,15 +283,18 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             .catch((err) => {
               writeFailed = true;
               failure = err;
-              if (r.state === "recording") r.stop();
+              if (r.state !== "inactive") r.stop();
             });
       };
       r.onerror = (e) => {
         failure = e.error || Error("Capture interrupted");
-        if (r.state === "recording") r.stop();
+        if (r.state !== "inactive") r.stop();
       };
+      function elapsed() {return Math.round(activeMs+(startedAt==null ? 0 : performance.now()-startedAt));}
+      r.onpause=()=>{activeMs=elapsed();startedAt=null;setPhase("paused");api.recordingStatus(true,activeMs).catch(e=>fail(e.message));};
+      r.onresume=()=>{startedAt=performance.now();setPhase("recording");api.recordingStatus(false,activeMs).catch(e=>fail(e.message));};
       r.onstop = async () => {
-        const duration = Math.round(performance.now() - startedAt);
+        const duration = elapsed();
         setPhase("saving");
         tracks.forEach((t) => t.stop());
         try {
@@ -453,9 +461,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           </div>
           <button
             className="min-h-11 rounded-lg border-0 bg-accent px-5 font-semibold text-white hover:bg-deep"
-            disabled={!!busy || (phase !== "idle" && phase !== "recording")}
+            disabled={!!busy || (phase !== "idle" && phase !== "recording" && phase !== "paused")}
             onClick={() =>
-              phase === "recording"
+              (phase === "recording" || phase === "paused")
                 ? recorder.current.stop()
                 : source
                   ? start()
@@ -466,6 +474,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
               {
                 idle: source ? "Start recording" : "Choose screen or window",
                 recording: "Stop recording",
+                paused: "Stop recording",
                 previewing: "Opening preview…",
                 starting: "Starting…",
                 saving: "Saving…",

@@ -1,6 +1,6 @@
 const { Tray, Menu, globalShortcut, nativeImage } = require("electron");
 
-function recordingMenu(onStop) {
+function recordingMenu(onStop,onToggle) {
   // A small red recording light, also visible against a dark menu bar.
   const bytes = Buffer.alloc(16 * 16 * 4);
   for (let y = 0; y < 16; y++)
@@ -31,25 +31,28 @@ function recordingMenu(onStop) {
   }
   try {
     registered = globalShortcut.register(shortcut, onStop);
-    tray.setContextMenu(
+    let paused=false,base=0,started=Date.now();
+    function rebuild(){tray.setContextMenu(
       Menu.buildFromTemplate([
+        {label:paused?"Resume recording":"Pause recording",click:onToggle},
         {
           label: registered ? "Stop recording (⌘⇧9)" : "Stop recording",
           click: onStop,
         },
       ]),
     );
-    const started = Date.now();
+    }
+    rebuild();
     function tick() {
-      const seconds = Math.floor((Date.now() - started) / 1000);
+      const seconds = Math.floor((base + (paused ? 0 : Date.now()-started))/1000);
       const clock =
         Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
-      if (process.platform === "darwin") tray.setTitle(clock);
+      if (process.platform === "darwin") tray.setTitle((paused ? "Ⅱ " : "")+clock);
       tray.setToolTip("glint · Recording " + clock);
     }
     tick();
     timer = setInterval(tick, 1000);
-    return close;
+    return {close,update(value,ms){paused=value;base=ms;started=Date.now();rebuild();tick();}};
   } catch (error) {
     close();
     throw error;
