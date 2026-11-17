@@ -131,14 +131,42 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     <>
       {busy && <p role="status">{busy}</p>}
       {notice && <p role="status">{notice}</p>}
-      <section className="console">
+      <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
         <div className="stage">
-          <div className="monitor" aria-hidden="true">
-            <i />
-          </div>
-          <h3>
-            {sources.find((s) => s.id === source)?.name ||
-              "Choose a capture source"}
+          <svg
+            viewBox="0 0 92 65"
+            className="h-16 w-24"
+            fill="none"
+            aria-hidden="true"
+          >
+            <rect
+              x="9"
+              y="11"
+              width="54"
+              height="36"
+              rx="5"
+              stroke="var(--glass)"
+              transform="rotate(-10 36 29)"
+            />
+            <rect
+              x="25"
+              y="15"
+              width="58"
+              height="39"
+              rx="5"
+              stroke="var(--shine)"
+              strokeWidth="1.6"
+              fill="var(--deep)"
+            />
+            <path
+              d="M26 24h55M36 43l8-10m-3 13 5-6"
+              stroke="var(--glass)"
+              strokeLinecap="round"
+            />
+            <circle cx="31" cy="20" r="1" fill="var(--shine)" />
+          </svg>
+          <h3 className="max-w-full break-words font-display text-2xl">
+            {sources.find((s) => s.id === source)?.name || "Screen capture"}
           </h3>
           {phase === "recording" && (
             <span role="status">Recording in progress</span>
@@ -161,9 +189,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             </select>
           )}
         </div>
-        <div className="transport">
-          <label>
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-paper px-5 py-3">
+          <label className="flex items-center gap-2 font-medium">
             <input
+              className="size-4 accent-accent"
               type="checkbox"
               checked={mic}
               disabled={phase !== "idle"}
@@ -172,7 +201,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             Microphone
           </label>
           <button
-            className="primary"
+            className="rounded-full border-0 bg-accent px-5 font-semibold text-white before:mr-2 before:inline-block before:size-2 before:rounded-full before:bg-current hover:bg-deep"
             disabled={
               !!busy || (phase === "idle" ? !source : phase !== "recording")
             }
@@ -191,7 +220,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           </button>
         </div>
       </section>
-      <details className="destination">
+      <details className="destination border-b border-line">
         <summary>
           <strong>Destination</strong>
           <span>
@@ -240,11 +269,21 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           </button>
         </fieldset>
       </details>
-      <section className="library">
-        <h2>Recordings</h2>
-        {preview && <video controls src={"clip://library/" + preview} />}
+      <section className="library mt-7">
+        <h2 className="mb-4 font-display text-2xl font-medium tracking-tight">
+          Recordings
+        </h2>
+        {preview && (
+          <video
+            className="mb-4 max-h-80 w-full rounded-xl bg-deep"
+            controls
+            src={"clip://library/" + preview}
+          />
+        )}
         {!videos.length && (
-          <small>Your recordings for {profile.name} will appear here.</small>
+          <small className="block rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
+            Your recordings for {profile.name} will appear here.
+          </small>
         )}
         {videos.map((v) => (
           <article key={v.id}>
