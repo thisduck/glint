@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { Studio } from "./studio";
-import { symbols, LogoShapes, Logo } from "./logos";
+import { Logo } from "./logo";
 const api = window.desk;
 const themes = [
   { id: "lilac", name: "Lilac", font: "Baskerville" },
@@ -14,9 +14,6 @@ const themes = [
 function App() {
   const [theme, setTheme] = useState(
     () => themes.find((t) => t.id === localStorage.appearance)?.id || "cobalt",
-  );
-  const [mark, setMark] = useState(() =>
-    symbols.includes(localStorage.logo) ? localStorage.logo : symbols[0],
   );
   const [profiles, setProfiles] = useState([]),
     [id, select] = useState(Number(localStorage.profile) || 1);
@@ -54,9 +51,8 @@ function App() {
     >
       <aside className="flex flex-col border-b border-line bg-rail p-5 md:min-h-screen md:border-b-0 md:border-r md:py-8">
         <h1 className="mb-6 flex items-center gap-2 text-[29px] font-display font-medium leading-none tracking-tight md:mb-12">
-          <LogoShapes />
-          <Logo name={mark} />
-          cinderella
+          <Logo />
+          snow white
         </h1>
         <h2 className="mb-2 px-2 text-xs font-semibold tracking-wide text-muted">
           Profiles
@@ -144,23 +140,6 @@ function App() {
               </button>
             ))}
           </div>
-          <fieldset className="mt-3 grid grid-cols-2 gap-1">
-            <legend className="py-2 font-semibold">Logo symbol</legend>
-            {symbols.map((name) => (
-              <button
-                key={name}
-                aria-pressed={mark === name}
-                onClick={() => {
-                  setMark(name);
-                  localStorage.logo = name;
-                }}
-                className="flex flex-col items-center justify-center gap-1 px-1 text-xs aria-pressed:bg-tint"
-              >
-                <Logo name={name} />
-                {name}
-              </button>
-            ))}
-          </fieldset>
         </details>
       </aside>
       <div className="mx-auto w-full min-w-0 max-w-5xl px-5 py-7 sm:px-8 lg:p-12">

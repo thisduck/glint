@@ -1,4 +1,4 @@
-# cinderella
+# snow white
 
 A local macOS screen recorder with named profiles and optional Google Drive upload. Work and Personal are created on first launch. Each profile can use its own Google account and folder, or share a connected account with other profiles.
 
@@ -11,7 +11,7 @@ pnpm install --frozen-lockfile
 pnpm start
 ```
 
-Choose a profile, click **Choose screen or window**, select the capture source, and start recording. Allow macOS Screen Recording access for Electron when prompted and relaunch if macOS requests it. Enable microphone access to include narration. Stop the recording to preview it. Local WebM files and the SQLite library are stored under Electron's user-data directory (normally `~/Library/Application Support/cinderella` on macOS).
+Choose a profile, click **Choose screen or window**, select the capture source, and start recording. Allow macOS Screen Recording access for Electron when prompted and relaunch if macOS requests it. Enable microphone access to include narration. Stop the recording to preview it. Local WebM files and the SQLite library are stored under Electron's user-data directory (normally `~/Library/Application Support/snow white` on macOS). Existing installations continue using their original library location.
 
 ## Connect Google Drive
 

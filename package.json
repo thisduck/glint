@@ -1,5 +1,5 @@
 {
-  "name": "cinderella",
+  "name": "snow-white",
   "version": "0.1.0",
   "private": true,
   "main": "src/main.cjs",
@@ -16,5 +16,6 @@
     "electron": "44.7.0",
     "esbuild": "0.27.7",
     "tailwindcss": "3.4.19"
-  }
+  },
+  "productName": "snow white"
 }

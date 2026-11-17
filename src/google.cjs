@@ -42,7 +42,7 @@ async function browserSession(open, setup) {
         try {
           await flow.request(new URL(req.url, origin), req, res, ok);
         } catch (e) {
-          res.writeHead(400).end("Return to cinderella and try again.");
+          res.writeHead(400).end("Return to snow white and try again.");
           no(e);
         }
       });
@@ -112,7 +112,7 @@ class Google {
           }
           const code = url.searchParams.get("code");
           if (!code) throw Error("Google sign-in was cancelled.");
-          res.end("Return to cinderella to choose your folder.");
+          res.end("Return to snow white to choose your folder.");
           ok({ code, redirect_uri });
         },
       };
@@ -181,7 +181,7 @@ class Google {
             "\\u003c",
           );
           res.setHeader("Content-Type", "text/html;charset=utf-8");
-          res.end(`<!doctype html><title>Choose a folder · cinderella</title><p>Choose a Google Drive folder for cinderella.</p><script src="https://apis.google.com/js/api.js"></script><script>
+          res.end(`<!doctype html><title>Choose a folder · snow white</title><p>Choose a Google Drive folder for snow white.</p><script src="https://apis.google.com/js/api.js"></script><script>
         const config=${args};
         gapi.load('picker',()=>{const p=google.picker;
           const view=new p.DocsView(p.ViewId.FOLDERS).setIncludeFolders(true).setSelectFolderEnabled(true);
@@ -189,7 +189,7 @@ class Google {
           .setOAuthToken(config.token).setOrigin(location.origin).setCallback(async data=>{
             if(data.action===p.Action.PICKED||data.action===p.Action.CANCEL){
               await fetch(location.pathname+'?id='+encodeURIComponent(data.docs?.[0]?.id||''),{method:'POST'});
-              document.body.textContent='Return to cinderella.';
+              document.body.textContent='Return to snow white.';
             }}).build().setVisible(true)
         });</script>`);
         },

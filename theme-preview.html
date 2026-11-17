@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Theme comparison · cinderella</title>
+    <title>Theme comparison · snow white</title>
     <style>
       :root,
       [data-theme="lilac"] {
@@ -277,44 +277,8 @@
         --display: "Menlo", monospace;
         --body: "Helvetica Neue", sans-serif;
       }
-
-      .logos {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin: 12px 0 26px;
-      }
-      .logos button {
-        display: grid;
-        justify-items: center;
-        gap: 6px;
-        min-width: 94px;
-        padding: 10px;
-        border-radius: 10px;
-        border: 1px solid #d4d1cb;
-        background: #fcfbfa;
-        font: inherit;
-        font-size: 12px;
-        color: #332b37;
-        cursor: pointer;
-      }
-      .logos button[aria-pressed="true"] {
-        border: 2px solid var(--accent);
-        padding: 9px;
-        background: var(--tint);
-      }
-      .logos .mirror {
-        height: 46px;
-        width: 38px;
-      }
       .sample .mirror {
         color: var(--ink);
-      }
-      .logo-title {
-        font:
-          500 20px Georgia,
-          serif;
-        margin: 0;
       }
 
       /* Keep option names aligned and give the recorder samples a consistent scale. */
@@ -331,33 +295,6 @@
       }
       .toolbar select {
         min-height: 44px;
-      }
-      .logos {
-        gap: 8px;
-        margin: 10px 0 32px;
-      }
-      .logos button {
-        min-width: 88px;
-        border-color: transparent;
-        background: transparent;
-      }
-      .logos button:hover {
-        background: #ece9e3;
-      }
-      .logos button[aria-pressed="true"] {
-        border: 1px solid #9a8c9e;
-        padding: 10px;
-        background: #fffdf9;
-      }
-      .logos button[aria-pressed="true"]:after {
-        content: "✓";
-        position: absolute;
-        right: 5px;
-        top: 3px;
-        font: 12px system-ui;
-      }
-      .logos button {
-        position: relative;
       }
       .board {
         grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -413,12 +350,6 @@
         .board {
           grid-template-columns: 1fr;
         }
-        .logos {
-          gap: 4px;
-        }
-        .logos button {
-          min-width: 80px;
-        }
         .toolbar {
           margin-top: 24px;
         }
@@ -428,69 +359,19 @@
   <body>
     <svg width="0" height="0" aria-hidden="true" style="position: absolute">
       <defs>
-        <symbol id="mark-glass-slipper" viewBox="0 0 34 42">
+        <symbol id="wall-mirror" viewBox="0 0 34 42">
           <g
             fill="none"
             stroke="currentColor"
-            stroke-width="1.65"
+            stroke-width="1.7"
             stroke-linecap="round"
             stroke-linejoin="round"
           >
             <path
+              d="M6 35V16a11 11 0 0 1 22 0v19a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1Z"
               fill="var(--tint)"
-              d="M4 17c3 2 5 7 10 9 3 1 5-2 7-4 2 3 4 4 8 5 3 1 3 4 0 5h-9c-5 0-7-7-12-9l-1 9H5l-1-10z"
             />
-            <path
-              d="m21 13 1.4-3.5 1.4 3.5 3.2 1.3-3.2 1.3-1.4 3.4-1.4-3.4-3.2-1.3z"
-              fill="var(--shine)"
-            />
-          </g>
-        </symbol>
-        <symbol id="mark-pumpkin-coach" viewBox="0 0 34 42">
-          <g
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.65"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M17 12q-1-5 4-5" />
-            <path
-              fill="var(--tint)"
-              d="M4 23c0-8 6-12 13-10 8-3 14 3 13 10-1 5-5 7-13 7S5 28 4 23Z"
-            />
-            <path d="M13 26v-5q0-6 4-6t4 6v5z" />
-            <circle cx="9" cy="31" r="4" fill="var(--paper)" />
-            <circle cx="25" cy="31" r="4" fill="var(--paper)" />
-          </g>
-        </symbol>
-        <symbol id="mark-midnight-clock" viewBox="0 0 34 42">
-          <g
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.65"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="17" cy="22" r="14" fill="var(--tint)" />
-            <path d="M17 11v11l-3-9m-8 9h2m18 0h2m-11 9v2" />
-            <circle cx="17" cy="22" r="1.3" fill="currentColor" />
-          </g>
-        </symbol>
-        <symbol id="mark-fairy-wand" viewBox="0 0 34 42">
-          <g
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.65"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m5 35 15-18m-13 18 14-17" />
-            <path
-              fill="var(--tint)"
-              d="m21 6 2.7 5.4 6 .8-4.3 4.3 1 6-5.4-2.9-5.4 2.9 1-6-4.4-4.3 6-.8z"
-            />
-            <path d="m6 10 0 5m-2.5-2.5h5M28 27v4m-2-2h4" />
+            <path d="m12 21 6-8" />
           </g>
         </symbol>
       </defs>
@@ -499,8 +380,8 @@
       <header>
         <span class="brand"
           ><svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-            <use href="#mark-glass-slipper" /></svg
-          >cinderella</span
+            <use href="#wall-mirror" /></svg
+          >snow white</span
         >
       </header>
       <div class="toolbar">
@@ -514,26 +395,6 @@
           <option value="marigold">Marigold only</option>
           <option value="midnight">Midnight only</option>
         </select>
-      </div>
-      <h2 class="logo-title">Logo symbol</h2>
-      <div class="logos" role="group" aria-label="Logo symbol">
-        <button data-mark="glass-slipper" aria-pressed="true">
-          <svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-            <use href="#mark-glass-slipper" /></svg
-          >Glass slipper</button
-        ><button data-mark="pumpkin-coach" aria-pressed="false">
-          <svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-            <use href="#mark-pumpkin-coach" /></svg
-          >Pumpkin coach</button
-        ><button data-mark="midnight-clock" aria-pressed="false">
-          <svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-            <use href="#mark-midnight-clock" /></svg
-          >Midnight clock</button
-        ><button data-mark="fairy-wand" aria-pressed="false">
-          <svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-            <use href="#mark-fairy-wand" /></svg
-          >Fairy wand
-        </button>
       </div>
       <div class="board">
         <article data-theme="lilac" aria-label="Lilac theme">
@@ -554,8 +415,8 @@
             <div class="bar">
               <span class="brand"
                 ><svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-                  <use href="#mark-glass-slipper" /></svg
-                >cinderella</span
+                  <use href="#wall-mirror" /></svg
+                >snow white</span
               ><span class="profile">Work</span>
             </div>
             <p class="studio">Recording studio</p>
@@ -615,8 +476,8 @@
             <div class="bar">
               <span class="brand"
                 ><svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-                  <use href="#mark-glass-slipper" /></svg
-                >cinderella</span
+                  <use href="#wall-mirror" /></svg
+                >snow white</span
               ><span class="profile">Work</span>
             </div>
             <p class="studio">Recording studio</p>
@@ -676,8 +537,8 @@
             <div class="bar">
               <span class="brand"
                 ><svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-                  <use href="#mark-glass-slipper" /></svg
-                >cinderella</span
+                  <use href="#wall-mirror" /></svg
+                >snow white</span
               ><span class="profile">Work</span>
             </div>
             <p class="studio">Recording studio</p>
@@ -737,8 +598,8 @@
             <div class="bar">
               <span class="brand"
                 ><svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-                  <use href="#mark-glass-slipper" /></svg
-                >cinderella</span
+                  <use href="#wall-mirror" /></svg
+                >snow white</span
               ><span class="profile">Work</span>
             </div>
             <p class="studio">Recording studio</p>
@@ -798,8 +659,8 @@
             <div class="bar">
               <span class="brand"
                 ><svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-                  <use href="#mark-glass-slipper" /></svg
-                >cinderella</span
+                  <use href="#wall-mirror" /></svg
+                >snow white</span
               ><span class="profile">Work</span>
             </div>
             <p class="studio">Recording studio</p>
@@ -859,8 +720,8 @@
             <div class="bar">
               <span class="brand"
                 ><svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-                  <use href="#mark-glass-slipper" /></svg
-                >cinderella</span
+                  <use href="#wall-mirror" /></svg
+                >snow white</span
               ><span class="profile">Work</span>
             </div>
             <p class="studio">Recording studio</p>
@@ -916,14 +777,6 @@
           );
       });
       picker.dispatchEvent(new Event("change"));
-      for (const button of document.querySelectorAll("[data-mark]")) {
-        button.onclick = () => {
-          for (const item of document.querySelectorAll("[data-mark]"))
-            item.setAttribute("aria-pressed", String(item === button));
-          for (const use of document.querySelectorAll(".brand use"))
-            use.setAttribute("href", "#mark-" + button.dataset.mark);
-        };
-      }
     </script>
   </body>
 </html>
