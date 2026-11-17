@@ -33,7 +33,7 @@ async function trimRecording(library, id, start, end, cuts = []) {
   if (cuts.length) {
     const exclude = cuts.map(([a,b]) => "gte(t,"+a+")*lt(t,"+b+")").join("+");
     const offsets = cuts.map(([a,b]) => "gte(T,"+b+")*"+(b-a)).join("+");
-    const filter = "select='not("+exclude+")',setpts='PTS-("+offsets+")/TB'";
+    const filter = "select='gte(t,"+start+")*lt(t,"+end+")*not("+exclude+")',setpts='PTS-("+start+"+"+offsets+")/TB'";
     editArgs.splice(0,editArgs.length,"-vf",filter,"-af","a"+filter.replace(",setpts",",asetpts"),"-fps_mode","vfr");
   }
   const binary = require("./ffmpeg.cjs").ffmpegBinary();
