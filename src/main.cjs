@@ -311,12 +311,18 @@ app.whenReady().then(() => {
     }
   });
   let closeRecordingMenu;
+  function foregroundStudio() {
+    if (win.isDestroyed()) return;
+    if (win.isMinimized()) win.restore();
+    win.show();
+    win.focus();
+  }
   function restoreStudio() {
     closeSetup(false);
     clearOutline();
     closeRecordingMenu?.close();
     closeRecordingMenu = null;
-    if (!win.isDestroyed()) win.show();
+    foregroundStudio();
   }
   handle("showStudio", restoreStudio);
   handle("recordingMenu", (showToolbar, cameraOn, position, windowCapture) => {
@@ -384,7 +390,29 @@ app.whenReady().then(() => {
   });
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
-  win.webContents.on("render-process-gone", restoreStudio);
+  const reopenStudio = () => {
+    if (!preparation && !library.open && !outline) foregroundStudio();
+  };
+  app.on("activate", reopenStudio);
+  app.on("second-instance", reopenStudio);
+  let lastRendererRecovery = 0;
+  win.webContents.on("render-process-gone", (_, details) => {
+    console.error("Studio renderer exited", details.reason, details.exitCode);
+    if (details.reason === "clean-exit" || win.isDestroyed()) return;
+    if (library.open) {
+      try {
+        library.end(library.open.id, false);
+      } catch (error) {
+        console.error("Recovering interrupted recording:", error.message);
+      }
+    }
+    restoreStudio();
+    // Avoid an automatic reload loop if a media decoder repeatedly crashes.
+    if (Date.now() - lastRendererRecovery > 30000) {
+      lastRendererRecovery = Date.now();
+      win.reload();
+    }
+  });
   win.on("closed", () => {
     closeSetup(false);
     clearOutline();

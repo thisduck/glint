@@ -75,7 +75,13 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   }
   const [phase, setPhase] = useState("idle"),
     [videos, setVideos] = useState([]),
-    [preview, play] = useState("");
+    [preview, setPreview] = useState(
+      () => sessionStorage.getItem("glint.openRecording." + profile.id) || "",
+    );
+  function play(id: string) {
+    sessionStorage.setItem("glint.openRecording." + profile.id, id);
+    setPreview(id);
+  }
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [destinationOpen, setDestinationOpen] = useState(false);
   const [managing, manage] = useState(false);
