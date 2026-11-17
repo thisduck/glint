@@ -1,15 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { Studio } from "./studio";
+import { mirrors, MirrorShapes, Mirror } from "./mirrors";
 const api = window.desk;
 const themes = [
   { id: "lilac", name: "Lilac", font: "Baskerville" },
   { id: "grove", name: "Grove", font: "Avenir Next" },
   { id: "clay", name: "Clay", font: "Georgia" },
+  { id: "cobalt", name: "Cobalt", font: "Helvetica Neue" },
+  { id: "marigold", name: "Marigold", font: "Palatino" },
+  { id: "midnight", name: "Midnight", font: "Menlo" },
 ];
 function App() {
   const [theme, setTheme] = useState(
     () => themes.find((t) => t.id === localStorage.appearance)?.id || "lilac",
+  );
+  const [mark, setMark] = useState(() =>
+    mirrors.includes(localStorage.mirror) ? localStorage.mirror : mirrors[0],
   );
   const [profiles, setProfiles] = useState([]),
     [id, select] = useState(Number(localStorage.profile) || 1);
@@ -47,22 +54,8 @@ function App() {
     >
       <aside className="flex flex-col border-b border-line bg-rail p-5 md:min-h-screen md:border-b-0 md:border-r md:py-8">
         <h1 className="mb-6 flex items-center gap-2 text-[29px] font-display font-medium leading-none tracking-tight md:mb-12">
-          <svg
-            className="h-10 w-8 shrink-0 text-accent"
-            viewBox="0 0 34 42"
-            fill="none"
-            aria-hidden="true"
-          >
-            <g
-              transform="rotate(18 17 21)"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            >
-              <ellipse cx="17" cy="15" rx="10" ry="12.5" fill="var(--tint)" />
-              <path d="m13 16 5-7m-1 10 4-6M15 28v9a2 2 0 0 0 4 0v-9" />
-            </g>
-          </svg>
+          <MirrorShapes />
+          <Mirror name={mark} />
           cinderella
         </h1>
         <h2 className="mb-2 px-2 text-xs font-semibold tracking-wide text-muted">
@@ -151,6 +144,23 @@ function App() {
               </button>
             ))}
           </div>
+          <fieldset className="mt-3 grid grid-cols-2 gap-1">
+            <legend className="py-2 font-semibold">Mirror logo</legend>
+            {mirrors.map((name) => (
+              <button
+                key={name}
+                aria-pressed={mark === name}
+                onClick={() => {
+                  setMark(name);
+                  localStorage.mirror = name;
+                }}
+                className="flex flex-col items-center justify-center gap-1 px-1 text-xs aria-pressed:bg-tint"
+              >
+                <Mirror name={name} />
+                {name}
+              </button>
+            ))}
+          </fieldset>
         </details>
       </aside>
       <div className="mx-auto w-full min-w-0 max-w-5xl px-5 py-7 sm:px-8 lg:p-12">

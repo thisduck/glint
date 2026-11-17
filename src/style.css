@@ -46,6 +46,48 @@
     --display: Georgia, serif;
     --body: "Gill Sans", Helvetica, sans-serif;
   }
+  [data-theme="cobalt"] {
+    --paper: #f5f8ff;
+    --rail: #eaf0ff;
+    --ink: #17284c;
+    --muted: #4c6082;
+    --line: #cbd8ee;
+    --accent: #234db6;
+    --tint: #d9e4ff;
+    --glass: #96b7ff;
+    --deep: #152c60;
+    --shine: #deecff;
+    --display: "Helvetica Neue", sans-serif;
+    --body: "Helvetica Neue", sans-serif;
+  }
+  [data-theme="marigold"] {
+    --paper: #fffbee;
+    --rail: #f9f1d6;
+    --ink: #382e1d;
+    --muted: #6c5b37;
+    --line: #e7dcb6;
+    --accent: #80520e;
+    --tint: #f8e7ad;
+    --glass: #e9c365;
+    --deep: #49391c;
+    --shine: #fff1ae;
+    --display: "Palatino", serif;
+    --body: "Trebuchet MS", sans-serif;
+  }
+  [data-theme="midnight"] {
+    --paper: #191c24;
+    --rail: #202430;
+    --ink: #e9ecfa;
+    --muted: #b2bbd3;
+    --line: #404758;
+    --accent: #565fb0;
+    --tint: #333951;
+    --glass: #a3acee;
+    --deep: #171928;
+    --shine: #e1e5ff;
+    --display: "Menlo", monospace;
+    --body: "Helvetica Neue", sans-serif;
+  }
   body {
     @apply m-0 text-sm antialiased;
   }
