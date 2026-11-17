@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
+import { ChoiceSelect, MicrophoneCheckbox } from "./components/ui/controls";
+import * as Collapsible from "@radix-ui/react-collapsible";
+import { Folder, ChevronDown } from "lucide-react";
 const api = window.desk;
 export function Studio({ profile, refreshProfile, lock, fail }) {
   const [sources, setSources] = useState([]),
@@ -172,18 +175,13 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             <span role="status">Recording in progress</span>
           )}
           {!!sources.length && (
-            <select
-              aria-label="Capture source"
-              disabled={phase !== "idle"}
+            <ChoiceSelect
+              label="Capture source"
               value={source}
-              onChange={(e) => choose(e.target.value)}
-            >
-              {sources.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
+              onChange={choose}
+              disabled={phase !== "idle"}
+              options={sources.map((s) => ({ value: s.id, label: s.name }))}
+            />
           )}
           {!!source && phase === "idle" && (
             <button className="refresh" onClick={load}>
@@ -192,16 +190,11 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           )}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 bg-paper px-5 py-4">
-          <label className="flex items-center gap-2 font-medium">
-            <input
-              className="size-4 accent-accent"
-              type="checkbox"
-              checked={mic}
-              disabled={phase !== "idle"}
-              onChange={(e) => setMic(e.target.checked)}
-            />
-            Microphone
-          </label>
+          <MicrophoneCheckbox
+            checked={mic}
+            disabled={phase !== "idle"}
+            onChange={setMic}
+          />
           <button
             className="min-h-11 rounded-lg border-0 bg-accent px-5 font-semibold text-white hover:bg-deep"
             disabled={!!busy || (phase !== "idle" && phase !== "recording")}
@@ -224,55 +217,60 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           </button>
         </div>
       </section>
-      <details className="destination">
-        <summary>
-          <strong>Destination</strong>
-          <span>
-            {profile.folderName
-              ? (accounts.find((a) => a.id === profile.account)?.email ||
-                  "Google Drive") +
-                " / " +
-                profile.folderName
-              : "Local recordings"}
+      <Collapsible.Root className="destination">
+        <Collapsible.Trigger className="destination-trigger">
+          <Folder aria-hidden="true" />
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
+            <span className="text-xs text-muted">Destination</span>
+            <span>
+              {profile.folderName
+                ? (accounts.find((a) => a.id === profile.account)?.email ||
+                    "Google Drive") +
+                  " / " +
+                  profile.folderName
+                : "Local recordings"}
+            </span>
           </span>
-        </summary>
-        <fieldset disabled={!!busy || phase !== "idle"}>
-          <legend>Google Drive</legend>
-          <select
-            aria-label="Google account"
-            value={account}
-            onChange={(e) => setAccount(e.target.value)}
-          >
-            <option value="">Select account</option>
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.email}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={() =>
-              action("Connecting…", async () => {
-                setAccount(await api.connect());
-                setAccounts(await api.accounts());
-              })
-            }
-          >
-            Connect Google account
-          </button>
-          <button
-            disabled={!account}
-            onClick={() =>
-              action("Choosing folder…", async () => {
-                await api.folder(profile.id, account);
-                await refreshProfile();
-              })
-            }
-          >
-            Choose folder
-          </button>
-        </fieldset>
-      </details>
+          <ChevronDown aria-hidden="true" />
+        </Collapsible.Trigger>
+        <Collapsible.Content>
+          <fieldset disabled={!!busy || phase !== "idle"}>
+            <legend>Google Drive</legend>
+            {!!accounts.length && (
+              <ChoiceSelect
+                label="Google account"
+                value={account}
+                onChange={setAccount}
+                disabled={!!busy || phase !== "idle"}
+                options={accounts.map((a) => ({ value: a.id, label: a.email }))}
+              />
+            )}
+            <button
+              onClick={() =>
+                action("Connecting…", async () => {
+                  setAccount(await api.connect());
+                  setAccounts(await api.accounts());
+                })
+              }
+            >
+              Connect Google account
+            </button>
+            {!!account && (
+              <button
+                disabled={!account}
+                onClick={() =>
+                  action("Choosing folder…", async () => {
+                    await api.folder(profile.id, account);
+                    await refreshProfile();
+                  })
+                }
+              >
+                Choose folder
+              </button>
+            )}
+          </fieldset>
+        </Collapsible.Content>
+      </Collapsible.Root>
       <section className="library mt-6 border-t border-line pt-6">
         <h2 className="mb-4 font-display text-2xl font-medium tracking-tight">
           Recordings
