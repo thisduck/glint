@@ -13,7 +13,7 @@ function recordingToolbar(commands) {
   const receive=(event,action)=>{
     if(win.isDestroyed() || event.senderFrame!==win.webContents.mainFrame)return;
     if(action==="hide")win.hide();
-    else commands[action]?.();
+    else if(action==="stop" || action==="toggle") commands[action]();
   };
   ipcMain.on("toolbarCommand",receive);
   win.once("closed",()=>ipcMain.removeListener("toolbarCommand",receive));
