@@ -32,6 +32,11 @@ const methods = [
   "reveal",
 ];
 contextBridge.exposeInMainWorld("desk", {
+  onCameraPosition(callback){
+    const listener=(_,point)=>callback(point);
+    ipcRenderer.on("cameraPosition",listener);
+    return ()=>ipcRenderer.removeListener("cameraPosition",listener);
+  },
   onRecordingToggle(callback){
     const listener=()=>callback();
     ipcRenderer.on("toggleRecording",listener);

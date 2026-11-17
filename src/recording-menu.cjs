@@ -1,6 +1,6 @@
 const { Tray, Menu, globalShortcut, nativeImage } = require("electron");
 
-function recordingMenu(onStop,onToggle,showToolbar) {
+function recordingMenu(onStop,onToggle,showToolbar,moveCamera) {
   // A small red recording light, also visible against a dark menu bar.
   const bytes = Buffer.alloc(16 * 16 * 4);
   for (let y = 0; y < 16; y++)
@@ -38,6 +38,7 @@ function recordingMenu(onStop,onToggle,showToolbar) {
     let paused=false,base=0,started=Date.now();
     function rebuild(){tray.setContextMenu(
       Menu.buildFromTemplate([
+        ...(moveCamera ? [{label:"Camera position",submenu:["Top left","Top right","Bottom left","Bottom right"].map((label,i)=>({label,click:()=>moveCamera({x:i%2,y:Math.floor(i/2)})}))}] : []),
         {label:"Show floating controls",click:()=>toolbar.show()},
         {label:paused?"Resume recording":"Pause recording",click:onToggle},
         {

@@ -4,6 +4,7 @@ import { ChoiceSelect, MicrophoneCheckbox } from "./components/ui/controls";
 import { Folder, HardDrive } from "lucide-react";
 import { RecordingThumbnail } from "./recording-thumbnail";
 import { RecordingPage } from "./recording-page";
+import { cameraComposition } from "./camera.mjs";
 import { openMicrophone } from "./microphone.mjs";
 import { SourcePicker, type CaptureSource } from "./source-picker";
 const api = window.desk;
@@ -160,9 +161,24 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     };
   }, [pendingUploads, profile.id]);
   const capture = useRef<MediaStream | null>(null);
+  const composition = useRef(null);
+  const cameraPosition=useRef({x:1,y:1});
+  const [cameraOn,setCameraOn]=useState(false);
+  useEffect(()=>api.onCameraPosition?.(point=>{cameraPosition.current=point;}),[]);
+  async function toggleCamera(enabled){
+    if(!enabled){composition.current?.close();composition.current=null;setCameraOn(false);return;}
+    const display=capture.current;
+    if(!display)return;
+    await action("Opening camera…",async()=>{
+      const result=await cameraComposition(display,cameraPosition,()=>setNotice("Camera disconnected. Screen recording continues."));
+      if(capture.current!==display){result.close();return;}
+      composition.current=result;setCameraOn(true);
+    });
+  }
   const previewVideo = useRef<HTMLVideoElement>(null);
   const mounted = useRef(true);
   function releaseCapture() {
+    composition.current?.close();composition.current=null;setCameraOn(false);
     const stream = capture.current;
     capture.current = null;
     stream?.getTracks().forEach((track) => {
@@ -178,8 +194,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     };
   }, []);
   useEffect(() => {
-    if (previewVideo.current) previewVideo.current.srcObject = capture.current;
-  }, [source, phase]);
+    if (previewVideo.current) previewVideo.current.srcObject = composition.current?.stream || capture.current;
+  }, [source, phase,cameraOn]);
   async function selectSource(item: CaptureSource) {
     setPickerOpen(false);
     setPhase("previewing");
@@ -219,6 +235,12 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       }
     }
   }
+  function placeCamera(event){
+    const bounds=event.currentTarget.getBoundingClientRect();
+    const clamp=n=>Math.max(0,Math.min(1,n));
+    const inset=Math.min(bounds.width,bounds.height)*0.14;
+    cameraPosition.current={x:clamp((event.clientX-bounds.left-inset)/(bounds.width-2*inset)),y:clamp((event.clientY-bounds.top-inset)/(bounds.height-2*inset))};
+  }
   async function start() {
     let activeMs=0, startedAt,
       microphone,
@@ -246,7 +268,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         throw Error(
           "The selected source is no longer sharing. Choose a screen or window again.",
         );
-      tracks.push(...display.getTracks());
+      tracks.push(...(composition.current?.stream || display).getVideoTracks());
       if (mic) {
         microphone = await openMicrophone(
           navigator.mediaDevices,
@@ -315,7 +337,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         throw Error(
           "Capture ended before recording started. Choose a capture source again.",
         );
-      await api.recordingMenu(showToolbar);
+      await api.recordingMenu(showToolbar,cameraOn);
       if (failure) throw failure;
       startedAt = performance.now();
       r.start(1000);
@@ -356,6 +378,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         <div className="stage">
           {source ? (
             <video
+              title={cameraOn ? "Drag to position your camera" : undefined}
+              onPointerDown={e=>{if(cameraOn){e.currentTarget.setPointerCapture(e.pointerId);placeCamera(e);}}}
+              onPointerMove={e=>{if(cameraOn && e.currentTarget.hasPointerCapture(e.pointerId))placeCamera(e);}}
               aria-label="Selected capture source preview"
               ref={previewVideo}
               autoPlay
@@ -430,6 +455,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2"><input type="checkbox" checked={showToolbar} disabled={!!busy || phase!=="idle"} onChange={e=>setToolbar(e.target.checked)}/>Floating controls</label>
             {showToolbar && source?.id.startsWith("screen:") && <small>Controls may appear in full-display recordings.</small>}
+            <label className="flex items-center gap-2"><input type="checkbox" checked={cameraOn} disabled={!source || !!busy || phase!=="idle"} onChange={e=>toggleCamera(e.target.checked)}/>Camera bubble</label>
+            {cameraOn && <small>Drag on the preview to position your camera.</small>}
             <MicrophoneCheckbox
               checked={mic}
               disabled={!!busy || phase !== "idle"}

@@ -48,6 +48,7 @@ try {
     prune: false,
     icon: path.join(root, "build/icon.icns"),
     extendInfo: {
+      NSCameraUsageDescription:"Include your camera when you turn on the camera bubble.",
       NSMicrophoneUsageDescription:
         "Record narration when you enable the microphone.",
       NSScreenCaptureUsageDescription:
