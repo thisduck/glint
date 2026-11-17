@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChoiceSelect, MicrophoneCheckbox } from "./components/ui/controls";
 
 import { Folder, HardDrive } from "lucide-react";
+import { RecordingThumbnail } from "./recording-thumbnail";
 import { RecordingPage } from "./recording-page";
 import { openMicrophone } from "./microphone.mjs";
 import { SourcePicker, type CaptureSource } from "./source-picker";
@@ -678,8 +679,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         )}
         {videos.map((v) => (
           <article key={v.id}>
-            <time>{v.title || new Date(v.created).toLocaleString()}</time>{" "}
-            <button
+            
+            <button className="group flex min-w-0 flex-1 items-center gap-3 border-transparent bg-transparent p-1 text-left" aria-label={"View recording: " + (v.title || new Date(v.created).toLocaleString())}
               disabled={!!busy || phase !== "idle"}
               onClick={() => {
                 releaseCapture();
@@ -687,7 +688,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                 play(v.id);
               }}
             >
-              View recording
+              <RecordingThumbnail video={v}/>
+              <span className="min-w-0"><span className="block truncate font-semibold">{v.title || "Screen recording"}</span>
+                <time className="mt-1 block text-xs text-muted" dateTime={v.created}>{new Date(v.created).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"})}</time>
+              </span>
             </button>
             {v.remote ? (
               <>
