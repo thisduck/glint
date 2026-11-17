@@ -15,11 +15,13 @@ Choose a profile, click **Choose screen or window**, select the capture source, 
 
 ### Capture preview and recording
 
-A reported issue showed “The capture source closed” immediately after pressing Start, sometimes with a missing thumbnail. glint now opens a muted preview when you select a source and records from that same stream. Press **Start recording** to prepare the microphone and hide the studio for a three-second countdown. Press **Esc** or click **Cancel** to return to the preview. The countdown appears over the selected screen or window. A border marks the source during the countdown and follows a captured window during recording. Recording begins when the countdown finishes. The menu bar shows a red dot and elapsed time. Choose **Stop recording** there or press **⌘⇧9** when the shortcut is available.
+Choose **Entire screen** or **An app window**, select a live thumbnail, and click **Preview selection**. glint outlines that source and places the setup panel on it. The microphone and camera can be switched on there. Drag the camera preview to place it or adjust its size while looking at the actual source. **Back to studio** keeps the selection, and **On-screen setup** reopens the panel.
+
+Click **Start recording** on the panel for a three-second countdown over the source. Esc cancels the countdown and returns to setup. Recording begins after the countdown. The menu bar shows elapsed recording time and includes Pause, Resume and Stop. Press **⌘⇧9** to stop when the shortcut is available.
 
 ## Connect Google Drive
 
-Choose your Google account under the profile’s destination. The first time, click **Connect Google Drive** and sign in. Choosing or connecting an account saves the profile’s destination immediately. glint creates or reuses a folder named after the profile in My Drive, then shows its name and account. Use **Change → Change folder…** to pick an existing folder instead. The app requests per-file Drive access. It encrypts refresh tokens using Electron safeStorage and the macOS Keychain.
+Choose your Google account under the profile’s destination. The first time, click **Connect Google Drive** and sign in. Choosing or connecting an account saves the profile’s destination immediately. glint creates or reuses a folder named after the profile in My Drive, then shows its name and account. Open destination **Settings** and choose **Change folder…** to pick an existing folder instead. The app requests per-file Drive access. It encrypts refresh tokens using Electron safeStorage and the macOS Keychain.
 
 Enable **Auto-upload new recordings** after choosing a folder. This preference belongs to the profile. glint saves each recording locally, then uploads it in the background. Pending uploads resume when glint reopens. If an upload fails, use **Retry Drive upload** in the recording library.
 
@@ -57,7 +59,7 @@ In the destination panel, open **Manage accounts** to reconnect an email or disc
 
 ### Camera and recording controls
 
-Turn on **Camera bubble** before or after choosing a screen or window. Drag on the preview to place it. Set **Bubble size** in the preview. During window recording, drag the live desktop camera to move it or drag its corner grip to resize. The floating toolbar and the menu bar also have placement and size controls. For full-display capture the desktop camera stays hidden initially, and **Show desktop camera bubble** opens it. The camera is composited into the saved video.
+Turn on **Camera bubble** before or after choosing a screen or window. Drag on the preview to place it. Set **Bubble size** in the preview. During window recording, drag the live desktop camera to move it or drag its corner grip to resize. The floating toolbar and the menu bar also have placement and size controls. For full-display capture the desktop camera stays hidden initially, and **Show camera preview** opens it. The camera is composited into the saved video.
 
 Drag the floating toolbar by its grip. Use **Pause**, **Resume**, **Stop**, or **Hide**. The menu bar can restore the toolbar. Floating controls default to visible for a window capture and hidden for a whole display, where macOS can capture floating windows.
 

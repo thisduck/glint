@@ -84,6 +84,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     try {
       await fn();
     } catch (e) {
+      await leaveSetup();
       fail(e.message);
     } finally {
       setBusy("");
@@ -166,6 +167,28 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       clearTimeout(timer);
     };
   }, [pendingUploads, profile.id]);
+  const setupActive=useRef<symbol|null>(null);
+  const startPending=useRef(false);
+  const handleSetup=useRef<(action:string)=>void>();
+  useEffect(()=>api.onSetupCommand?.(action=>handleSetup.current?.(action)),[]);
+  async function leaveSetup(restore=true){
+    if (!setupActive.current)return;
+    setupActive.current=null;
+    await api.closeSetup(restore);
+  }
+  async function showSetup(item:CaptureSource){
+    if(!api.openSetup || setupActive.current)return;
+    const session=Symbol();
+    setupActive.current=session;
+    try{
+      const opened=await api.openSetup(item.id,{cameraOn:!!composition.current,micOn:mic,position:cameraPosition.current,busy:false});
+      if(!opened && setupActive.current===session)setupActive.current=null;
+    }catch(error){
+      if(setupActive.current!==session)return;
+      setupActive.current=null;
+      fail("On-screen setup could not open. You can still start here. "+error.message);
+    }
+  }
   const capture = useRef<MediaStream | null>(null);
   const composition = useRef(null);
   const cameraPosition = useRef({ x: 1, y: 1, scale: 0.23 });
@@ -187,6 +210,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       }),
     [],
   );
+  useEffect(()=>{
+    if(setupActive.current)api.updateSetup({cameraOn,micOn:mic,position:cameraPosition.current,busy:!!busy || phase!=="idle"}).catch(e=>fail(e.message));
+  },[cameraOn,cameraScale,mic,busy,phase]);
   function resizeCamera(scale) {
     cameraPosition.current = { ...cameraPosition.current, scale };
     setCameraScale(scale);
@@ -219,6 +245,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   const previewVideo = useRef<HTMLVideoElement>(null);
   const mounted = useRef(true);
   function releaseCapture() {
+    leaveSetup().catch(e=>fail(e.message));
     composition.current?.close();
     composition.current = null;
     setCameraOn(false);
@@ -277,8 +304,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           await attachCamera(stream);
         } catch (error) {
           fail("Could not open the camera. " + error.message);
+          return;
         }
       }
+      if(capture.current===stream)await showSetup(item);
     } catch (e) {
       fail("Could not preview this source. " + e.message);
     } finally {
@@ -305,6 +334,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     };
   }
   async function start() {
+    if(startPending.current || recorder.current || phase!=="idle")return;
+    startPending.current=true;
+    const fromSetup=setupActive.current;
     let activeMs = 0,
       startedAt,
       microphone,
@@ -347,13 +379,20 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         tracks.push(microphone.track);
         listInputs().catch(() => {});
       }
+      if(fromSetup && setupActive.current!==fromSetup){
+        microphone?.close();
+        setPhase("idle");lock(false);
+        return;
+      }
       const stream = new MediaStream(tracks);
       const r = new MediaRecorder(stream, { mimeType: "video/webm" });
+      await leaveSetup(false);
       if (!(await api.countdown(source.id))) {
         microphone?.close();
         await api.showStudio();
         setPhase("idle");
         lock(false);
+        if(fromSetup && capture.current===display)await showSetup(source);
         return;
       }
       id = await api.begin(profile.id);
@@ -428,8 +467,17 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       if (id) await api.end(id, false).catch(() => {});
       fail(e.message);
       reset();
-    }
+    }finally{startPending.current=false;}
   }
+  handleSetup.current=async command=>{
+    if(command==="sourceLost"){releaseCapture();choose(null);setNotice("The selected window closed. Choose another source.");return;}
+    if(!setupActive.current)return;
+    if(command==="cancel"){await leaveSetup();return;}
+    if(busy || phase!=="idle")return;
+    if(command==="start")await start();
+    if(command==="toggleMic")await saveMic(profile.microphoneId,!mic);
+    if(command==="toggleCamera")await toggleCamera(!cameraOn);
+  };
   const finished = videos.find((v) => v.id === preview);
   if (finished)
     return (
@@ -534,6 +582,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         </div>
         {source && <div className="setup-footer">
           <span className="text-sm text-muted">{phase==="idle" ? "Recording starts after a 3-second countdown." : phase==="paused"?"Recording paused":phase==="recording"?"Recording in progress":phase==="saving"?"Saving recording…":"Preparing recording…"}</span>
+          {phase==="idle" && <button disabled={!!busy} onClick={()=>showSetup(source)}>On-screen setup</button>}
           {capturing && <button onClick={()=>phase==="paused"?recorder.current.resume():recorder.current.pause()}>{phase==="paused"?"Resume":"Pause"}</button>}
           <button className="studio-primary" disabled={!!busy || (!capturing && phase!=="idle")} onClick={()=>capturing?recorder.current.stop():start()}>{capturing?<Square size={14}/>:<Circle size={14} fill="currentColor"/>}{capturing?"Stop recording":"Start recording"}</button>
         </div>}

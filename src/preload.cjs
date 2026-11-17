@@ -4,6 +4,9 @@ const methods = [
   "save",
   "sources",
   "source",
+  "openSetup",
+  "updateSetup",
+  "closeSetup",
   "countdown",
   "showStudio",
   "recordingMenu",
@@ -39,6 +42,11 @@ contextBridge.exposeInMainWorld("desk", {
     const listener = () => callback();
     ipcRenderer.on("portraitRequest", listener);
     return () => ipcRenderer.removeListener("portraitRequest", listener);
+  },
+  onSetupCommand(callback){
+    const listener=(_,action)=>callback(action);
+    ipcRenderer.on("setupCommand",listener);
+    return ()=>ipcRenderer.removeListener("setupCommand",listener);
   },
   onCameraPosition(callback) {
     const listener = (_, point) => callback(point);
