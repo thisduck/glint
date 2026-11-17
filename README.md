@@ -42,3 +42,5 @@ Desktop clients are inspectable. Keep production configuration out of Git and re
 Run `pnpm test` and `pnpm build`. Automated tests exercise profile persistence, recording storage and recovery, destination isolation, and upload retry with a simulated Drive service.
 
 For a desktop smoke test, add a profile, rename it, restart, and confirm its name. Record a screen with microphone enabled, stop, and play back the result. Connect two Google accounts, choose a different destination in each profile, and upload a short recording from each. Verify each file's folder and sharing settings in Drive.
+
+In the destination panel, open **Manage accounts** to reconnect an email or disconnect it from glint. Disconnecting clears the saved Drive destination and turns off auto-upload for every profile using that account.

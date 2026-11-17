@@ -159,11 +159,23 @@ test("an identity-only grant prompts for Drive consent on exchange and refresh",
   for (const grant_type of ["authorization_code", "refresh_token"])
     await assert.rejects(
       google.token({ grant_type }),
-      /Reconnect this account/,
+      /Manage accounts and choose Reconnect/,
     );
   scope += " https://www.googleapis.com/auth/drive.file";
   assert.equal(
     (await google.token({ grant_type: "refresh_token" })).access_token,
     "test-access",
   );
+});
+
+test("disconnect clears the local grant and only its profiles' destinations", () => {
+  const store = new Store(":memory:");
+  const g = new Google(store);
+  for (const p of store.profiles()) {
+    store.db.prepare("INSERT INTO accounts VALUES(?,?,?)").run(p.name,p.name,Buffer.from("token"));
+    store.db.prepare("UPDATE profiles SET account=?,folder='folder',autoUpload=1 WHERE id=?").run(p.name,p.id);
+  }
+  g.disconnect("Work");
+  assert.deepEqual(g.accounts().map(a => a.id),["Personal"]);
+  assert.deepEqual(store.profiles().map(p => [p.account,p.folder,p.autoUpload]),[[null,null,0],["Personal","folder",1]]);
 });

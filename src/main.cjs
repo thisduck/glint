@@ -79,7 +79,8 @@ app.whenReady().then(() => {
       .catch((e) => console.error("Auto-upload queue:", e.message));
   resumeUploads();
   handle("accounts", () => google.accounts());
-  handle("connect", () => google.connect());
+  handle("connect", (account) => google.connect(account));
+  handle("disconnect", (account) => google.disconnect(account));
   handle("recordingsFolder", (profile, account) =>
     google.recordingsFolder(profile, account),
   );

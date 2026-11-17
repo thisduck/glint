@@ -5,7 +5,7 @@ const tokenUrl = "https://oauth2.googleapis.com/token";
 const files = "https://www.googleapis.com/drive/v3/files";
 const driveScope = "https://www.googleapis.com/auth/drive.file";
 const reconnectMessage =
-  "Reconnect this account using Sign in with Google in the account menu. On Google's consent screen, select the permission to access the Drive files you use with glint, then continue.";
+  "Open Manage accounts and choose Reconnect for this account. On Google's consent screen, select the permission to access the Drive files you use with glint, then continue.";
 const random = () => crypto.randomBytes(32).toString("base64url");
 async function json(url, options) {
   const res = await fetch(url, options);
@@ -20,6 +20,7 @@ async function json(url, options) {
     ) {
       throw Error(reconnectMessage);
     }
+    if (data.error === "invalid_grant") throw Error(reconnectMessage);
     throw Error(
       data.error_description ||
         data.error?.message ||
@@ -101,7 +102,21 @@ class Google {
       .prepare("SELECT id,email FROM accounts ORDER BY email")
       .all();
   }
-  async connect() {
+  disconnect(account) {
+    this.db.exec("BEGIN");
+    try {
+      this.db.prepare("DELETE FROM accounts WHERE id=?").run(account);
+      this.db.prepare("UPDATE profiles SET account=NULL, folder=NULL, folderName=NULL, autoUpload=0 WHERE account=?").run(account);
+      this.db.prepare("UPDATE videos SET uploadState='failed' WHERE account=? AND uploadState='pending'").run(account);
+      this.db.exec("COMMIT");
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
+  }
+  async connect(account) {
+    const existing = account && this.accounts().find((row) => row.id === account);
+    if (account && !existing) throw Error("This account has been disconnected.");
     const { client_id } = this.credentials(),
       verifier = random();
     const result = await browserSession(this.open, (origin, state) => {
@@ -109,6 +124,7 @@ class Google {
       const params = new URLSearchParams({
         client_id,
         redirect_uri,
+        ...(existing && { login_hint: existing.email }),
         response_type: "code",
         state,
         scope: "openid email " + driveScope,
@@ -153,6 +169,7 @@ class Google {
       "https://openidconnect.googleapis.com/v1/userinfo",
       { headers: { Authorization: "Bearer " + tokens.access_token } },
     );
+    if (existing && existing.id !== user.sub) throw Error("Choose " + existing.email + " to reconnect this account.");
     if (!tokens.refresh_token)
       throw Error("Reconnect and grant offline access.");
     this.db

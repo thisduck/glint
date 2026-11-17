@@ -12,6 +12,7 @@ const methods = [
   "driveConfigured",
   "accounts",
   "connect",
+  "disconnect",
   "folder",
   "recordingsFolder",
   "upload",

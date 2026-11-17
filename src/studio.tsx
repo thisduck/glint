@@ -13,6 +13,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     [preview, play] = useState("");
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [editingDestination, editDestination] = useState(false);
+  const [managing, manage] = useState(false);
+  const [removing, remove] = useState("");
   const [destinationMessage, setDestinationMessage] = useState("");
   const [destinationError, setDestinationError] = useState("");
   const [accounts, setAccounts] = useState([]),
@@ -436,6 +438,68 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
               </button>
             )}
           </fieldset>
+        )}
+        {accounts.length > 0 && (
+          <details
+            className="mt-3 text-sm"
+            open={managing}
+            onToggle={(e) => manage(e.currentTarget.open)}
+          >
+            <summary className="cursor-pointer text-muted">
+              Manage accounts
+            </summary>
+            {accounts.map((account) => (
+              <fieldset
+                key={account.id}
+                disabled={!!busy || phase !== "idle"}
+                className="mt-3 flex flex-wrap items-center gap-2"
+              >
+                <span className="mr-auto break-all">{account.email}</span>
+                {removing === account.id ? (
+                  <>
+                    <p className="w-full">
+                      Disconnecting this account turns off Drive uploads for
+                      every profile using it. Your recordings stay on this Mac
+                      and in Drive.
+                    </p>
+                    <button
+                      onClick={() =>
+                        saveDestination(
+                          "Disconnecting…",
+                          async () => {
+                            await api.disconnect(account.id);
+                            setAccounts(await api.accounts());
+                            remove("");
+                          },
+                          "Account disconnected from glint.",
+                        )
+                      }
+                    >
+                      Disconnect from glint
+                    </button>
+                    <button onClick={() => remove("")}>Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() =>
+                        saveDestination(
+                          "Reconnecting…",
+                          () => api.connect(account.id),
+                          "Account reconnected.",
+                        )
+                      }
+                    >
+                      Reconnect
+                    </button>
+                    <button onClick={() => remove(account.id)}>
+                      Disconnect…
+                    </button>
+                  </>
+                )}
+              </fieldset>
+            ))}
+          </details>
         )}
         {driveSaved && (
           <label className="mt-4 flex cursor-pointer items-center gap-2 border-t border-line pt-3">
