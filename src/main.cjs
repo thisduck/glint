@@ -62,9 +62,10 @@ app.whenReady().then(() => {
   let selected = null;
   const { Google } = require("./google.cjs");
   const { Uploads } = require("./uploads.cjs");
-  const google = new Google(store, safeStorage, (url) =>
-    shell.openExternal(url),
-  );
+  const {loadConfig,missing} = require("./google-config.cjs");
+  const config = loadConfig(app.getAppPath());
+  const google = new Google(store, safeStorage, (url) => shell.openExternal(url),config);
+  handle("driveConfigured",()=>missing(config).length===0);
   const uploads = new Uploads(library, google);
   handle("accounts", () => google.accounts());
   handle("connect", () => google.connect());

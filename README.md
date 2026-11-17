@@ -19,6 +19,14 @@ A reported issue showed “The capture source closed” immediately after pressi
 
 ## Connect Google Drive
 
+Click **Connect Google account** to sign in through your browser. Select a connected account and click **Choose folder** to apply the destination to the current profile. The app requests per-file Drive access. It encrypts refresh tokens using Electron safeStorage and the macOS Keychain.
+
+**Save to Drive** streams the local file directly to Google. Recordings keep the destination selected at capture time. For a recording made without a destination, the first upload uses its profile's configured folder. An interrupted upload can be retried. **Copy link** copies the Drive viewing URL. **Open in Drive** opens the file where you can change sharing permissions.
+
+## Publisher and source-build setup
+
+Official downloads carry glint’s desktop OAuth configuration. Users sign in to their own Google accounts in their browsers. Developers running from source and maintainers of independent distributions can supply their own project settings.
+
 In a Google Cloud project, enable Google Drive API and Google Picker API. Configure the OAuth consent screen. For an external app in testing, add each Google account as a test user. Create a **Desktop app** OAuth client and an API key restricted to the Google Picker API. Copy the numeric project number from the same project.
 
 Export these variables in the shell that starts the app:
@@ -31,9 +39,9 @@ export GOOGLE_PROJECT_NUMBER='your-numeric-project-number'
 pnpm start
 ```
 
-Click **Connect Google account** to sign in through your browser. Select a connected account and click **Choose folder** to apply the destination to the current profile. The app requests per-file Drive access. It encrypts refresh tokens using Electron safeStorage and the macOS Keychain.
+For a public release, use a production Desktop OAuth client, configure the consent screen for external users, and complete Google’s applicable publishing requirements. Supply all four settings from release secrets and run `pnpm package:mac` on a Mac. This builds a ZIP for the current architecture in `release/`. The package command requires all four settings and includes only those settings in the app. Runtime environment overrides must belong to one project. Local recording works without Google configuration.
 
-**Save to Drive** streams the local file directly to Google. Recordings keep the destination selected at capture time. For a recording made without a destination, the first upload uses its profile's configured folder. An interrupted upload can be retried. **Copy link** copies the Drive viewing URL. **Open in Drive** opens the file where you can change sharing permissions.
+Desktop clients are inspectable. Keep production configuration out of Git and restrict the Picker key to the Picker API. User refresh tokens are issued separately per account. Public macOS distribution also requires your normal Developer ID signing and notarization process; the packaging command alone does not notarize the app.
 
 ## Check the slices
 

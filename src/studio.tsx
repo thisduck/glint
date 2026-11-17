@@ -11,11 +11,13 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   const [phase, setPhase] = useState("idle"),
     [videos, setVideos] = useState([]),
     [preview, play] = useState("");
+  const [configured,setConfigured]=useState(false);
   const [accounts, setAccounts] = useState([]),
     [account, setAccount] = useState(profile.account || ""),
     [busy, setBusy] = useState(""),
     [notice, setNotice] = useState("");
   useEffect(() => {
+    api.driveConfigured().then(setConfigured).catch(e=>fail(e.message));
     api
       .accounts()
       .then(setAccounts)
@@ -315,6 +317,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         <Collapsible.Content>
           <fieldset disabled={!!busy || phase !== "idle"}>
             <legend>Google Drive</legend>
+            {!configured && <p>This build uses local storage. Google Drive requires a configured glint build.</p>}
             {!!accounts.length && (
               <ChoiceSelect
                 label="Google account"
@@ -324,7 +327,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                 options={accounts.map((a) => ({ value: a.id, label: a.email }))}
               />
             )}
-            <button
+            <button disabled={!configured}
               onClick={() =>
                 action("Connecting…", async () => {
                   setAccount(await api.connect());

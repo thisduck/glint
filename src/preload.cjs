@@ -8,6 +8,7 @@ const methods = [
   "append",
   "end",
   "list",
+  "driveConfigured",
   "accounts",
   "connect",
   "folder",
