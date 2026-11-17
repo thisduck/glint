@@ -61,7 +61,7 @@ In the destination panel, open **Manage accounts** to reconnect an email or disc
 
 Turn on **Camera bubble** before or after choosing a screen or window. Drag on the preview to place it. Set **Bubble size** in the preview. During window recording, drag the live desktop camera to move it or drag its corner grip to resize. The floating toolbar and the menu bar also have placement and size controls. For full-display capture the desktop camera stays hidden initially, and **Show camera preview** opens it. The camera is composited into the saved video.
 
-Drag the floating toolbar by its grip. Use **Pause**, **Resume**, **Stop**, or **Hide**. The menu bar can restore the toolbar. Floating controls default to visible for a window capture and hidden for a whole display, where macOS can capture floating windows.
+Drag the floating toolbar by its grip. Use **Pause**, **Resume**, **Stop**, or **Hide**. The menu bar can restore the toolbar. Microphone, camera bubble, and floating toolbar start enabled for each new profile. glint remembers changes to these switches per profile. Turn off the floating toolbar when capturing a whole display if you want to keep it out of the recording.
 
 ### Editing and managing a recording
 

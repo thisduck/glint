@@ -23,6 +23,7 @@ const methods = [
   "setFileAccess",
   "deleteRecording",
   "setMicrophone",
+  "setCaptureOption",
   "driveConfigured",
   "accounts",
   "connect",

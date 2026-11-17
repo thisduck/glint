@@ -24,8 +24,8 @@ const api = window.desk;
 export function Studio({ profile, refreshProfile, lock, fail }) {
   const [source, choose] = useState<CaptureSource | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [toolbar, setToolbar] = useState<boolean | null>(null);
-  const showToolbar = toolbar ?? Boolean(source?.id.startsWith("window:"));
+  const showToolbar = Boolean(profile.toolbarEnabled);
+  const cameraEnabled = Boolean(profile.cameraEnabled);
   const mic = Boolean(profile.micEnabled);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const deviceRevision = useRef(0);
@@ -216,7 +216,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   const composition = useRef(null);
   const cameraPosition = useRef({ x: 1, y: 1, scale: 0.23 });
   const [cameraScale, setCameraScale] = useState(0.23);
-  const [cameraOn, setCameraOn] = useState(false);
+  const [cameraLive, setCameraLive] = useState(false);
+  const cameraOn = source ? cameraLive : cameraEnabled;
   useEffect(
     () =>
       api.onCameraPosition?.((point) => {
@@ -249,18 +250,23 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     setCameraScale(scale);
   }
   async function toggleCamera(enabled) {
-    if (!enabled) {
-      composition.current?.close();
-      composition.current = null;
-      setCameraOn(false);
-      return;
-    }
-    const display = capture.current;
-    if (!display) {
-      setCameraOn(true);
-      return;
-    }
-    await action("Opening camera…", () => attachCamera(display));
+    await action(enabled && capture.current ? "Opening camera…" : "Saving camera preference…", async () => {
+      await api.setCaptureOption(profile.id, "cameraEnabled", enabled);
+      await refreshProfile();
+      if (!enabled) {
+        composition.current?.close();
+        composition.current = null;
+        setCameraLive(false);
+      } else if (capture.current) {
+        await attachCamera(capture.current);
+      }
+    });
+  }
+  function setToolbar(enabled) {
+    return action("Saving toolbar preference…", async () => {
+      await api.setCaptureOption(profile.id, "toolbarEnabled", enabled);
+      await refreshProfile();
+    });
   }
   async function attachCamera(display: MediaStream) {
     const result = await cameraComposition(display, cameraPosition, () =>
@@ -271,7 +277,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       return;
     }
     composition.current = result;
-    setCameraOn(true);
+    setCameraLive(true);
   }
   const previewVideo = useRef<HTMLVideoElement>(null);
   const mounted = useRef(true);
@@ -279,7 +285,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     leaveSetup().catch((e) => fail(e.message));
     composition.current?.close();
     composition.current = null;
-    setCameraOn(false);
+    setCameraLive(false);
     const stream = capture.current;
     capture.current = null;
     stream?.getTracks().forEach((track) => {
@@ -330,7 +336,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           recorder.current.stop();
       };
       choose(item);
-      if (cameraOn) {
+      if (cameraEnabled) {
         try {
           await attachCamera(stream);
         } catch (error) {

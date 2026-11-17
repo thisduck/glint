@@ -14,6 +14,10 @@ class Store {
       .prepare("PRAGMA table_info(profiles)")
       .all()
       .map((c) => c.name);
+    for (const column of ["cameraEnabled", "toolbarEnabled"]) {
+      if (!columns.includes(column))
+        this.db.exec("ALTER TABLE profiles ADD COLUMN " + column + " INTEGER NOT NULL DEFAULT 1");
+    }
     if (!columns.includes("microphoneId"))
       this.db.exec(
         "ALTER TABLE profiles ADD COLUMN microphoneId TEXT NOT NULL DEFAULT 'default'",
@@ -69,6 +73,12 @@ class Store {
     if (!["private", "link", "folder"].includes(privacy))
       throw Error("Unknown sharing preference.");
     if (!this.db.prepare("UPDATE profiles SET privacy=? WHERE id=?").run(privacy,profile).changes) throw Error("Profile unavailable.");
+  }
+  setCaptureOption(profile, option, enabled) {
+    if (!["cameraEnabled", "toolbarEnabled"].includes(option) || typeof enabled !== "boolean")
+      throw Error("Invalid capture preference.");
+    const result = this.db.prepare("UPDATE profiles SET " + option + "=? WHERE id=?").run(Number(enabled), profile);
+    if (!result.changes) throw Error("Profile unavailable.");
   }
   setMicrophone(profile, device, enabled) {
     if (typeof device !== "string" || !device || typeof enabled !== "boolean")

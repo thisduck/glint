@@ -24,3 +24,23 @@ test("profiles survive restart with renamed defaults and additional profiles", (
   );
   again.db.close();
 });
+
+test("capture switches migrate enabled and retain independent choices per profile", t => {
+  const { DatabaseSync } = require("node:sqlite");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(),"glint-prefs-"));
+  t.after(()=>fs.rmSync(dir,{recursive:true}));
+  const file = path.join(dir,"library");
+  const legacy = new DatabaseSync(file);
+  legacy.exec("CREATE TABLE profiles(id INTEGER PRIMARY KEY,name TEXT NOT NULL,account TEXT,folder TEXT,folderName TEXT,micEnabled INTEGER NOT NULL DEFAULT 1); INSERT INTO profiles(name,micEnabled) VALUES('Work',0),('Personal',1)");
+  legacy.close();
+  const store = new Store(file);
+  const switches = s=>s.profiles().map(p=>[p.micEnabled,p.cameraEnabled,p.toolbarEnabled]);
+  assert.deepEqual(switches(store),[[0,1,1],[1,1,1]]);
+  store.setCaptureOption(1,"cameraEnabled",false);
+  store.setCaptureOption(2,"toolbarEnabled",false);
+  store.save("Client");
+  store.db.close();
+  const reopened=new Store(file);
+  assert.deepEqual(switches(reopened),[[0,0,1],[1,1,0],[1,1,1]]);
+  reopened.db.close();
+});
