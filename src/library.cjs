@@ -39,8 +39,12 @@ class Library {
         row.folder,
         row.autoUpload && row.account && row.folder ? "pending" : null,
       );
-    const fd = fs.openSync(this.file(id), "wx");
-    this.open = { id, fd };
+    try {
+      this.open = {id, fd: fs.openSync(this.file(id),"wx")};
+    } catch(error) {
+      this.db.prepare("DELETE FROM videos WHERE id=?").run(id);
+      throw error;
+    }
     return id;
   }
   append(id, bytes) {
@@ -58,7 +62,7 @@ class Library {
     fs.rmSync(this.file(id), { force: true });
     this.db.prepare("DELETE FROM videos WHERE id=?").run(id);
   }
-  end(id) {
+  end(id, complete = true) {
     if (this.open?.id !== id) throw Error("Recording is closed");
     fs.closeSync(this.open.fd);
     this.open = null;
@@ -66,7 +70,7 @@ class Library {
       this.remove(id);
       throw Error("Captured no video");
     }
-    this.finishRow(id);
+    this.finishRow(id,complete);
   }
   list(profile) {
     return this.db

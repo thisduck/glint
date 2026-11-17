@@ -128,8 +128,8 @@ app.whenReady().then(() => {
   });
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
-  handle("end", (id) => {
-    library.end(id);
+  handle("end", (id, complete = true) => {
+    library.end(id, complete);
     resumeUploads();
   });
   handle("list", (id) => library.list(id));

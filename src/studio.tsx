@@ -216,7 +216,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         tracks.forEach((t) => t.stop());
         try {
           await pending;
-          await api.end(id);
+          await api.end(id,!failure);
           await refresh();
           play(id);
           if (failure) throw failure;
@@ -234,7 +234,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       r.start(1000);
       setPhase("recording");
     } catch (e) {
-      if (id) await api.end(id).catch(() => {});
+      if (id) await api.end(id,false).catch(() => {});
       fail(e.message);
       reset();
     }
