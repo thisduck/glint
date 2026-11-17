@@ -367,17 +367,29 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
               Connect Google account
             </button>
             {!!account && (
-              <button
-                disabled={!account}
-                onClick={() =>
-                  action("Choosing folder…", async () => {
-                    await api.folder(profile.id, account);
-                    await refreshProfile();
-                  })
-                }
-              >
-                Choose folder
-              </button>
+              <div className="flex w-full flex-wrap items-center gap-2">
+                <button
+                  onClick={() =>
+                    action("Setting destination…", async () => {
+                      await api.recordingsFolder(profile.id, account);
+                      await refreshProfile();
+                    })
+                  }
+                >
+                  Use glint recordings folder
+                </button>
+                <button
+                  disabled={!account}
+                  onClick={() =>
+                    action("Choosing folder…", async () => {
+                      await api.folder(profile.id, account);
+                      await refreshProfile();
+                    })
+                  }
+                >
+                  Browse existing folders…
+                </button>
+              </div>
             )}
             {configured && profile.account && profile.folder && (
               <label className="flex w-full cursor-pointer items-center gap-2 py-2">

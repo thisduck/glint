@@ -13,6 +13,7 @@ const methods = [
   "accounts",
   "connect",
   "folder",
+  "recordingsFolder",
   "upload",
   "share",
 ];

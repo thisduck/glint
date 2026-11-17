@@ -109,3 +109,39 @@ test("auto-upload is opt-in, snapshots the folder and resumes saved work", async
   assert.equal(row(local).uploadState, null);
   assert.ok(fs.existsSync(lib.file(automatic)));
 });
+
+test("profile folder setup skips Picker and reuses the reserved ID after a lost response", async (t) => {
+  const store = new Store(":memory:"),
+    google = new Google(store, {}, () => assert.fail("Picker opened"), {});
+  google.access = async (account) => {
+    assert.equal(account, "work");
+    return "test-access";
+  };
+  let exists = false,
+    allocations = 0;
+  const folder = {
+    id: "folder-1",
+    name: "glint – Work",
+    mimeType: "application/vnd.google-apps.folder",
+    capabilities: { canAddChildren: true },
+  };
+  t.mock.method(global, "fetch", async (url, opts) => {
+    assert.equal(opts.headers.Authorization, "Bearer test-access");
+    if (url.includes("/generateIds")) {
+      allocations++;
+      return Response.json({ ids: [folder.id] });
+    }
+    if (opts.method === "POST") {
+      assert.equal(JSON.parse(opts.body).id, folder.id);
+      exists = true;
+      throw Error("connection lost");
+    }
+    return exists ? Response.json(folder) : Response.json({}, { status: 404 });
+  });
+  await assert.rejects(google.recordingsFolder(1, "work"), /connection lost/);
+  assert.equal(store.profiles()[0].folder, null);
+  await google.recordingsFolder(1, "work");
+  assert.equal(allocations, 1);
+  assert.equal(store.profiles()[0].folder, folder.id);
+  assert.equal(store.profiles()[1].folder, null);
+});

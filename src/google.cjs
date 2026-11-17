@@ -112,10 +112,13 @@ class Google {
           }
           const code = url.searchParams.get("code");
           if (!code) throw Error("Google sign-in was cancelled.");
-          const page = fs.readFileSync(require("node:path").join(__dirname, "google-return.html"));
+          const page = fs.readFileSync(
+            require("node:path").join(__dirname, "google-return.html"),
+          );
           res.writeHead(200, {
             "Content-Type": "text/html; charset=utf-8",
-            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
+            "Content-Security-Policy":
+              "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
           });
           res.end(page, () => ok({ code, redirect_uri }));
         },
@@ -151,6 +154,57 @@ class Google {
       grant_type: "refresh_token",
     });
     return token.access_token;
+  }
+  async recordingsFolder(profile, account) {
+    const row = this.db
+      .prepare("SELECT name FROM profiles WHERE id=?")
+      .get(profile);
+    if (!row) throw Error("Choose a profile first.");
+    const token = await this.access(account);
+    const headers = { Authorization: "Bearer " + token };
+    // Reserve the Drive ID locally before creation so a retry after a lost
+    // response uses the same folder. Different accounts have separate IDs.
+    this.db.exec(
+      "CREATE TABLE IF NOT EXISTS recordings_folders(profile INTEGER NOT NULL, account TEXT NOT NULL, id TEXT NOT NULL, PRIMARY KEY(profile, account))",
+    );
+    const lookup = this.db.prepare(
+      "SELECT id FROM recordings_folders WHERE profile=? AND account=?",
+    );
+    let entry = lookup.get(profile, account);
+    if (!entry) {
+      const result = await json(files + "/generateIds?count=1", { headers });
+      this.db
+        .prepare("INSERT OR IGNORE INTO recordings_folders VALUES(?,?,?)")
+        .run(profile, account, result.ids[0]);
+      entry = lookup.get(profile, account);
+    }
+    const fields = "id,name,mimeType,trashed,capabilities(canAddChildren)";
+    const url =
+      files + "/" + encodeURIComponent(entry.id) + "?fields=" + fields;
+    let response = await fetch(url, { headers });
+    if (response.status === 404) {
+      response = await fetch(files + "?fields=" + fields, {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: entry.id,
+          name: "glint – " + row.name,
+          mimeType: "application/vnd.google-apps.folder",
+        }),
+      });
+      if (response.status === 409) response = await fetch(url, { headers });
+    }
+    const info = await response.json();
+    if (!response.ok)
+      throw Error(
+        info.error?.message ||
+          "Could not open the recordings folder (" + response.status + ").",
+      );
+    if (info.trashed)
+      throw Error(
+        "Restore this profile’s glint folder from Drive Trash, then try again.",
+      );
+    this.saveDestination(profile, account, info);
   }
   async folder(profile, account) {
     const { GOOGLE_PICKER_KEY: key, GOOGLE_PROJECT_NUMBER: project } =
@@ -188,8 +242,13 @@ class Google {
           // keeping the session-specific URL path out of cross-origin requests.
           res.setHeader("Referrer-Policy", "origin");
           res.setHeader("Content-Type", "text/html;charset=utf-8");
-          const pageHtml = fs.readFileSync(require("node:path").join(__dirname, "google-picker.html"), "utf8");
-          res.end(pageHtml.replace("/* GOOGLE_CONFIGURATION */ null", () => args));
+          const pageHtml = fs.readFileSync(
+            require("node:path").join(__dirname, "google-picker.html"),
+            "utf8",
+          );
+          res.end(
+            pageHtml.replace("/* GOOGLE_CONFIGURATION */ null", () => args),
+          );
         },
       };
     });
@@ -200,6 +259,9 @@ class Google {
         "?supportsAllDrives=true&fields=id,name,mimeType,capabilities(canAddChildren)",
       { headers: { Authorization: "Bearer " + token } },
     );
+    this.saveDestination(profile, account, info);
+  }
+  saveDestination(profile, account, info) {
     if (
       info.mimeType !== "application/vnd.google-apps.folder" ||
       !info.capabilities?.canAddChildren
@@ -207,7 +269,7 @@ class Google {
       throw Error("Choose a folder you can upload to.");
     this.db
       .prepare("UPDATE profiles SET account=?,folder=?,folderName=? WHERE id=?")
-      .run(account, id, info.name, profile);
+      .run(account, info.id, info.name, profile);
   }
 }
 module.exports = { Google, json };

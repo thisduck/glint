@@ -80,6 +80,9 @@ app.whenReady().then(() => {
   resumeUploads();
   handle("accounts", () => google.accounts());
   handle("connect", () => google.connect());
+  handle("recordingsFolder", (profile, account) =>
+    google.recordingsFolder(profile, account),
+  );
   handle("folder", (profile, account) => google.folder(profile, account));
   handle("upload", (id) => uploads.send(id));
   handle("share", (id, copy) => {
