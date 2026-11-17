@@ -35,8 +35,12 @@ export function SourcePicker({
 
   useEffect(() => {
     const element = dialog.current;
+    const opener=document.activeElement;
     element?.showModal();
-    return () => element?.close();
+    return () => {
+      element?.close();
+      if(opener instanceof HTMLElement && opener.isConnected)opener.focus({preventScroll:true});
+    };
   }, []);
 
   useEffect(() => {
