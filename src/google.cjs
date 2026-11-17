@@ -112,8 +112,12 @@ class Google {
           }
           const code = url.searchParams.get("code");
           if (!code) throw Error("Google sign-in was cancelled.");
-          res.end("Return to glint to choose your folder.");
-          ok({ code, redirect_uri });
+          const page = fs.readFileSync(require("node:path").join(__dirname, "google-return.html"));
+          res.writeHead(200, {
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'",
+          });
+          res.end(page, () => ok({ code, redirect_uri }));
         },
       };
     });
