@@ -1,57 +1,94 @@
 <!doctype html>
 <html lang="en">
-  <meta charset="utf-8" /><meta
+  <meta charset="utf-8" />
+  <meta
     http-equiv="Content-Security-Policy"
     content="default-src 'none'; img-src data:; style-src 'unsafe-inline'"
-  /><title>Camera bubble</title>
+  />
+  <title>Camera preview</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      overflow: hidden;
-    }
-    main {
+    * { box-sizing: border-box; }
+    body { margin: 0; overflow: hidden; font: 12px -apple-system, BlinkMacSystemFont, sans-serif; }
+
+    .bubble {
       position: relative;
       width: 100vw;
       height: 100vh;
       border-radius: 50%;
       overflow: hidden;
-      cursor: grab;
-      touch-action: none;
-      border: 2px solid white;
+      background: #24222d;
+      box-shadow: inset 0 0 0 1px #24222d;
     }
-    main:active {
-      cursor: grabbing;
-    }
-    img {
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
+
+    img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+
     button {
       position: absolute;
-      bottom: 12%;
-      right: 12%;
-      border: 1px solid white;
-      color: white;
-      background: #242b43;
-      border-radius: 8px;
+      border: 1px solid #fff;
+      color: #fff;
+      background: #24222d;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      height: 24px;
+      padding: 0;
+      touch-action: none;
+    }
+
+    button svg { width: 14px; height: 14px; }
+
+    #move {
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 2px solid #f7f0ff;
+      border-radius: 50%;
+      background: transparent;
+      cursor: grab;
+    }
+
+    #move:active { cursor: grabbing; }
+
+    #resize {
+      bottom: max(2px, 7%);
+      left: 50%;
+      width: 24px;
+      transform: translateX(-50%);
       cursor: nwse-resize;
       opacity: 0;
     }
-    main:hover button,
-    button:focus {
-      opacity: 1;
+
+    .grip {
+      position: absolute;
+      top: 8%;
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 19px;
+      border-radius: 6px;
+      background: #24222d;
+      opacity: 0;
+      pointer-events: none;
     }
+
+    .bubble:hover .grip, .bubble:focus-within .grip,
+    .bubble:hover #resize, .bubble:focus-within #resize { opacity: 1; }
+    button:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
   </style>
-  <main title="Drag camera bubble">
-    <img alt="" /><button
-      title="Drag to resize camera bubble"
-      aria-label="Resize camera bubble"
-    >
-      ⤡
+  <main class="bubble" aria-label="Camera preview">
+    <img alt="" />
+    <button id="move" type="button" title="Drag camera preview to move it" aria-label="Camera position. Drag or use arrow keys to move.">
+      <span class="grip" aria-hidden="true">
+        <svg viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="4" cy="6" r="1" /><circle cx="8" cy="6" r="1" /><circle cx="12" cy="6" r="1" />
+          <circle cx="4" cy="10" r="1" /><circle cx="8" cy="10" r="1" /><circle cx="12" cy="10" r="1" />
+        </svg>
+      </span>
+    </button>
+    <button id="resize" type="button" title="Drag diagonally to resize" aria-label="Camera size. Drag or use arrow keys to resize.">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 7V3h4m2 10h4V9M3 3l10 10" />
+      </svg>
     </button>
   </main>
 </html>

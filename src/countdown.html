@@ -1,36 +1,41 @@
 <!doctype html>
 <html lang="en">
-  <meta charset="utf-8" /><meta
+  <meta charset="utf-8" />
+  <meta
     http-equiv="Content-Security-Policy"
     content="default-src 'none'; style-src 'unsafe-inline'"
-  /><title>Recording countdown</title>
+  />
+  <title>Recording countdown</title>
   <style>
-    html,
-    body {
-      height: 100%;
-      margin: 0;
-    }
+    html, body { height: 100%; margin: 0; }
     body {
       display: grid;
-      place-content: center;
-      text-align: center;
-      background: #202646;
-      color: white;
-      border-radius: 18px;
-      font:
-        14px "Helvetica Neue",
-        sans-serif;
+      align-content: center;
+      justify-items: center;
+      gap: 5px;
+      background: #24222d;
+      color: #fff;
+      border-radius: 16px;
+      font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
     }
-    strong {
-      font-size: 64px;
-      font-weight: 500;
-      font-variant-numeric: tabular-nums;
-    }
+    strong { font-size: 46px; line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
     a {
-      color: #d5dcff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border: 1px solid #645e71;
+      border-radius: 7px;
+      color: inherit;
+      text-decoration: none;
     }
+    a:hover { background: #423c4c; }
+    a:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    kbd { color: #ded8e7; font: inherit; font-size: 11px; }
   </style>
   <body>
-    <strong>3</strong><a href="cancel.html">Cancel · Esc</a>
+    <span>Recording starts in</span>
+    <strong role="status">3</strong>
+    <a href="cancel.html" aria-label="Cancel recording countdown">Cancel <kbd>Esc</kbd></a>
   </body>
 </html>

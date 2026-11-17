@@ -34,9 +34,31 @@ function desktopCamera(area, initial, place) {
       y: Math.round(area.y + pad + (area.height - 2 * pad - size) * point.y),
     });
   }
-  function drag(event, action) {
+  function drag(event, action, key) {
     if (win.isDestroyed() || event.senderFrame !== win.webContents.mainFrame)
       return;
+    if (action === "moveKey" || action === "resizeKey") {
+      const offsets = {
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+      };
+      if (!Object.prototype.hasOwnProperty.call(offsets, key)) return;
+      const [dx, dy] = offsets[key];
+      if (action === "moveKey") {
+        place({
+          x: clamp(layout.x + dx * 0.05, 0, 1),
+          y: clamp(layout.y + dy * 0.05, 0, 1),
+        });
+      } else {
+        place({
+          scale: clamp((layout.scale ?? 0.23) + (dx - dy) * 0.02, 0.1, 0.48),
+        });
+      }
+      return;
+    }
+
     const cursor = screen.getCursorScreenPoint();
     if (action === "move" || action === "resize") {
       gesture = { cursor, bounds: win.getBounds(), action };
