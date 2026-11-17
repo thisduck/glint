@@ -16,7 +16,7 @@ class Uploads {
       for (;;) {
         const next = this.library.db
           .prepare(
-            "SELECT id FROM videos WHERE ready=1 AND uploadState='pending' AND remote IS NULL ORDER BY created LIMIT 1",
+            "SELECT id FROM videos WHERE ready=1 AND uploadState='pending' ORDER BY created LIMIT 1",
           )
           .get();
         if (!next) break;
@@ -25,7 +25,7 @@ class Uploads {
         } catch {
           this.library.db
             .prepare(
-              "UPDATE videos SET uploadState='failed' WHERE id=? AND remote IS NULL",
+              "UPDATE videos SET uploadState='failed' WHERE id=? ",
             )
             .run(next.id);
         }
@@ -39,6 +39,9 @@ class Uploads {
     this.busy.add(id);
     try {
       return await this.upload(id);
+    } catch (error) {
+      this.library.db.prepare("UPDATE videos SET uploadState='failed',uploadError=? WHERE id=?").run(error.message,id);
+      throw error;
     } finally {
       this.busy.delete(id);
     }
@@ -49,7 +52,7 @@ class Uploads {
       .prepare("SELECT * FROM videos WHERE id=? AND ready=1")
       .get(id);
     if (!video) throw Error("Recording unavailable");
-    if (video.remote) return video.remote;
+    if (video.remote && !video.uploadState) return video.remote;
     if (!video.folder) {
       const p = db
         .prepare("SELECT * FROM profiles WHERE id=?")
@@ -70,13 +73,27 @@ class Uploads {
     let driveId = db
       .prepare("SELECT driveId FROM upload_ids WHERE video=?")
       .get(id)?.driveId;
-    const finish = () => {
-      db.prepare("UPDATE videos SET remote=?,uploadState=NULL WHERE id=?").run(
+    const finish = async () => {
+      if (video.privacy === "link") {
+        db.prepare("UPDATE videos SET remote=?,uploadState='pending' WHERE id=?").run(driveId,id);
+        await this.google.enableLink(driveId,headers);
+      }
+      db.prepare("UPDATE videos SET remote=?,uploadState=NULL,uploadError=NULL WHERE id=?").run(
         driveId,
         id,
       );
       return driveId;
     };
+    if (video.remote) {
+      driveId = video.remote;
+      return finish();
+    }
+    if (video.privacy === "private") {
+      const folder = await this.google.fileInfo(video.folder,headers);
+      const active = folder.permissions?.filter(p => !p.deleted);
+      if (!folder.ownedByMe || !active?.length || !active.every(p => p.role === "owner"))
+        throw Error("Private upload needs a folder only you can access. Review this folder’s sharing in Drive, then retry.");
+    }
     if (driveId) {
       const check = await this.request(
         base + "/" + driveId + "?supportsAllDrives=true",

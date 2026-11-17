@@ -72,6 +72,7 @@ app.whenReady().then(() => {
   );
   handle("driveConfigured", () => missing(config).length === 0);
   const uploads = new Uploads(library, google);
+  handle("setPrivacy", (id,privacy) => store.setPrivacy(id,privacy));
   handle("setMicrophone", (...args) => store.setMicrophone(...args));
   handle("setAutoUpload", (id, enabled) => store.setAutoUpload(id, enabled));
   const resumeUploads = () =>

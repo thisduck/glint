@@ -29,7 +29,7 @@ class Library {
     if (!row) throw Error("Choose a profile");
     this.db
       .prepare(
-        "INSERT INTO videos(id,created,profile,account,folder,uploadState) VALUES(?,?,?,?,?,?)",
+        "INSERT INTO videos(id,created,profile,account,folder,privacy,uploadState) VALUES(?,?,?,?,?,?,?)",
       )
       .run(
         id,
@@ -37,6 +37,7 @@ class Library {
         profile,
         row.account,
         row.folder,
+        row.privacy,
         row.autoUpload && row.account && row.folder ? "pending" : null,
       );
     try {

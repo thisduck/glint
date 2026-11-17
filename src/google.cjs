@@ -192,6 +192,15 @@ class Google {
     });
     return token.access_token;
   }
+  async fileInfo(id, headers) {
+    return json(files + "/" + encodeURIComponent(id) + "?supportsAllDrives=true&fields=webViewLink,ownedByMe,permissions(type,role,allowFileDiscovery,deleted,view),videoMediaMetadata", {headers});
+  }
+  async enableLink(id, headers) {
+    return json(files + "/" + encodeURIComponent(id) + "/permissions?supportsAllDrives=true", {
+      method: "POST", headers: {...headers, "Content-Type":"application/json"},
+      body: JSON.stringify({type:"anyone",role:"reader",allowFileDiscovery:false})
+    });
+  }
   async recordingsFolder(profile, account) {
     const row = this.db
       .prepare("SELECT name FROM profiles WHERE id=?")

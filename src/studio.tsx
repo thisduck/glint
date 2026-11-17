@@ -617,6 +617,12 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             Auto-upload new recordings
           </label>
         )}
+        {driveSaved && <div className="mt-3 flex flex-wrap items-center gap-3">
+          <span className="text-sm font-medium">Sharing for new uploads</span>
+          <ChoiceSelect label="Sharing for new uploads" value={profile.privacy} disabled={!!busy || phase !== "idle"}
+            options={[{value:"private",label:"Private · only me"},{value:"folder",label:"Use folder access"},{value:"link",label:"Anyone with the link"}]}
+            onChange={value => saveDestination("Saving sharing preference…", () => api.setPrivacy(profile.id,value), "Sharing preference saved for new recordings.")}/>
+        </div>}
         <div aria-live="polite" className="text-sm text-muted">
           {destinationMessage && <p className="mt-3">{destinationMessage}</p>}
         </div>

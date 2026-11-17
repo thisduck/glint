@@ -38,6 +38,17 @@ class Store {
         .some((c) => c.name === "uploadState")
     )
       this.db.exec("ALTER TABLE videos ADD COLUMN uploadState TEXT");
+    for (const table of ["profiles", "videos"]) {
+      const columns = this.db.prepare("PRAGMA table_info(" + table + ")").all();
+      if (!columns.some(c => c.name === "privacy"))
+        this.db.exec("ALTER TABLE " + table + " ADD COLUMN privacy TEXT NOT NULL DEFAULT 'private'");
+    }
+    if (!this.db.prepare("PRAGMA table_info(videos)").all().some(c => c.name === "uploadError"))
+      this.db.exec("ALTER TABLE videos ADD COLUMN uploadError TEXT");
+  }
+  setPrivacy(profile, privacy) {
+    if (!["private","link","folder"].includes(privacy)) throw Error("Unknown sharing preference.");
+    this.db.prepare("UPDATE profiles SET privacy=? WHERE id=?").run(privacy,profile);
   }
   setMicrophone(profile, device, enabled) {
     if (typeof device !== "string" || !device || typeof enabled !== "boolean")
