@@ -644,8 +644,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             <span className="text-sm font-medium">Sharing for new uploads</span>
             <ChoiceSelect
               label="Sharing for new uploads"
-              value={profile.privacy}
-              disabled={!!busy || phase !== "idle"}
+              value={profile.privacy || ""}
+              disabled={!profile.canSetPrivacy || !api.setPrivacy || !!busy || phase !== "idle"}
               options={[
                 { value: "private", label: "Private · only me" },
                 { value: "folder", label: "Use folder access" },
@@ -658,7 +658,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                   "Sharing preference saved for new recordings.",
                 )
               }
-            />
+            /> 
+            {(!profile.canSetPrivacy || !api.setPrivacy) && <p className="w-full text-sm text-muted">Quit glint with ⌘Q and reopen it to enable sharing settings.</p>}
           </div>
         )}
         <div aria-live="polite" className="text-sm text-muted">

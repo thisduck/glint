@@ -68,9 +68,7 @@ class Store {
   setPrivacy(profile, privacy) {
     if (!["private", "link", "folder"].includes(privacy))
       throw Error("Unknown sharing preference.");
-    this.db
-      .prepare("UPDATE profiles SET privacy=? WHERE id=?")
-      .run(privacy, profile);
+    if (!this.db.prepare("UPDATE profiles SET privacy=? WHERE id=?").run(privacy,profile).changes) throw Error("Profile unavailable.");
   }
   setMicrophone(profile, device, enabled) {
     if (typeof device !== "string" || !device || typeof enabled !== "boolean")
