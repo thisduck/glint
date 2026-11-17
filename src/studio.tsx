@@ -171,9 +171,6 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           {phase === "recording" && (
             <span role="status">Recording in progress</span>
           )}
-          <button disabled={phase !== "idle"} onClick={load}>
-            {sources.length ? "Refresh sources" : "Choose screen or window"}
-          </button>
           {!!sources.length && (
             <select
               aria-label="Capture source"
@@ -188,8 +185,13 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
               ))}
             </select>
           )}
+          {!!source && phase === "idle" && (
+            <button className="refresh" onClick={load}>
+              Refresh sources
+            </button>
+          )}
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-paper px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-paper px-5 py-4">
           <label className="flex items-center gap-2 font-medium">
             <input
               className="size-4 accent-accent"
@@ -201,17 +203,19 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             Microphone
           </label>
           <button
-            className="rounded-full border-0 bg-accent px-5 font-semibold text-white before:mr-2 before:inline-block before:size-2 before:rounded-full before:bg-current hover:bg-deep"
-            disabled={
-              !!busy || (phase === "idle" ? !source : phase !== "recording")
-            }
+            className="min-h-11 rounded-lg border-0 bg-accent px-5 font-semibold text-white hover:bg-deep"
+            disabled={!!busy || (phase !== "idle" && phase !== "recording")}
             onClick={() =>
-              phase === "recording" ? recorder.current.stop() : start()
+              phase === "recording"
+                ? recorder.current.stop()
+                : source
+                  ? start()
+                  : load()
             }
           >
             {
               {
-                idle: "Start recording",
+                idle: source ? "Start recording" : "Choose screen or window",
                 recording: "Stop recording",
                 starting: "Starting…",
                 saving: "Saving…",
@@ -269,7 +273,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           </button>
         </fieldset>
       </details>
-      <section className="library mt-7">
+      <section className="library mt-10">
         <h2 className="mb-4 font-display text-2xl font-medium tracking-tight">
           Recordings
         </h2>
@@ -282,7 +286,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         )}
         {!videos.length && (
           <small className="block rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
-            Your recordings for {profile.name} will appear here.
+            No recordings in {profile.name} yet.
           </small>
         )}
         {videos.map((v) => (

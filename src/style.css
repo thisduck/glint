@@ -153,8 +153,14 @@
   .destination summary {
     @apply cursor-pointer py-4 text-sm;
   }
+  .destination summary strong {
+    @apply font-normal text-muted;
+  }
+  .stage button.refresh {
+    @apply border-0 bg-transparent p-1 text-sm underline underline-offset-4;
+  }
   .destination summary span {
-    @apply ml-3 break-words text-muted;
+    @apply ml-3 break-words font-medium text-ink;
   }
   .destination fieldset {
     @apply mb-4 flex min-w-0 flex-wrap items-center gap-2;
@@ -173,5 +179,18 @@
   }
   .theme-choice[aria-pressed="true"] {
     @apply border-line bg-paper;
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  select,
+  summary {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
   }
 }
