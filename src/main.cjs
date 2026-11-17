@@ -166,7 +166,7 @@ app.whenReady().then(() => {
     icon: appIcon,
     width: 950,
     height: 720,
-    webPreferences: { preload: path.join(__dirname, "preload.cjs") },
+    webPreferences: { backgroundThrottling: false, preload: path.join(__dirname, "preload.cjs") },
   });
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
