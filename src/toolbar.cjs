@@ -2,14 +2,15 @@ const { BrowserWindow, ipcMain, screen } = require("electron");
 const path = require("node:path");
 
 function recordingToolbar(commands) {
-  const area = screen.getDisplayNearestPoint(
-    screen.getCursorScreenPoint(),
-  ).workArea;
+  const target = commands.captureArea;
+  const display = target ? screen.getDisplayMatching(target) : screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
+  const area=display.workArea;
   const win = new BrowserWindow({
     x: area.x + 18,
     y: area.y + area.height - 84,
     width: commands.position ? 540 : 360,
     height: 60,
+    type:"panel",
     frame: false,
     resizable: false,
     show: false,
@@ -23,7 +24,12 @@ function recordingToolbar(commands) {
     },
   });
   const portraitOptions=commands.portraitOptions;
-  const bubble=portraitOptions?.desktop ? require("./desktop-camera.cjs").desktopCamera(portraitOptions.area || area,commands.initialPosition,commands.position) : null;
+  let bubble,layout=commands.initialPosition;
+  function showCamera(){
+    if(!portraitOptions)return;
+    if(!bubble)bubble=require("./desktop-camera.cjs").desktopCamera(portraitOptions.area || area,layout,commands.position);
+  }
+  if(portraitOptions?.desktop)showCamera();
   const portraitTimer=portraitOptions && setInterval(()=>{
     if(bubble || (!win.isDestroyed() && win.isVisible()))portraitOptions.request();
   },125);
@@ -43,6 +49,7 @@ function recordingToolbar(commands) {
   };
   ipcMain.on("toolbarCommand", receive);
   win.once("closed", () => ipcMain.removeListener("toolbarCommand", receive));
+  win.setAlwaysOnTop(true,"screen-saver");
   win.setContentProtection(true);
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   let visible = false;
@@ -58,6 +65,7 @@ function recordingToolbar(commands) {
       if (!win.isDestroyed()) win.destroy();
     });
   return {
+    showCamera,
     show() {
       visible = true;
       if (!win.isDestroyed() && !win.webContents.isLoading())
@@ -65,7 +73,8 @@ function recordingToolbar(commands) {
     },
     portrait(frame){bubble?.portrait(frame);if(!win.isDestroyed() && win.isVisible())win.webContents.send("portrait",frame);},
     update(next) {
-      bubble?.update(next.position);
+      layout=next.position;
+      bubble?.update(layout);
       state = next;
       if (!win.isDestroyed()) win.webContents.send("toolbarState", next);
     },

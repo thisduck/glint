@@ -3,7 +3,7 @@ const path=require("node:path");
 const clamp=(value,min,max)=>Math.min(max,Math.max(min,value));
 
 function desktopCamera(area,initial,place){
-  const win=new BrowserWindow({frame:false,transparent:true,resizable:false,hasShadow:false,show:false,alwaysOnTop:true,skipTaskbar:true,acceptFirstMouse:true,
+  const win=new BrowserWindow({type:"panel",frame:false,transparent:true,resizable:false,hasShadow:false,show:false,alwaysOnTop:true,skipTaskbar:true,acceptFirstMouse:true,
     webPreferences:{sandbox:true,preload:path.join(__dirname,"desktop-camera-preload.cjs")}});
   let layout=initial,gesture,loaded=false;
   const shortest=Math.min(area.width,area.height),pad=shortest*0.025;
@@ -29,6 +29,7 @@ function desktopCamera(area,initial,place){
   }
   ipcMain.on("desktopCameraDrag",drag);
   win.once("closed",()=>ipcMain.removeListener("desktopCameraDrag",drag));
+  win.setAlwaysOnTop(true,"floating");
   win.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true});
   win.setContentProtection(true);
   update(initial);

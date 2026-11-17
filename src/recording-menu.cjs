@@ -50,6 +50,7 @@ function recordingMenu(
       stop: onStop,
       position: moveCamera ? place : null,
       initialPosition,
+      captureArea:portraitOptions?.area,
       portraitOptions:moveCamera ? portraitOptions : null,
     });
     if (showToolbar) toolbar.show();
@@ -62,6 +63,7 @@ function recordingMenu(
         Menu.buildFromTemplate([
           ...(moveCamera
             ? [
+                {label:"Show desktop camera bubble",click:()=>toolbar.showCamera()},
                 {label:"Camera size",submenu:[["Small",0.15],["Medium",0.23],["Large",0.36],["Extra large",0.48]].map(([label,scale])=>({label,click:()=>place({scale})}))},
                 {
                   label: "Camera position",
