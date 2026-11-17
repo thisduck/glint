@@ -27,7 +27,7 @@ async function json(url, options) {
         "Google request failed (" + res.status + ")",
     );
   }
-  return res.json();
+  return res.status === 204 ? null : res.json();
 }
 async function browserSession(open, setup) {
   const server = http.createServer(),
@@ -219,7 +219,7 @@ class Google {
       const query = new URLSearchParams({
         supportsAllDrives: "true",
         fields:
-          "nextPageToken,permissions(type,role,allowFileDiscovery,deleted,view)",
+          "nextPageToken,permissions(id,type,role,allowFileDiscovery,deleted,view,permissionDetails(inherited))",
         pageSize: "100",
       });
       if (pageToken) query.set("pageToken", pageToken);
@@ -231,6 +231,16 @@ class Google {
       pageToken = result.nextPageToken;
     } while (pageToken);
     return grants;
+  }
+  async changeLink(id, headers, enabled) {
+    const grants = (await this.filePermissions(id,headers)).filter(p=>p.type==="anyone" && !p.deleted && !p.view);
+    if (enabled && !grants.length) return this.enableLink(id,headers);
+    const changes = grants.filter(p=>!enabled || p.allowFileDiscovery || p.role !== "reader");
+    if(changes.some(p=>p.permissionDetails?.some(detail=>detail.inherited))) throw Error("This link access comes from the containing folder. Change its sharing in Drive.");
+    for (const p of changes) {
+      const url=files+"/"+encodeURIComponent(id)+"/permissions/"+encodeURIComponent(p.id)+"?supportsAllDrives=true";
+      await json(url,enabled ? {method:"PATCH",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({role:"reader",allowFileDiscovery:false})} : {method:"DELETE",headers});
+    }
   }
   async enableLink(id, headers) {
     return json(

@@ -87,7 +87,16 @@ app.whenReady().then(() => {
     google.recordingsFolder(profile, account),
   );
   handle("folder", (profile, account) => google.folder(profile, account));
+  const editingFiles = new Set();
+  async function editFile(id,operation) {
+    const video=store.db.prepare("SELECT * FROM videos WHERE id=? AND ready=1").get(id);
+    if(!video) throw Error("Recording unavailable.");
+    if(editingFiles.has(id) || uploads.busy.has(id) || video.uploadState==="pending") throw Error("Wait for the current operation to finish.");
+    editingFiles.add(id);
+    try {return await operation(video);} finally {editingFiles.delete(id);}
+  }
   handle("upload", (id) => {
+    if(editingFiles.has(id)) throw Error("Wait for the recording change to finish.");
     const queued = store.db
       .prepare(
         "UPDATE videos SET uploadState='pending',uploadError=NULL WHERE id=? AND ready=1 AND (remote IS NULL OR uploadState='failed')",
@@ -125,6 +134,14 @@ app.whenReady().then(() => {
     };
   }
   handle("driveDetails", driveDetails);
+  handle("setFileAccess",(id,privacy)=>editFile(id,async video=>{
+    if(!["folder","private","link"].includes(privacy)) throw Error("Unknown access setting.");
+    if(video.remote) {
+      if(privacy==="private") throw Error("Choose restricted link access for uploaded files.");
+      await google.changeLink(video.remote,{Authorization:"Bearer "+await google.access(video.account)},privacy==="link");
+    }
+    store.db.prepare("UPDATE videos SET privacy=?,uploadState=CASE WHEN remote IS NULL THEN uploadState ELSE NULL END,uploadError=CASE WHEN remote IS NULL THEN uploadError ELSE NULL END WHERE id=?").run(privacy,id);
+  }));
   handle("reveal", (id) => shell.showItemInFolder(library.file(id)));
   handle("share", async (id, copy) => {
     const { info } = await uploadedFile(id);

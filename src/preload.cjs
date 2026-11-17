@@ -16,6 +16,7 @@ const methods = [
   "list",
   "setAutoUpload",
   "setPrivacy",
+  "setFileAccess",
   "setMicrophone",
   "driveConfigured",
   "accounts",

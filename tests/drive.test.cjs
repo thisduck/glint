@@ -259,3 +259,18 @@ test("a rejected link grant can retry without uploading the file again", async (
   await worker.send(id);
   assert.equal(lib.list(1)[0].uploadError, null);
 });
+
+test("changing one file's link preserves named grants and respects inherited access",async t=>{
+  const g=new Google(new Store(":memory:"));
+  let inherited=false;
+  g.filePermissions=async()=>[{id:"person",type:"user"},{id:"public",type:"anyone",permissionDetails:[{inherited}]}];
+  const calls=[];
+  t.mock.method(global,"fetch",async(url,opts)=>{calls.push([url,opts.method]);return new Response(null,{status:204});});
+  await g.changeLink("clip",{},false);
+  assert.equal(calls.length,1);
+  assert.match(calls[0][0],/files\/clip\/permissions\/public\?/);
+  assert.equal(calls[0][1],"DELETE");
+  inherited=true;
+  await assert.rejects(g.changeLink("clip",{},false),/containing folder/);
+  assert.equal(calls.length,1);
+});

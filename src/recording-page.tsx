@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Check, Copy, HardDrive, Cloud } from "lucide-react";
 
+import { ChoiceSelect } from "./components/ui/controls";
 import { ClipEditor } from "./clip-editor";
 
 const api = window.desk;
 export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
+  const [changingAccess,setChangingAccess]=useState(false);
   const [details, setDetails] = useState(null);
   const [issue, setIssue] = useState("");
   const [lookupError, setLookupError] = useState("");
@@ -206,6 +208,18 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
             <Cloud size={16} /> Google Drive
           </dt>
           <dd>{cloudStatus}</dd>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3 py-3">
+          <dt>{video.remote ? "Link sharing" : "Access on upload"}</dt>
+          <dd>{video.remote && !changingAccess ? <button disabled={!!busy || pending} onClick={()=>setChangingAccess(true)}>Change link access</button> :
+            <ChoiceSelect label="Access for this recording" disabled={!!busy || pending}
+              value={video.remote ? "" : video.privacy}
+              options={video.remote ? [{value:"folder",label:"Restricted · existing people only"},{value:"link",label:"Anyone with the link · viewer"}] : [{value:"private",label:"Private · only me"},{value:"folder",label:"Use folder access"},{value:"link",label:"Anyone with the link"}]}
+              onChange={value=>run("Sharing",async()=>{
+                try {await api.setFileAccess(video.id,value);setChangingAccess(false);}
+                finally {checkAgain(n=>n+1);await refresh();}
+              })}/>}
+          </dd>
         </div>
         {video.remote && (
           <>
