@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
-import { ChoiceSelect, MicrophoneCheckbox } from "./components/ui/controls";
+import { ChoiceSelect } from "./components/ui/controls";
 
-import { Folder, HardDrive } from "lucide-react";
+import { SetupSwitch } from "./components/ui/setup-switch";
+import { AppWindow, Camera, ChevronDown, ChevronRight, Circle, Folder, HardDrive, Mic, Monitor, SlidersHorizontal, Square } from "lucide-react";
 import { RecordingLibrary } from "./recording-library";
 import { RecordingPage } from "./recording-page";
 import { cameraComposition } from "./camera.mjs";
@@ -59,7 +60,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     [videos, setVideos] = useState([]),
     [preview, play] = useState("");
   const [configured, setConfigured] = useState<boolean | null>(null);
-  const [editingDestination, editDestination] = useState(false);
+  const [destinationOpen,setDestinationOpen]=useState(false);
   const [managing, manage] = useState(false);
   const [removing, remove] = useState("");
   const [destinationMessage, setDestinationMessage] = useState("");
@@ -97,7 +98,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         await fn();
         await refreshProfile();
         setDestinationMessage(confirmation);
-        editDestination(false);
+
       } catch (e) {
         setDestinationMessage("");
         setDestinationError(e.message);
@@ -441,6 +442,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         refresh={refresh}
       />
     );
+  const setupLocked=!!busy || phase!=="idle";
+  const capturing=phase==="recording" || phase==="paused";
+  const settings=capture.current?.getVideoTracks()[0]?.getSettings?.();
+  const bubblePixels=Math.round(Math.min(settings?.width||0,settings?.height||0)*cameraScale);
   return (
     <>
       <h2 className="mb-4 mt-7 font-display text-2xl font-medium tracking-tight">
@@ -455,141 +460,33 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       )}
       {busy && busy !== destinationMessage && <p role="status">{busy}</p>}
       {notice && <p role="status">{notice}</p>}
-      <section className="overflow-hidden rounded-xl border border-line bg-paper">
-        <div className="stage">
-          {source ? (
-            <video
-              title={cameraOn ? "Drag to position your camera" : undefined}
-              onPointerDown={(e) => {
-                if (cameraOn) {
-                  e.currentTarget.setPointerCapture(e.pointerId);
-                  placeCamera(e);
-                }
-              }}
-              onPointerMove={(e) => {
-                if (cameraOn && e.currentTarget.hasPointerCapture(e.pointerId))
-                  placeCamera(e);
-              }}
-              aria-label="Selected capture source preview"
-              ref={previewVideo}
-              autoPlay
-              muted
-              playsInline
-              poster={source.thumbnail ?? undefined}
-              className="max-h-44 max-w-full rounded-md object-contain"
-            />
-          ) : (
-            <svg
-              viewBox="0 0 92 65"
-              className="h-12 w-[68px]"
-              fill="none"
-              aria-hidden="true"
-            >
-              <rect
-                x="9"
-                y="11"
-                width="54"
-                height="36"
-                rx="5"
-                stroke="var(--glass)"
-                transform="rotate(-10 36 29)"
-              />
-              <rect
-                x="25"
-                y="15"
-                width="58"
-                height="39"
-                rx="5"
-                stroke="var(--shine)"
-                strokeWidth="1.6"
-                fill="var(--deep)"
-              />
-              <path
-                d="M26 24h55M36 43l8-10m-3 13 5-6"
-                stroke="var(--glass)"
-                strokeLinecap="round"
-              />
-              <circle cx="31" cy="20" r="1" fill="var(--shine)" />
-            </svg>
-          )}
-          <h3 className="max-w-full break-words font-display text-2xl">
-            {source?.name || "Screen capture"}
-          </h3>
-          {phase === "recording" && (
-            <span role="status">Recording in progress</span>
-          )}
-          {!!source && phase === "idle" && (
-            <div className="flex gap-3">
-              <button
-                className="refresh"
-                disabled={!!busy}
-                onClick={() => setPickerOpen(true)}
-              >
-                Change
-              </button>
-              <button
-                className="refresh"
-                disabled={!!busy}
-                onClick={() => {
-                  releaseCapture();
-                  choose(null);
-                }}
-              >
-                End preview
-              </button>
+      <section className="studio-setup" aria-label="Set up a recording">
+        <div className="capture-panel">
+          {source ? <>
+            <div className="capture-view">
+              <video aria-label="Selected capture source preview" ref={previewVideo} muted autoPlay playsInline
+                poster={source.thumbnail ?? undefined} className="capture-video" title={cameraOn ? "Drag to position your camera" : undefined}
+                onPointerDown={e=>{if(cameraOn && !setupLocked){e.currentTarget.setPointerCapture(e.pointerId);placeCamera(e);}}}
+                onPointerMove={e=>{if(cameraOn && e.currentTarget.hasPointerCapture(e.pointerId))placeCamera(e);}}/>
             </div>
-          )}
+            <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+              <div className="mr-auto min-w-0 flex-1"><p className="text-xs text-muted">{capturing ? (phase==="paused"?"Paused":"Recording") : "Live preview"}</p>
+                <p className="truncate font-medium" title={source.name}>{source.name}</p></div>
+              <button className="quiet" disabled={setupLocked} onClick={()=>setPickerOpen(true)}>Change source</button>
+              <button className="quiet" disabled={setupLocked} onClick={()=>{releaseCapture();choose(null);}}>Clear</button>
+            </div>
+          </> : <div className="source-empty">
+            <div className="source-glyph" aria-hidden="true"><Monitor size={34} strokeWidth={1.45}/><AppWindow size={22}/></div>
+            <h3>What would you like to record?</h3>
+            <button className="studio-primary" disabled={setupLocked} onClick={()=>setPickerOpen(true)}><Monitor size={16}/>{phase==="previewing"?"Opening preview…":"Choose screen or window"}</button>
+          </div>}
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-paper px-5 py-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={showToolbar}
-                disabled={!!busy || phase !== "idle"}
-                onChange={(e) => setToolbar(e.target.checked)}
-              />
-              Floating controls
-            </label>
-            {showToolbar && source?.id.startsWith("screen:") && (
-              <small>Controls may appear in full-display recordings.</small>
-            )}
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={cameraOn}
-                disabled={!!busy || phase !== "idle"}
-                onChange={(e) => toggleCamera(e.target.checked)}
-              />
-              Camera bubble
-            </label>
-            {cameraOn && (
-              <small>
-                {source
-                  ? "Drag on the preview to position your camera."
-                  : "Choose a screen or window to preview your camera."}
-              </small>
-            )}
-            {cameraOn && (
-              <label className="flex items-center gap-2">
-                Bubble size
-                <input
-                  aria-label="Bubble size"
-                  type="range"
-                  min="10"
-                  max="48"
-                  value={Math.round(cameraScale * 100)}
-                  onChange={(e) => resizeCamera(Number(e.target.value) / 100)}
-                />
-              </label>
-            )}
-            <MicrophoneCheckbox
-              checked={mic}
-              disabled={!!busy || phase !== "idle"}
-              onChange={(enabled) => saveMic(profile.microphoneId, enabled)}
-            />
-            {mic && (
-              <ChoiceSelect
+        <div className="setup-options">
+          <section className="setup-option" aria-label="Microphone setup">
+            <div className="option-title"><Mic size={17}/><h3>Microphone</h3>
+              <SetupSwitch label="Microphone" checked={mic} disabled={setupLocked} onChange={enabled=>saveMic(profile.microphoneId,enabled)}/>
+            </div>
+            {mic ?               <ChoiceSelect
                 label="Recording microphone"
                 value={profile.microphoneId}
                 disabled={!!busy || phase !== "idle"}
@@ -613,82 +510,55 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                     ? [{ value: "show-inputs", label: "Find microphones…" }]
                     : []),
                 ]}
-              />
-            )}
-          </div>
-          <button
-            className="min-h-11 rounded-lg border-0 bg-accent px-5 font-semibold text-white hover:bg-deep"
-            disabled={
-              !!busy ||
-              (phase !== "idle" && phase !== "recording" && phase !== "paused")
-            }
-            onClick={() =>
-              phase === "recording" || phase === "paused"
-                ? recorder.current.stop()
-                : source
-                  ? start()
-                  : setPickerOpen(true)
-            }
-          >
-            {
-              {
-                idle: source ? "Start recording" : "Choose screen or window",
-                recording: "Stop recording",
-                paused: "Stop recording",
-                previewing: "Opening preview…",
-                starting: "Starting…",
-                saving: "Saving…",
-              }[phase]
-            }
-          </button>
+              /> : <p className="option-note">Record without narration</p>}
+          </section>
+          <section className="setup-option" aria-label="Camera setup">
+            <div className="option-title"><Camera size={17}/><h3>Camera bubble</h3>
+              <SetupSwitch label="Camera bubble" checked={cameraOn} disabled={setupLocked} onChange={toggleCamera}/>
+            </div>
+            {cameraOn && source ? <>
+              <label className="mt-2 flex items-center justify-between gap-2 text-xs" htmlFor="bubble-size">Bubble size
+                <output htmlFor="bubble-size" className="font-medium tabular-nums">{Math.round(cameraScale*100)}%{bubblePixels>0 && " · "+bubblePixels+" px"}</output>
+              </label>
+              <input id="bubble-size" type="range" min="10" max="48" value={Math.round(cameraScale*100)} disabled={setupLocked}
+                aria-valuetext={Math.round(cameraScale*100)+" percent of the shorter side"} onChange={e=>resizeCamera(Number(e.target.value)/100)}/>
+              <p className="option-note">Drag on the preview to move your camera.</p>
+            </> : <p className="option-note">{cameraOn?"Your camera appears when you choose a screen or window.":"Record just your screen"}</p>}
+          </section>
+          <details className="setup-option setup-more">
+            <summary><SlidersHorizontal size={15}/>Recording controls<ChevronDown size={14}/></summary>
+            <div className="option-title mt-3"><span>Floating toolbar</span><SetupSwitch label="Floating controls" disabled={setupLocked} checked={showToolbar} onChange={setToolbar}/></div>
+            <p className="option-note">{showToolbar ? "Pause or stop from a movable toolbar." : "Pause or stop from the glint menu bar icon."}
+              {showToolbar && source?.id.startsWith("screen:") && " The toolbar can appear in a full-screen recording."}</p>
+          </details>
         </div>
+        {source && <div className="setup-footer">
+          <span className="text-sm text-muted">{phase==="idle" ? "Recording starts after a 3-second countdown." : phase==="paused"?"Recording paused":phase==="recording"?"Recording in progress":phase==="saving"?"Saving recording…":"Preparing recording…"}</span>
+          {capturing && <button onClick={()=>phase==="paused"?recorder.current.resume():recorder.current.pause()}>{phase==="paused"?"Resume":"Pause"}</button>}
+          <button className="studio-primary" disabled={!!busy || (!capturing && phase!=="idle")} onClick={()=>capturing?recorder.current.stop():start()}>{capturing?<Square size={14}/>:<Circle size={14} fill="currentColor"/>}{capturing?"Stop recording":"Start recording"}</button>
+        </div>}
       </section>
       <section
         aria-label="Recording destination"
-        className="destination p-4 sm:p-5"
+        className="destination"
       >
-        <div className="flex items-start gap-3">
-          {driveSaved ? (
-            <Folder aria-hidden="true" className="mt-1 size-5 text-muted" />
-          ) : (
-            <HardDrive aria-hidden="true" className="mt-1 size-5 text-muted" />
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-muted">
-              {profile.name} destination
-            </p>
-            <h3 className="mt-1 break-words font-semibold">
-              {driveSaved ? profile.folderName : "On this Mac"}
-            </h3>
-            {driveSaved && (
-              <p className="break-all text-sm text-muted">
-                Google Drive{savedEmail && " · " + savedEmail}
-              </p>
-            )}
-          </div>
-          {driveSaved && (
-            <button
-              className="quiet"
-              disabled={!!busy || phase !== "idle"}
-              onClick={() => {
-                editDestination(!editingDestination);
-                setDestinationMessage("");
-                setDestinationError("");
-              }}
-            >
-              {editingDestination ? "Done" : "Change"}
-            </button>
-          )}
-        </div>
+        <button className="destination-summary" aria-expanded={destinationOpen} onClick={()=>setDestinationOpen(!destinationOpen)}>
+          <span className="destination-icon">{driveSaved && profile.autoUpload ? <Folder size={20}/> : <HardDrive size={20}/>}</span>
+          <span className="min-w-0 flex-1 text-left"><span className="block font-medium">{driveSaved && profile.autoUpload ? "Auto-upload to "+profile.folderName : "Save on this Mac"}</span>
+            <span className="mt-0.5 block truncate text-xs text-muted">{driveSaved ? (profile.autoUpload ? "Google Drive · "+({private:"Only me",folder:"Folder access",link:"Anyone with the link"}[profile.privacy] || "Folder access") : "Manual upload to "+profile.folderName) : "Google Drive is optional"}</span></span>
+          <span className="text-xs text-muted">Settings</span><ChevronDown className={destinationOpen?"rotate-180":""} size={16}/>
+        </button>
+        {destinationOpen && <div className="border-t border-line px-4 pb-4 pt-3">
+        {driveSaved && <p className="text-sm text-muted">{profile.name} · {savedEmail || "Google Drive"}</p>}
         {configured === false && (
           <p className="mt-3 text-sm text-muted">
             Google Drive is unavailable in this build.
           </p>
         )}
-        {configured && (!driveSaved || editingDestination) && (
+        {configured && (
           <fieldset
             disabled={!!busy || phase !== "idle"}
-            className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4"
+            className="mt-2 flex flex-wrap items-center gap-3"
           >
             {!driveSaved && (
               <p className="w-full text-sm text-muted">
@@ -841,8 +711,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             )}
           </div>
         )}
+        </div>}
         <div aria-live="polite" className="text-sm text-muted">
-          {destinationMessage && <p className="mt-3">{destinationMessage}</p>}
+          {destinationMessage && <p className="px-4 pb-3">{destinationMessage}</p>}
         </div>
         {destinationError && <p role="alert">{destinationError}</p>}
       </section>
