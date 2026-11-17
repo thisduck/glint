@@ -4,7 +4,7 @@ const path = require("node:path");
 async function countdown(studio) {
   const overlay = new BrowserWindow({
     width: 158, height: 132, frame: false, transparent: true, resizable: false,
-    alwaysOnTop: true, skipTaskbar: true, show: false, webPreferences: { sandbox: true }
+    alwaysOnTop: true, skipTaskbar: true, acceptFirstMouse: true, show: false, webPreferences: { sandbox: true }
   });
   overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   let escapeRegistered = false;
@@ -15,6 +15,7 @@ async function countdown(studio) {
       let remaining = 3;
       const cancel = () => resolve(false);
       overlay.once("closed", cancel);
+      overlay.webContents.on("will-navigate", event => { event.preventDefault(); cancel(); });
       overlay.webContents.on("before-input-event", (_, input) => {
         if (input.key === "Escape") cancel();
       });
