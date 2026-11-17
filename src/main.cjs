@@ -3,6 +3,7 @@ const {
   BrowserWindow,
   ipcMain,
   desktopCapturer,
+  systemPreferences,
   session,
   protocol,
   net,
@@ -57,6 +58,7 @@ app.whenReady().then(() => {
       types: ["screen", "window"],
       thumbnailSize,
     });
+  let listedSources = new Map();
   let selected = null;
   const { Google } = require("./google.cjs");
   const { Uploads } = require("./uploads.cjs");
@@ -77,36 +79,23 @@ app.whenReady().then(() => {
       "https://drive.google.com/file/d/" + encodeURIComponent(remote) + "/view";
     return copy ? clipboard.writeText(url) : shell.openExternal(url);
   });
-  handle("sources", async () =>
-    (await sources({ width: 400, height: 225 })).map(
-      ({ id, name, thumbnail }) => ({
-        id,
-        name,
-        thumbnail: thumbnail.isEmpty()
-          ? null
-          : "data:image/jpeg;base64," + thumbnail.toJPEG(75).toString("base64"),
-      }),
-    ),
-  );
-  const available = async (id) =>
-    (await sources()).some((item) => item.id === id);
-  handle("sourceAvailable", available);
-  handle("source", async (id) => {
-    if (!(await available(id))) return false;
-    selected = id;
-    return true;
-  });
-  session.defaultSession.setDisplayMediaRequestHandler(async (req, cb) => {
-    const id = selected;
-    selected = null;
-    try {
-      const video =
-        req.frame === win.webContents.mainFrame &&
-        (await sources()).find((s) => s.id === id);
-      cb(video ? { video } : {});
-    } catch {
-      cb({});
+  handle("sources", async () => {
+    const items = await sources({width:400,height:225});
+    if (process.platform === "darwin" && ["restricted","denied"].includes(systemPreferences.getMediaAccessStatus("screen"))) {
+      throw Error("Screen capture access is disabled. Allow Screen Recording in macOS System Settings, then relaunch glint.");
     }
+    listedSources = new Map(items.map(({id,name})=>[id,{id,name}]));
+    return items.map(({id,name,thumbnail})=>({id,name,thumbnail:thumbnail.isEmpty()?null:thumbnail.toDataURL()}));
+  });
+  handle("source", id => {
+    selected = listedSources.get(id);
+    if (!selected) throw Error("Choose a capture source again.");
+  });
+  session.defaultSession.setDisplayMediaRequestHandler((req, cb) => {
+    if(req.frame !== win.webContents.mainFrame || !selected){cb(null);return;}
+    const video = selected;
+    selected=null;
+    cb({video});
   });
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));

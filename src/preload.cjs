@@ -4,7 +4,6 @@ const methods = [
   "save",
   "sources",
   "source",
-  "sourceAvailable",
   "begin",
   "append",
   "end",

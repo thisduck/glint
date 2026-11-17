@@ -42,31 +42,45 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   useEffect(() => {
     refresh().catch((e) => fail(e.message));
   }, []);
-  function sourceLost() {
-    choose(null);
-    setNotice("The capture source closed. Choose another screen or window.");
+  const capture = useRef<MediaStream | null>(null);
+  const previewVideo = useRef<HTMLVideoElement>(null);
+  const mounted = useRef(true);
+  function releaseCapture() {
+    const stream=capture.current;
+    capture.current=null;
+    stream?.getTracks().forEach(track=>{track.onended=null;track.stop()});
   }
-  useEffect(() => {
-    if (!source || phase !== "idle" || pickerOpen) return;
-    let active = true;
-    let timer;
-    async function check() {
-      try {
-        if (!(await api.sourceAvailable(source.id)) && active) {
-          sourceLost();
-          return;
-        }
-      } catch {
-        /* Start recording also validates the source. */
+  useEffect(()=>{
+    mounted.current=true;
+    return ()=>{mounted.current=false;releaseCapture()};
+  },[]);
+  useEffect(()=>{
+    if(previewVideo.current) previewVideo.current.srcObject=capture.current;
+  },[source,phase]);
+  async function selectSource(item:CaptureSource){
+    setPickerOpen(false);setPhase("previewing");lock(true);setNotice("");fail("");
+    try{
+      await api.source(item.id);
+      const stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
+      const track=stream.getVideoTracks()[0];
+      if(!mounted.current || !track || track.readyState==="ended"){
+        stream.getTracks().forEach(t=>t.stop());
+        if(mounted.current)throw Error("No video arrived from this source. Choose it again or check Screen Recording access.");
+        return;
       }
-      if (active) timer = setTimeout(check, 3000);
+      releaseCapture();capture.current=stream;
+      track.onended=()=>{
+        releaseCapture();choose(null);
+        setNotice("Screen sharing ended. Choose another screen or window.");
+        if(recorder.current?.state==="recording")recorder.current.stop();
+      };
+      choose(item);
+    } catch(e){
+      fail("Could not preview this source. "+e.message);
+    } finally {
+      if(mounted.current){setPhase("idle");lock(false);}
     }
-    timer = setTimeout(check, 3000);
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [source, phase, pickerOpen]);
+  }
   async function start() {
     let tracks = [],
       id = null,
@@ -76,21 +90,16 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     lock(true);
     fail("");
     function reset() {
+      releaseCapture();choose(null);
       tracks.forEach((t) => t.stop());
       recorder.current = null;
       setPhase("idle");
       lock(false);
     }
     try {
-      if (!(await api.source(source.id))) {
-        sourceLost();
-        reset();
-        return;
-      }
-      const display = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: false,
-      });
+      const display=capture.current;
+      if(!display || display.getVideoTracks()[0]?.readyState!=="live")
+        throw Error("The selected source is no longer sharing. Choose a screen or window again.");
       tracks.push(...display.getTracks());
       if (mic)
         tracks.push(
@@ -138,17 +147,11 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       };
       const videoTrack = display.getVideoTracks()[0];
       if (!videoTrack || videoTrack.readyState === "ended") throw Error("Capture ended before recording started. Choose a capture source again.");
-      videoTrack.onended = () => {
-        sourceLost();
-        if (r.state === "recording") r.stop();
-      };
       r.start(1000);
       setPhase("recording");
     } catch (e) {
       if (id) await api.end(id).catch(() => {});
-      if (!(await api.sourceAvailable(source.id).catch(() => true)))
-        sourceLost();
-      else fail(e.message);
+      fail(e.message);
       reset();
     }
   }
@@ -158,24 +161,15 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         <SourcePicker
           current={source}
           onCancel={() => setPickerOpen(false)}
-          onChoose={(item) => {
-            choose(item);
-            setPickerOpen(false);
-            setNotice("");
-            fail("");
-          }}
+          onChoose={selectSource}
         />
       )}
       {busy && <p role="status">{busy}</p>}
       {notice && <p role="status">{notice}</p>}
       <section className="overflow-hidden rounded-xl border border-line bg-paper">
         <div className="stage">
-          {source?.thumbnail ? (
-            <img
-              src={source.thumbnail}
-              alt=""
-              className="max-h-44 max-w-full rounded-md object-contain"
-            />
+          {source ? (
+            <video aria-label="Selected capture source preview" ref={previewVideo} autoPlay muted playsInline poster={source.thumbnail ?? undefined} className="max-h-44 max-w-full rounded-md object-contain"/>
           ) : (
             <svg
               viewBox="0 0 92 65"
@@ -247,6 +241,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
               {
                 idle: source ? "Start recording" : "Choose screen or window",
                 recording: "Stop recording",
+                previewing: "Opening preview…",
                 starting: "Starting…",
                 saving: "Saving…",
               }[phase]

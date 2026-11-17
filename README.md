@@ -13,6 +13,10 @@ pnpm start
 
 Choose a profile, click **Choose screen or window**, select the capture source, and start recording. Allow macOS Screen Recording access for Electron when prompted and relaunch if macOS requests it. Enable microphone access to include narration. Stop the recording to preview it. Local WebM files and the SQLite library are stored under Electron's user-data directory (normally `~/Library/Application Support/glint` on macOS). Existing installations continue using their original library location.
 
+### Capture preview and recording
+
+A reported issue showed “The capture source closed” immediately after pressing Start, sometimes with a missing thumbnail. glint now opens a muted preview when you select a source and records from that same stream. Microphone capture and file writing begin when you press Start. Stopping the recording releases the capture source.
+
 ## Connect Google Drive
 
 In a Google Cloud project, enable Google Drive API and Google Picker API. Configure the OAuth consent screen. For an external app in testing, add each Google account as a test user. Create a **Desktop app** OAuth client and an API key restricted to the Google Picker API. Copy the numeric project number from the same project.
