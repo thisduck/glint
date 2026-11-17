@@ -39,6 +39,8 @@ function handle(name, fn) {
   });
 }
 app.whenReady().then(() => {
+  const appIcon = path.join(__dirname, "..", "build", "icon.png");
+  if (process.platform === "darwin") app.dock.setIcon(appIcon);
   store = new Store(path.join(app.getPath("userData"), "library.sqlite"));
   library = new Library(
     store,
@@ -113,6 +115,7 @@ app.whenReady().then(() => {
   handle("profiles", () => store.profiles());
   handle("save", (name, id) => store.save(name, id));
   win = new BrowserWindow({
+    icon: appIcon,
     width: 950,
     height: 720,
     webPreferences: { preload: path.join(__dirname, "preload.cjs") },
