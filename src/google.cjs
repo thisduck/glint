@@ -106,8 +106,16 @@ class Google {
     this.db.exec("BEGIN");
     try {
       this.db.prepare("DELETE FROM accounts WHERE id=?").run(account);
-      this.db.prepare("UPDATE profiles SET account=NULL, folder=NULL, folderName=NULL, autoUpload=0 WHERE account=?").run(account);
-      this.db.prepare("UPDATE videos SET uploadState='failed' WHERE account=? AND uploadState='pending'").run(account);
+      this.db
+        .prepare(
+          "UPDATE profiles SET account=NULL, folder=NULL, folderName=NULL, autoUpload=0 WHERE account=?",
+        )
+        .run(account);
+      this.db
+        .prepare(
+          "UPDATE videos SET uploadState='failed' WHERE account=? AND uploadState='pending'",
+        )
+        .run(account);
       this.db.exec("COMMIT");
     } catch (error) {
       this.db.exec("ROLLBACK");
@@ -115,8 +123,10 @@ class Google {
     }
   }
   async connect(account) {
-    const existing = account && this.accounts().find((row) => row.id === account);
-    if (account && !existing) throw Error("This account has been disconnected.");
+    const existing =
+      account && this.accounts().find((row) => row.id === account);
+    if (account && !existing)
+      throw Error("This account has been disconnected.");
     const { client_id } = this.credentials(),
       verifier = random();
     const result = await browserSession(this.open, (origin, state) => {
@@ -169,7 +179,8 @@ class Google {
       "https://openidconnect.googleapis.com/v1/userinfo",
       { headers: { Authorization: "Bearer " + tokens.access_token } },
     );
-    if (existing && existing.id !== user.sub) throw Error("Choose " + existing.email + " to reconnect this account.");
+    if (existing && existing.id !== user.sub)
+      throw Error("Choose " + existing.email + " to reconnect this account.");
     if (!tokens.refresh_token)
       throw Error("Reconnect and grant offline access.");
     this.db
@@ -193,25 +204,50 @@ class Google {
     return token.access_token;
   }
   async fileInfo(id, headers) {
-    return json(files + "/" + encodeURIComponent(id) + "?supportsAllDrives=true&fields=webViewLink,ownedByMe,permissions(type,role,allowFileDiscovery,deleted,view),videoMediaMetadata", {headers});
+    return json(
+      files +
+        "/" +
+        encodeURIComponent(id) +
+        "?supportsAllDrives=true&fields=webViewLink,ownedByMe,permissions(type,role,allowFileDiscovery,deleted,view),videoMediaMetadata",
+      { headers },
+    );
   }
   async filePermissions(id, headers) {
     const grants = [];
     let pageToken;
     do {
-      const query = new URLSearchParams({supportsAllDrives:"true",fields:"nextPageToken,permissions(type,role,allowFileDiscovery,deleted,view)",pageSize:"100"});
-      if (pageToken) query.set("pageToken",pageToken);
-      const result = await json(files + "/" + encodeURIComponent(id) + "/permissions?" + query,{headers});
+      const query = new URLSearchParams({
+        supportsAllDrives: "true",
+        fields:
+          "nextPageToken,permissions(type,role,allowFileDiscovery,deleted,view)",
+        pageSize: "100",
+      });
+      if (pageToken) query.set("pageToken", pageToken);
+      const result = await json(
+        files + "/" + encodeURIComponent(id) + "/permissions?" + query,
+        { headers },
+      );
       grants.push(...(result.permissions || []));
       pageToken = result.nextPageToken;
     } while (pageToken);
     return grants;
   }
   async enableLink(id, headers) {
-    return json(files + "/" + encodeURIComponent(id) + "/permissions?supportsAllDrives=true", {
-      method: "POST", headers: {...headers, "Content-Type":"application/json"},
-      body: JSON.stringify({type:"anyone",role:"reader",allowFileDiscovery:false})
-    });
+    return json(
+      files +
+        "/" +
+        encodeURIComponent(id) +
+        "/permissions?supportsAllDrives=true",
+      {
+        method: "POST",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "anyone",
+          role: "reader",
+          allowFileDiscovery: false,
+        }),
+      },
+    );
   }
   async recordingsFolder(profile, account) {
     const row = this.db
@@ -288,7 +324,7 @@ class Google {
             }
             const selected = url.searchParams.get("id");
             if (!selected) throw Error("Folder selection cancelled.");
-            res.end("Saved",()=>ok(selected));
+            res.end("Saved", () => ok(selected));
             return;
           }
           const args = JSON.stringify({ key, project, token }).replaceAll(

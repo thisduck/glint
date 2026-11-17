@@ -118,9 +118,13 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   const driveSaved = Boolean(profile.account && profile.folder);
   const savedEmail = accounts.find((a) => a.id === profile.account)?.email;
   const recorder = useRef(null);
-  useEffect(() => api.onStopRecording(() => {
-    if (recorder.current?.state === "recording") recorder.current.stop();
-  }), []);
+  useEffect(
+    () =>
+      api.onStopRecording(() => {
+        if (recorder.current?.state === "recording") recorder.current.stop();
+      }),
+    [],
+  );
   async function refresh() {
     setVideos(await api.list(profile.id));
   }
@@ -208,7 +212,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     }
   }
   async function start() {
-    let startedAt, microphone,
+    let startedAt,
+      microphone,
       writeFailed = false;
     let tracks = [],
       id = null,
@@ -218,7 +223,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     lock(true);
     fail("");
     function reset() {
-      api.showStudio().catch(e => fail(e.message));
+      api.showStudio().catch((e) => fail(e.message));
       microphone?.close();
       releaseCapture();
       choose(null);
@@ -285,7 +290,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         tracks.forEach((t) => t.stop());
         try {
           await pending;
-          await api.end(id, !failure,duration,failure?.message);
+          await api.end(id, !failure, duration, failure?.message);
           await refresh();
           play(id);
         } catch (e) {
@@ -310,11 +315,23 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       reset();
     }
   }
-  const finished = videos.find(v => v.id === preview);
-  if (finished) return <RecordingPage key={finished.id} video={finished} onOpen={play} profile={profile} onBack={() => play("")} refresh={refresh} />;
+  const finished = videos.find((v) => v.id === preview);
+  if (finished)
+    return (
+      <RecordingPage
+        key={finished.id}
+        video={finished}
+        onOpen={play}
+        profile={profile}
+        onBack={() => play("")}
+        refresh={refresh}
+      />
+    );
   return (
     <>
-      <h2 className="mb-4 mt-7 font-display text-2xl font-medium tracking-tight">Recording studio</h2>
+      <h2 className="mb-4 mt-7 font-display text-2xl font-medium tracking-tight">
+        Recording studio
+      </h2>
       {pickerOpen && (
         <SourcePicker
           current={source}
@@ -622,12 +639,28 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             Auto-upload new recordings
           </label>
         )}
-        {driveSaved && <div className="mt-3 flex flex-wrap items-center gap-3">
-          <span className="text-sm font-medium">Sharing for new uploads</span>
-          <ChoiceSelect label="Sharing for new uploads" value={profile.privacy} disabled={!!busy || phase !== "idle"}
-            options={[{value:"private",label:"Private · only me"},{value:"folder",label:"Use folder access"},{value:"link",label:"Anyone with the link"}]}
-            onChange={value => saveDestination("Saving sharing preference…", () => api.setPrivacy(profile.id,value), "Sharing preference saved for new recordings.")}/>
-        </div>}
+        {driveSaved && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium">Sharing for new uploads</span>
+            <ChoiceSelect
+              label="Sharing for new uploads"
+              value={profile.privacy}
+              disabled={!!busy || phase !== "idle"}
+              options={[
+                { value: "private", label: "Private · only me" },
+                { value: "folder", label: "Use folder access" },
+                { value: "link", label: "Anyone with the link" },
+              ]}
+              onChange={(value) =>
+                saveDestination(
+                  "Saving sharing preference…",
+                  () => api.setPrivacy(profile.id, value),
+                  "Sharing preference saved for new recordings.",
+                )
+              }
+            />
+          </div>
+        )}
         <div aria-live="polite" className="text-sm text-muted">
           {destinationMessage && <p className="mt-3">{destinationMessage}</p>}
         </div>
@@ -645,7 +678,16 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         {videos.map((v) => (
           <article key={v.id}>
             <time>{v.title || new Date(v.created).toLocaleString()}</time>{" "}
-            <button disabled={!!busy || phase !== "idle"} onClick={() => {releaseCapture(); choose(null); play(v.id);}}>View recording</button>
+            <button
+              disabled={!!busy || phase !== "idle"}
+              onClick={() => {
+                releaseCapture();
+                choose(null);
+                play(v.id);
+              }}
+            >
+              View recording
+            </button>
             {v.remote ? (
               <>
                 <button

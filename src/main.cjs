@@ -72,7 +72,7 @@ app.whenReady().then(() => {
   );
   handle("driveConfigured", () => missing(config).length === 0);
   const uploads = new Uploads(library, google);
-  handle("setPrivacy", (id,privacy) => store.setPrivacy(id,privacy));
+  handle("setPrivacy", (id, privacy) => store.setPrivacy(id, privacy));
   handle("setMicrophone", (...args) => store.setMicrophone(...args));
   handle("setAutoUpload", (id, enabled) => store.setAutoUpload(id, enabled));
   const resumeUploads = () =>
@@ -87,33 +87,50 @@ app.whenReady().then(() => {
     google.recordingsFolder(profile, account),
   );
   handle("folder", (profile, account) => google.folder(profile, account));
-  handle("upload", id => {
-    const queued = store.db.prepare("UPDATE videos SET uploadState='pending',uploadError=NULL WHERE id=? AND ready=1 AND (remote IS NULL OR uploadState='failed')").run(id);
+  handle("upload", (id) => {
+    const queued = store.db
+      .prepare(
+        "UPDATE videos SET uploadState='pending',uploadError=NULL WHERE id=? AND ready=1 AND (remote IS NULL OR uploadState='failed')",
+      )
+      .run(id);
     if (!queued.changes) throw Error("Recording is unavailable for upload.");
     resumeUploads();
   });
   async function uploadedFile(id) {
-    const video = store.db.prepare("SELECT remote,account FROM videos WHERE id=? AND ready=1").get(id);
+    const video = store.db
+      .prepare("SELECT remote,account FROM videos WHERE id=? AND ready=1")
+      .get(id);
     if (!video?.remote) throw Error("Upload this recording first.");
-    const headers = {Authorization:"Bearer " + await google.access(video.account)};
-    const info = await google.fileInfo(video.remote,headers);
-    return {info,remote:video.remote,headers};
+    const headers = {
+      Authorization: "Bearer " + (await google.access(video.account)),
+    };
+    const info = await google.fileInfo(video.remote, headers);
+    return { info, remote: video.remote, headers };
   }
   async function driveDetails(id) {
-    const {info,remote,headers} = await uploadedFile(id);
+    const { info, remote, headers } = await uploadedFile(id);
     let accessIssue;
     if (!info.permissions) {
-      try {info.permissions = await google.filePermissions(remote,headers);}
-      catch (error) {accessIssue = error.message;}
+      try {
+        info.permissions = await google.filePermissions(remote, headers);
+      } catch (error) {
+        accessIssue = error.message;
+      }
     }
-    return {accessIssue,access:require("./drive-status.cjs").describeAccess(info), metadata:!!info.videoMediaMetadata?.durationMillis, link:info.webViewLink};
+    return {
+      accessIssue,
+      access: require("./drive-status.cjs").describeAccess(info),
+      metadata: !!info.videoMediaMetadata?.durationMillis,
+      link: info.webViewLink,
+    };
   }
-  handle("driveDetails",driveDetails);
-  handle("reveal",id => shell.showItemInFolder(library.file(id)));
-  handle("share", async (id,copy) => {
-    const {info} = await uploadedFile(id);
+  handle("driveDetails", driveDetails);
+  handle("reveal", (id) => shell.showItemInFolder(library.file(id)));
+  handle("share", async (id, copy) => {
+    const { info } = await uploadedFile(id);
     const link = info.webViewLink;
-    if (!link || new URL(link).origin !== "https://drive.google.com") throw Error("Drive has not returned a viewing link yet.");
+    if (!link || new URL(link).origin !== "https://drive.google.com")
+      throw Error("Drive has not returned a viewing link yet.");
     return copy ? clipboard.writeText(link) : shell.openExternal(link);
   });
   handle("sources", async () => {
@@ -157,25 +174,37 @@ app.whenReady().then(() => {
   }
   handle("showStudio", restoreStudio);
   handle("recordingMenu", () => {
-    if (!library.open || closeRecordingMenu) throw Error("Recording unavailable.");
-    closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(() => win.webContents.send("stopRecording"));
+    if (!library.open || closeRecordingMenu)
+      throw Error("Recording unavailable.");
+    closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(() =>
+      win.webContents.send("stopRecording"),
+    );
   });
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
-  handle("trimRecording",(id,start,end) => require("./trim.cjs").trimRecording(library,id,start,end));
-  handle("renameRecording",(id,title) => library.rename(id,title));
-  handle("end", (id, complete = true,durationMs,issue) => {
-    library.end(id, complete,durationMs,issue);
+  handle("trimRecording", (id, start, end) =>
+    require("./trim.cjs").trimRecording(library, id, start, end),
+  );
+  handle("renameRecording", (id, title) => library.rename(id, title));
+  handle("end", (id, complete = true, durationMs, issue) => {
+    library.end(id, complete, durationMs, issue);
     resumeUploads();
   });
-  handle("list", (id) => library.list(id).map(v => ({...v,progress:uploads.progress.get(v.id)})));
+  handle("list", (id) =>
+    library
+      .list(id)
+      .map((v) => ({ ...v, progress: uploads.progress.get(v.id) })),
+  );
   handle("profiles", () => store.profiles());
   handle("save", (name, id) => store.save(name, id));
   win = new BrowserWindow({
     icon: appIcon,
     width: 950,
     height: 720,
-    webPreferences: { backgroundThrottling: false, preload: path.join(__dirname, "preload.cjs") },
+    webPreferences: {
+      backgroundThrottling: false,
+      preload: path.join(__dirname, "preload.cjs"),
+    },
   });
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));

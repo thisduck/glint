@@ -16,12 +16,14 @@ class Uploads {
     try {
       for (;;) {
         const next = this.library.db
-          .prepare("SELECT id FROM videos WHERE ready=1 AND uploadState='pending' ORDER BY created")
-          .all().find(row => !this.busy.has(row.id));
+          .prepare(
+            "SELECT id FROM videos WHERE ready=1 AND uploadState='pending' ORDER BY created",
+          )
+          .all()
+          .find((row) => !this.busy.has(row.id));
         if (!next) break;
         // send records failures against the video so the queue can continue.
         await this.send(next.id).catch(() => {});
-
       }
     } finally {
       this.draining = false;
@@ -31,10 +33,18 @@ class Uploads {
     if (this.busy.has(id)) throw Error("Upload already running");
     this.busy.add(id);
     try {
-      this.library.db.prepare("UPDATE videos SET uploadState='pending',uploadError=NULL WHERE id=? AND ready=1 AND (remote IS NULL OR uploadState IS NOT NULL)").run(id);
+      this.library.db
+        .prepare(
+          "UPDATE videos SET uploadState='pending',uploadError=NULL WHERE id=? AND ready=1 AND (remote IS NULL OR uploadState IS NOT NULL)",
+        )
+        .run(id);
       return await this.upload(id);
     } catch (error) {
-      this.library.db.prepare("UPDATE videos SET uploadState='failed',uploadError=? WHERE id=?").run(error.message,id);
+      this.library.db
+        .prepare(
+          "UPDATE videos SET uploadState='failed',uploadError=? WHERE id=?",
+        )
+        .run(error.message, id);
       throw error;
     } finally {
       this.busy.delete(id);
@@ -70,13 +80,14 @@ class Uploads {
       .get(id)?.driveId;
     const finish = async () => {
       if (video.privacy === "link") {
-        db.prepare("UPDATE videos SET remote=?,uploadState='pending' WHERE id=?").run(driveId,id);
-        await this.google.enableLink(driveId,headers);
+        db.prepare(
+          "UPDATE videos SET remote=?,uploadState='pending' WHERE id=?",
+        ).run(driveId, id);
+        await this.google.enableLink(driveId, headers);
       }
-      db.prepare("UPDATE videos SET remote=?,uploadState=NULL,uploadError=NULL WHERE id=?").run(
-        driveId,
-        id,
-      );
+      db.prepare(
+        "UPDATE videos SET remote=?,uploadState=NULL,uploadError=NULL WHERE id=?",
+      ).run(driveId, id);
       return driveId;
     };
     if (video.remote) {
@@ -84,10 +95,16 @@ class Uploads {
       return finish();
     }
     if (video.privacy === "private") {
-      const folder = await this.google.fileInfo(video.folder,headers);
-      const active = folder.permissions?.filter(p => !p.deleted);
-      if (!folder.ownedByMe || !active?.length || !active.every(p => p.role === "owner"))
-        throw Error("Private upload needs a folder only you can access. Review this folder’s sharing in Drive, then retry.");
+      const folder = await this.google.fileInfo(video.folder, headers);
+      const active = folder.permissions?.filter((p) => !p.deleted);
+      if (
+        !folder.ownedByMe ||
+        !active?.length ||
+        !active.every((p) => p.role === "owner")
+      )
+        throw Error(
+          "Private upload needs a folder only you can access. Review this folder’s sharing in Drive, then retry.",
+        );
     }
     if (driveId) {
       const check = await this.request(
@@ -140,19 +157,24 @@ class Uploads {
       for await (const chunk of input) {
         yield chunk;
         sent += chunk.length;
-        progress.set(id,Math.min(99,Math.floor(sent * 100 / size)));
+        progress.set(id, Math.min(99, Math.floor((sent * 100) / size)));
       }
     }
-    this.progress.set(id,0);
+    this.progress.set(id, 0);
     let res;
     try {
       res = await this.request(location, {
-      method: "PUT",
-      body: body(),
-      duplex: "half",
-      headers: { "Content-Type": "video/webm", "Content-Length": String(size) },
-    });
-    } finally {input.destroy();}
+        method: "PUT",
+        body: body(),
+        duplex: "half",
+        headers: {
+          "Content-Type": "video/webm",
+          "Content-Length": String(size),
+        },
+      });
+    } finally {
+      input.destroy();
+    }
     if (!res.ok)
       throw Error(
         "Upload interrupted (" +

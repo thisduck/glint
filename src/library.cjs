@@ -41,8 +41,8 @@ class Library {
         row.autoUpload && row.account && row.folder ? "pending" : null,
       );
     try {
-      this.open = {id, fd: fs.openSync(this.file(id),"wx")};
-    } catch(error) {
+      this.open = { id, fd: fs.openSync(this.file(id), "wx") };
+    } catch (error) {
       this.db.prepare("DELETE FROM videos WHERE id=?").run(id);
       throw error;
     }
@@ -57,15 +57,27 @@ class Library {
       .prepare(
         "UPDATE videos SET ready=1,captureIssue=?,uploadState=CASE WHEN ? THEN uploadState ELSE NULL END WHERE id=?",
       )
-      .run(complete ? null : issue || "Capture ended early. Play the local copy to review it.", Number(complete), id);
+      .run(
+        complete
+          ? null
+          : issue || "Capture ended early. Play the local copy to review it.",
+        Number(complete),
+        id,
+      );
   }
   remove(id) {
     fs.rmSync(this.file(id), { force: true });
     this.db.prepare("DELETE FROM videos WHERE id=?").run(id);
   }
   rename(id, title) {
-    if (typeof title !== "string" || !title.trim() || title.trim().length > 160) throw Error("Use a title between 1 and 160 characters.");
-    if (!this.db.prepare("UPDATE videos SET title=? WHERE id=? AND ready=1").run(title.trim(),id).changes) throw Error("Recording unavailable.");
+    if (typeof title !== "string" || !title.trim() || title.trim().length > 160)
+      throw Error("Use a title between 1 and 160 characters.");
+    if (
+      !this.db
+        .prepare("UPDATE videos SET title=? WHERE id=? AND ready=1")
+        .run(title.trim(), id).changes
+    )
+      throw Error("Recording unavailable.");
   }
   end(id, complete = true, durationMs, issue) {
     if (this.open?.id !== id) throw Error("Recording is closed");
@@ -75,8 +87,11 @@ class Library {
       this.remove(id);
       throw Error("Captured no video");
     }
-    if (Number.isSafeInteger(durationMs) && durationMs > 0) this.db.prepare("UPDATE videos SET durationMs=? WHERE id=?").run(durationMs,id);
-    this.finishRow(id,complete,issue);
+    if (Number.isSafeInteger(durationMs) && durationMs > 0)
+      this.db
+        .prepare("UPDATE videos SET durationMs=? WHERE id=?")
+        .run(durationMs, id);
+    this.finishRow(id, complete, issue);
   }
   list(profile) {
     return this.db

@@ -27,13 +27,13 @@ const methods = [
   "driveDetails",
   "reveal",
 ];
-contextBridge.exposeInMainWorld(
-  "desk",
-  { onStopRecording(callback) {
+contextBridge.exposeInMainWorld("desk", {
+  onStopRecording(callback) {
     const listener = () => callback();
     ipcRenderer.on("stopRecording", listener);
     return () => ipcRenderer.removeListener("stopRecording", listener);
-  }, ...Object.fromEntries(
+  },
+  ...Object.fromEntries(
     methods.map((k) => [k, (...args) => ipcRenderer.invoke(k, ...args)]),
-  )},
-);
+  ),
+});

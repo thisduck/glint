@@ -45,7 +45,10 @@ test("upload retains original account and folder and reconciles an interrupted r
   const u = new Uploads(
     l,
     {
-      fileInfo: async () => ({ownedByMe:true, permissions:[{role:"owner"}]}),
+      fileInfo: async () => ({
+        ownedByMe: true,
+        permissions: [{ role: "owner" }],
+      }),
       access: async (account) => {
         assert.equal(account, "work");
         return "access";
@@ -173,50 +176,86 @@ test("disconnect clears the local grant and only its profiles' destinations", ()
   const store = new Store(":memory:");
   const g = new Google(store);
   for (const p of store.profiles()) {
-    store.db.prepare("INSERT INTO accounts VALUES(?,?,?)").run(p.name,p.name,Buffer.from("token"));
-    store.db.prepare("UPDATE profiles SET account=?,folder='folder',autoUpload=1 WHERE id=?").run(p.name,p.id);
+    store.db
+      .prepare("INSERT INTO accounts VALUES(?,?,?)")
+      .run(p.name, p.name, Buffer.from("token"));
+    store.db
+      .prepare(
+        "UPDATE profiles SET account=?,folder='folder',autoUpload=1 WHERE id=?",
+      )
+      .run(p.name, p.id);
   }
   g.disconnect("Work");
-  assert.deepEqual(g.accounts().map(a => a.id),["Personal"]);
-  assert.deepEqual(store.profiles().map(p => [p.account,p.folder,p.autoUpload]),[[null,null,0],["Personal","folder",1]]);
+  assert.deepEqual(
+    g.accounts().map((a) => a.id),
+    ["Personal"],
+  );
+  assert.deepEqual(
+    store.profiles().map((p) => [p.account, p.folder, p.autoUpload]),
+    [
+      [null, null, 0],
+      ["Personal", "folder", 1],
+    ],
+  );
 });
 
-test("private recordings stay local in a shared folder and retain their original privacy", async t => {
+test("private recordings stay local in a shared folder and retain their original privacy", async (t) => {
   const store = new Store(":memory:");
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(),"glint-private-"));
-  t.after(()=>fs.rmSync(dir,{recursive:true}));
-  const lib = new Library(store,dir);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "glint-private-"));
+  t.after(() => fs.rmSync(dir, { recursive: true }));
+  const lib = new Library(store, dir);
   store.db.exec("UPDATE profiles SET account='me',folder='shared' WHERE id=1");
   const id = lib.begin(1);
-  lib.append(id,[1]);
+  lib.append(id, [1]);
   lib.end(id);
-  store.setPrivacy(1,"link");
-  const worker = new Uploads(lib,{
-    access:async()=>"token",
-    fileInfo:async()=>({ownedByMe:true,permissions:[{role:"owner"},{role:"reader"}]})
-  },()=>assert.fail("private content sent"));
-  await assert.rejects(worker.send(id),/only you/);
-  assert.equal(lib.list(1)[0].privacy,"private");
-  assert.equal(lib.list(1)[0].remote,null);
+  store.setPrivacy(1, "link");
+  const worker = new Uploads(
+    lib,
+    {
+      access: async () => "token",
+      fileInfo: async () => ({
+        ownedByMe: true,
+        permissions: [{ role: "owner" }, { role: "reader" }],
+      }),
+    },
+    () => assert.fail("private content sent"),
+  );
+  await assert.rejects(worker.send(id), /only you/);
+  assert.equal(lib.list(1)[0].privacy, "private");
+  assert.equal(lib.list(1)[0].remote, null);
 });
 
-test("a rejected link grant can retry without uploading the file again", async t => {
+test("a rejected link grant can retry without uploading the file again", async (t) => {
   const store = new Store(":memory:");
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(),"glint-link-"));
-  t.after(()=>fs.rmSync(dir,{recursive:true}));
-  const lib = new Library(store,dir);
-  store.db.exec("UPDATE profiles SET account='me',folder='target',privacy='link' WHERE id=1");
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "glint-link-"));
+  t.after(() => fs.rmSync(dir, { recursive: true }));
+  const lib = new Library(store, dir);
+  store.db.exec(
+    "UPDATE profiles SET account='me',folder='target',privacy='link' WHERE id=1",
+  );
   const id = lib.begin(1);
-  lib.append(id,[1]); lib.end(id);
-  store.db.prepare("UPDATE videos SET remote='uploaded',uploadState='pending' WHERE id=?").run(id);
+  lib.append(id, [1]);
+  lib.end(id);
+  store.db
+    .prepare(
+      "UPDATE videos SET remote='uploaded',uploadState='pending' WHERE id=?",
+    )
+    .run(id);
   let blocked = true;
-  const worker = new Uploads(lib,{access:async()=>"token",enableLink:async remote=>{
-    assert.equal(remote,"uploaded");
-    if(blocked) throw Error("Organization policy");
-  }},()=>assert.fail("duplicate upload"));
+  const worker = new Uploads(
+    lib,
+    {
+      access: async () => "token",
+      enableLink: async (remote) => {
+        assert.equal(remote, "uploaded");
+        if (blocked) throw Error("Organization policy");
+      },
+    },
+    () => assert.fail("duplicate upload"),
+  );
   await worker.drain();
-  assert.equal(lib.list(1)[0].uploadError,"Organization policy");
-  blocked=false;
+  assert.equal(lib.list(1)[0].uploadError, "Organization policy");
+  blocked = false;
   await worker.send(id);
-  assert.equal(lib.list(1)[0].uploadError,null);
+  assert.equal(lib.list(1)[0].uploadError, null);
 });
