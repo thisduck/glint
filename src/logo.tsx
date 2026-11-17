@@ -2,20 +2,17 @@ import React from "react";
 export function Logo() {
   return (
     <svg
-      className="h-9 w-7 shrink-0 text-ink"
-      viewBox="0 0 34 42"
+      className="size-8 shrink-0 text-ink"
+      viewBox="0 0 40 40"
       aria-hidden="true"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.7"
+      strokeWidth="1.8"
       strokeLinejoin="round"
       strokeLinecap="round"
     >
-      <g transform="rotate(24 17 21)">
-        <path d="M17 28v9" strokeWidth="3.2" />
-        <ellipse cx="17" cy="16" rx="9.6" ry="12.2" fill="var(--tint)" />
-        <path d="m13 16 4-6" />
-      </g>
+      <ellipse cx="20" cy="15" rx="9" ry="11" fill="var(--tint)" />
+      <path d="M7 15a13 14 0 0 0 26 0M20 29v6m-7 1h14m-11-20 4-6" />
     </svg>
   );
 }
