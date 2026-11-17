@@ -2,10 +2,11 @@ import React,{useEffect,useRef,useState} from "react";
 import {Play,Pause,Volume2,VolumeX,Maximize2,Minimize2} from "lucide-react";
 
 function clock(n:number){return Math.floor(n/60)+":"+String(Math.floor(n)%60).padStart(2,"0");}
-export function VideoPlayer({video,player,children}) {
+export function VideoPlayer({video,player,children,mediaLength}) {
   const workspace=useRef<HTMLElement>(null);
   const [playing,setPlaying]=useState(false),[muted,setMuted]=useState(false);
-  const [position,seek]=useState(0),[duration,setDuration]=useState(video.durationMs/1000 || 0);
+  const [position,seek]=useState(0),[nativeDuration,setDuration]=useState(0);
+  const duration=nativeDuration || mediaLength;
   const [full,setFull]=useState(false),[error,setError]=useState("");
   useEffect(()=>{
     const sync=()=>setFull(document.fullscreenElement===workspace.current);

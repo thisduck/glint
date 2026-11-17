@@ -15,6 +15,7 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
   const [lookupError, setLookupError] = useState("");
   const [checking, checkAgain] = useState(0);
   const [busy, setBusy] = useState("");
+  const [mediaLength,setMediaLength] = useState(video.durationMs/1000 || 0);
   const player = useRef<HTMLVideoElement>(null);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
@@ -129,8 +130,8 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
           </p>
         )}
       </header>
-      <VideoPlayer video={video} player={player}>
-      <ClipEditor
+      <VideoPlayer video={video} player={player} mediaLength={mediaLength}>
+      <ClipEditor onDuration={setMediaLength}
         video={video}
         player={player}
         busy={busy}

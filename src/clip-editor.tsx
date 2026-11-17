@@ -13,7 +13,7 @@ function time(seconds: number) {
 }
 
 type Marker = "start" | "end" | "playhead";
-export function ClipEditor({ video, player, busy, onSave }) {
+export function ClipEditor({ video, player, busy, onSave,onDuration }) {
   const [duration, setDuration] = useState((video.durationMs || 0) / 1000);
   const [start, setStart] = useState(0),
     [end, setEnd] = useState<number | null>(null);
@@ -50,7 +50,7 @@ export function ClipEditor({ video, player, busy, onSave }) {
           throw Error("Quit and reopen glint to load timeline frames.");
         const strip = await window.desk.filmstrip(video.id);
         if (active) {
-          setDuration(strip.duration);
+          setDuration(strip.duration);onDuration(strip.duration);
           setImage(strip.image);
         }
       } catch (e) {
