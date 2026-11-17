@@ -20,7 +20,9 @@ export function SourcePicker({
   const dialog = useRef<HTMLDialogElement>(null);
   const [items, setItems] = useState<CaptureSource[]>([]);
   const [message, setMessage] = useState("Loading screens and windows…");
-  const [revision, refresh] = useState(0);
+  const [tab, setTab] = useState(
+    current?.id.startsWith("window:") ? "Window" : "Screen",
+  );
   useEffect(() => {
     const element = dialog.current;
     element?.showModal();
@@ -30,24 +32,27 @@ export function SourcePicker({
     let active = true;
     setMessage("Loading screens and windows…");
     setItems([]);
-    window.desk
-      .sources()
-      .then((sources: CaptureSource[]) => {
+    let timer: ReturnType<typeof setTimeout>;
+    async function update() {
+      let delay = 900;
+      try {
+        const sources = await window.desk.sources(tab.toLowerCase());
         if (!active) return;
         setItems(sources);
-        setMessage(
-          sources.length
-            ? ""
-            : "No capture sources found. Check Screen Recording access in System Settings.",
-        );
-      })
-      .catch((error: Error) => {
-        if (active) setMessage(error.message);
-      });
+        setMessage("");
+      } catch (error) {
+        if (!active) return;
+        setMessage(error.message);
+        delay = 4000;
+      }
+      timer = setTimeout(update, delay);
+    }
+    update();
     return () => {
       active = false;
+      clearTimeout(timer);
     };
-  }, [revision]);
+  }, [tab]);
   return (
     <dialog
       ref={dialog}
@@ -64,7 +69,8 @@ export function SourcePicker({
         </button>
       </header>
       <Tabs.Root
-        defaultValue={current?.id.startsWith("window:") ? "Window" : "Screen"}
+        value={tab}
+        onValueChange={setTab}
         className="flex max-h-[calc(80vh-5rem)] flex-col"
       >
         <Tabs.List
@@ -124,9 +130,6 @@ export function SourcePicker({
               </Tabs.Content>
             );
           })}
-          <button type="button" onClick={() => refresh((v) => v + 1)}>
-            Refresh list
-          </button>
         </div>
       </Tabs.Root>
     </dialog>

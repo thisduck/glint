@@ -53,12 +53,7 @@ app.whenReady().then(() => {
       { headers: req.headers },
     ),
   );
-  const sources = (thumbnailSize = { width: 0, height: 0 }) =>
-    desktopCapturer.getSources({
-      types: ["screen", "window"],
-      thumbnailSize,
-    });
-  let listedSources = new Map();
+  const listedSources = new Map();
   let selected = null;
   const { Google } = require("./google.cjs");
   const { Uploads } = require("./uploads.cjs");
@@ -181,8 +176,14 @@ app.whenReady().then(() => {
       throw Error("Drive has not returned a viewing link yet.");
     return copy ? clipboard.writeText(link) : shell.openExternal(link);
   });
-  handle("sources", async () => {
-    const items = await sources({ width: 400, height: 225 });
+  handle("sources", async (kind) => {
+    const types = kind === undefined ? ["screen", "window"] : [kind];
+    if (types.some((type) => type !== "screen" && type !== "window"))
+      throw Error("Unknown capture source type.");
+    const items = await desktopCapturer.getSources({
+      types,
+      thumbnailSize: { width: 400, height: 225 },
+    });
     if (
       process.platform === "darwin" &&
       ["restricted", "denied"].includes(
@@ -193,7 +194,10 @@ app.whenReady().then(() => {
         "Screen capture access is disabled. Allow Screen Recording in macOS System Settings, then relaunch glint.",
       );
     }
-    listedSources = new Map(items.map(({ id, name }) => [id, { id, name }]));
+    for (const id of listedSources.keys()) {
+      if (types.includes(id.split(":")[0])) listedSources.delete(id);
+    }
+    for (const { id, name } of items) listedSources.set(id, { id, name });
     return items.map(({ id, name, thumbnail }) => ({
       id,
       name,
