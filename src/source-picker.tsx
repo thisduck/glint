@@ -88,7 +88,7 @@ export function SourcePicker({
       className="m-auto w-[calc(100%-2rem)] max-w-2xl overflow-hidden rounded-2xl border border-line bg-paper p-0 text-ink shadow-2xl backdrop:bg-black/50"
     >
       <form
-        className="flex max-h-[calc(100dvh-2rem)] flex-col"
+        className="flex h-[min(32rem,calc(100dvh-2rem))] flex-col"
         onSubmit={(event) => {
           event.preventDefault();
           if (selected) onChoose(selected);
@@ -110,7 +110,7 @@ export function SourcePicker({
             setLoading(true);
             setTab(value);
           }}
-          className="flex min-h-0 flex-col"
+          className="flex min-h-0 flex-1 flex-col"
         >
           <Tabs.List
             aria-label="What to record"
@@ -131,7 +131,7 @@ export function SourcePicker({
             <Tabs.Content
               key={id}
               value={id}
-              className="min-h-0 overflow-y-auto"
+              className="min-h-0 flex-1 overflow-y-auto"
             >
               <div className="px-5 py-4 sm:px-6">
                 {loading ? (
