@@ -1,0 +1,5 @@
+overrides:
+  '@types/node': 24.19.1
+onlyBuiltDependencies:
+  - electron
+  - esbuild
