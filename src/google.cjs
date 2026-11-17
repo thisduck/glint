@@ -27,7 +27,8 @@ async function json(url, options) {
         "Google request failed (" + res.status + ")",
     );
   }
-  return res.status === 204 ? null : res.json();
+  if (res.status === 204 || options?.method === "DELETE") return null;
+  return res.json();
 }
 async function browserSession(open, setup) {
   const server = http.createServer(),
