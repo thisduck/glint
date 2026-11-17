@@ -87,7 +87,11 @@ app.whenReady().then(() => {
     google.recordingsFolder(profile, account),
   );
   handle("folder", (profile, account) => google.folder(profile, account));
-  handle("upload", (id) => uploads.send(id));
+  handle("upload", id => {
+    const queued = store.db.prepare("UPDATE videos SET uploadState='pending',uploadError=NULL WHERE id=? AND ready=1 AND (remote IS NULL OR uploadState='failed')").run(id);
+    if (!queued.changes) throw Error("Recording is unavailable for upload.");
+    resumeUploads();
+  });
   async function driveDetails(id) {
     const video = store.db.prepare("SELECT remote,account FROM videos WHERE id=? AND ready=1").get(id);
     if (!video?.remote) throw Error("Upload this recording first.");
