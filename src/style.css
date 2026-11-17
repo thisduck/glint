@@ -202,3 +202,11 @@
     transition: none;
   }
 }
+
+main > div:has(.video-workspace) { max-width: 1440px; }
+.video-workspace video { max-height: 65vh; aspect-ratio: 16 / 9; }
+.video-workspace:fullscreen {
+  box-sizing: border-box; background: var(--rail); color: var(--ink);
+  padding: 12px clamp(16px,3vw,60px); overflow: auto;
+}
+.video-workspace:fullscreen video { height: max(38vh,calc(100vh - 340px)); max-height: none; }

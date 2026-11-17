@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { ArrowLeft, Check, Copy, HardDrive, Cloud } from "lucide-react";
 
 import { ChoiceSelect } from "./components/ui/controls";
+import { VideoPlayer } from "./video-player";
 import { ClipEditor } from "./clip-editor";
 
 const api = window.desk;
@@ -128,15 +129,20 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
           </p>
         )}
       </header>
-      <video
-        ref={player}
-        controls
-        playsInline
-        preload="metadata"
-        aria-label="Local recording"
-        src={"clip://library/" + video.id}
-        className="aspect-video max-h-[48vh] w-full rounded-xl bg-deep"
+      <VideoPlayer video={video} player={player}>
+      <ClipEditor
+        video={video}
+        player={player}
+        busy={busy}
+        onSave={(start, end,cuts) =>
+          run("Trim", async () => {
+            const id = await api.trimRecording(video.id, start, end,cuts);
+            await refresh();
+            onOpen(id);
+          })
+        }
       />
+      </VideoPlayer>
       <div className="my-4 flex flex-wrap items-center gap-2">
         {video.remote && (
           <button
@@ -186,18 +192,6 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
           </button>
         )}
       </div>
-      <ClipEditor
-        video={video}
-        player={player}
-        busy={busy}
-        onSave={(start, end,cuts) =>
-          run("Trim", async () => {
-            const id = await api.trimRecording(video.id, start, end,cuts);
-            await refresh();
-            onOpen(id);
-          })
-        }
-      />
       <dl className="destination divide-y divide-line px-5" aria-live="polite">
         <div className="flex items-center justify-between gap-4 py-3">
           <dt className="flex items-center gap-2">
