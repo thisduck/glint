@@ -43,4 +43,6 @@ Run `pnpm test` and `pnpm build`. Automated tests exercise profile persistence, 
 
 For a desktop smoke test, add a profile, rename it, restart, and confirm its name. Record a screen with microphone enabled, stop, and play back the result. Connect two Google accounts, choose a different destination in each profile, and upload a short recording from each. Verify each file's folder and sharing settings in Drive.
 
+Each profile remembers its recording microphone and whether microphone capture is on. Choose **System default** to follow the computer’s input setting. If a preferred input is unavailable, glint tries the system default and remembers the preferred input for later recordings.
+
 In the destination panel, open **Manage accounts** to reconnect an email or disconnect it from glint. Disconnecting clears the saved Drive destination and turns off auto-upload for every profile using that account.

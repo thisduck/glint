@@ -10,6 +10,18 @@ class Store {
       INSERT INTO profiles(name)
       SELECT name FROM (SELECT 'Work' AS name UNION ALL SELECT 'Personal')
       WHERE NOT EXISTS (SELECT 1 FROM profiles);`);
+    const columns = this.db
+      .prepare("PRAGMA table_info(profiles)")
+      .all()
+      .map((c) => c.name);
+    if (!columns.includes("microphoneId"))
+      this.db.exec(
+        "ALTER TABLE profiles ADD COLUMN microphoneId TEXT NOT NULL DEFAULT 'default'",
+      );
+    if (!columns.includes("micEnabled"))
+      this.db.exec(
+        "ALTER TABLE profiles ADD COLUMN micEnabled INTEGER NOT NULL DEFAULT 1",
+      );
     if (
       !this.db
         .prepare("PRAGMA table_info(profiles)")
@@ -26,6 +38,16 @@ class Store {
         .some((c) => c.name === "uploadState")
     )
       this.db.exec("ALTER TABLE videos ADD COLUMN uploadState TEXT");
+  }
+  setMicrophone(profile, device, enabled) {
+    if (typeof device !== "string" || !device || typeof enabled !== "boolean")
+      throw Error("Invalid microphone preference.");
+    if (
+      !this.db
+        .prepare("UPDATE profiles SET microphoneId=?,micEnabled=? WHERE id=?")
+        .run(device, Number(enabled), profile).changes
+    )
+      throw Error("Profile unavailable.");
   }
   setAutoUpload(profile, enabled) {
     if (typeof enabled !== "boolean")

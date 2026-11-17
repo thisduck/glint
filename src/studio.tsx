@@ -2,12 +2,54 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChoiceSelect, MicrophoneCheckbox } from "./components/ui/controls";
 
 import { Folder, HardDrive } from "lucide-react";
+import { openMicrophone } from "./microphone.mjs";
 import { SourcePicker, type CaptureSource } from "./source-picker";
 const api = window.desk;
 export function Studio({ profile, refreshProfile, lock, fail }) {
   const [source, choose] = useState<CaptureSource | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [mic, setMic] = useState(true);
+  const mic = Boolean(profile.micEnabled);
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const deviceRevision = useRef(0);
+  async function listInputs() {
+    const revision = ++deviceRevision.current;
+    const list = await navigator.mediaDevices.enumerateDevices();
+    if (revision === deviceRevision.current)
+      setDevices(
+        list.filter(
+          (d) =>
+            d.kind === "audioinput" &&
+            d.deviceId &&
+            !["default", "communications"].includes(d.deviceId),
+        ),
+      );
+  }
+  useEffect(() => {
+    const update = () => listInputs().catch(() => {});
+    update();
+    navigator.mediaDevices.addEventListener("devicechange", update);
+    return () => {
+      deviceRevision.current++;
+      navigator.mediaDevices.removeEventListener("devicechange", update);
+    };
+  }, []);
+  function saveMic(device, enabled) {
+    return action("Saving microphone…", async () => {
+      await api.setMicrophone(profile.id, device, enabled);
+      await refreshProfile();
+    });
+  }
+  function chooseMic(id) {
+    if (id !== "show-inputs") return saveMic(id, mic);
+    return action("Finding microphones…", async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      try {
+        await listInputs();
+      } finally {
+        stream.getTracks().forEach((t) => t.stop());
+      }
+    });
+  }
   const [phase, setPhase] = useState("idle"),
     [videos, setVideos] = useState([]),
     [preview, play] = useState("");
@@ -162,6 +204,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     }
   }
   async function start() {
+    let microphone,
+      writeFailed = false;
     let tracks = [],
       id = null,
       pending = Promise.resolve(),
@@ -170,6 +214,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     lock(true);
     fail("");
     function reset() {
+      microphone?.close();
       releaseCapture();
       choose(null);
       tracks.forEach((t) => t.stop());
@@ -184,12 +229,20 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           "The selected source is no longer sharing. Choose a screen or window again.",
         );
       tracks.push(...display.getTracks());
-      if (mic)
-        tracks.push(
-          ...(
-            await navigator.mediaDevices.getUserMedia({ audio: true })
-          ).getAudioTracks(),
+      if (mic) {
+        microphone = await openMicrophone(
+          navigator.mediaDevices,
+          profile.microphoneId,
+          () => setNotice("Using the system default microphone."),
+          (error) => {
+            failure = error;
+            if (recorder.current?.state === "recording")
+              recorder.current.stop();
+          },
         );
+        tracks.push(microphone.track);
+        listInputs().catch(() => {});
+      }
       const stream = new MediaStream(tracks);
       const r = new MediaRecorder(stream, { mimeType: "video/webm" });
       id = await api.begin(profile.id);
@@ -198,13 +251,14 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         if (e.data.size)
           pending = pending
             .then(async () => {
-              if (!failure)
+              if (!writeFailed)
                 await api.append(
                   id,
                   new Uint8Array(await e.data.arrayBuffer()),
                 );
             })
             .catch((err) => {
+              writeFailed = true;
               failure = err;
               if (r.state === "recording") r.stop();
             });
@@ -218,10 +272,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         tracks.forEach((t) => t.stop());
         try {
           await pending;
-          await api.end(id,!failure);
+          await api.end(id, !failure);
           await refresh();
-          play(id);
           if (failure) throw failure;
+          play(id);
         } catch (e) {
           fail(e.message);
         } finally {
@@ -233,10 +287,11 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         throw Error(
           "Capture ended before recording started. Choose a capture source again.",
         );
+      if (failure) throw failure;
       r.start(1000);
       setPhase("recording");
     } catch (e) {
-      if (id) await api.end(id,false).catch(() => {});
+      if (id) await api.end(id, false).catch(() => {});
       fail(e.message);
       reset();
     }
@@ -327,11 +382,40 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           )}
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 bg-paper px-5 py-4">
-          <MicrophoneCheckbox
-            checked={mic}
-            disabled={phase !== "idle"}
-            onChange={setMic}
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <MicrophoneCheckbox
+              checked={mic}
+              disabled={!!busy || phase !== "idle"}
+              onChange={(enabled) => saveMic(profile.microphoneId, enabled)}
+            />
+            {mic && (
+              <ChoiceSelect
+                label="Recording microphone"
+                value={profile.microphoneId}
+                disabled={!!busy || phase !== "idle"}
+                onChange={chooseMic}
+                options={[
+                  { value: "default", label: "System default" },
+                  ...devices.map((d, i) => ({
+                    value: d.deviceId,
+                    label: d.label || "Microphone " + (i + 1),
+                  })),
+                  ...(profile.microphoneId !== "default" &&
+                  !devices.some((d) => d.deviceId === profile.microphoneId)
+                    ? [
+                        {
+                          value: profile.microphoneId,
+                          label: "Unavailable · use system default",
+                        },
+                      ]
+                    : []),
+                  ...(!devices.some((d) => d.label)
+                    ? [{ value: "show-inputs", label: "Find microphones…" }]
+                    : []),
+                ]}
+              />
+            )}
+          </div>
           <button
             className="min-h-11 rounded-lg border-0 bg-accent px-5 font-semibold text-white hover:bg-deep"
             disabled={!!busy || (phase !== "idle" && phase !== "recording")}

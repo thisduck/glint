@@ -9,6 +9,7 @@ const methods = [
   "end",
   "list",
   "setAutoUpload",
+  "setMicrophone",
   "driveConfigured",
   "accounts",
   "connect",
