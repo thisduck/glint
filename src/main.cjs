@@ -92,18 +92,27 @@ app.whenReady().then(() => {
     if (!queued.changes) throw Error("Recording is unavailable for upload.");
     resumeUploads();
   });
-  async function driveDetails(id) {
+  async function uploadedFile(id) {
     const video = store.db.prepare("SELECT remote,account FROM videos WHERE id=? AND ready=1").get(id);
     if (!video?.remote) throw Error("Upload this recording first.");
     const headers = {Authorization:"Bearer " + await google.access(video.account)};
     const info = await google.fileInfo(video.remote,headers);
-    if (!info.permissions) info.permissions = await google.filePermissions(video.remote,headers);
-    return {access:require("./drive-status.cjs").describeAccess(info), metadata:!!info.videoMediaMetadata?.durationMillis, link:info.webViewLink};
+    return {info,remote:video.remote,headers};
+  }
+  async function driveDetails(id) {
+    const {info,remote,headers} = await uploadedFile(id);
+    let accessIssue;
+    if (!info.permissions) {
+      try {info.permissions = await google.filePermissions(remote,headers);}
+      catch (error) {accessIssue = error.message;}
+    }
+    return {accessIssue,access:require("./drive-status.cjs").describeAccess(info), metadata:!!info.videoMediaMetadata?.durationMillis, link:info.webViewLink};
   }
   handle("driveDetails",driveDetails);
   handle("reveal",id => shell.showItemInFolder(library.file(id)));
   handle("share", async (id,copy) => {
-    const {link} = await driveDetails(id);
+    const {info} = await uploadedFile(id);
+    const link = info.webViewLink;
     if (!link || new URL(link).origin !== "https://drive.google.com") throw Error("Drive has not returned a viewing link yet.");
     return copy ? clipboard.writeText(link) : shell.openExternal(link);
   });

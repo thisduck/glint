@@ -22,7 +22,7 @@ export function RecordingPage({video,profile,onOpen,onBack,refresh}) {
         const info = await api.driveDetails(video.id);
         if (!active) return;
         setDetails(info);
-        setLookupError("");
+        setLookupError(info.accessIssue || "");
         if (!info.metadata && ++attempts < 12) timer = setTimeout(check,15000);
       } catch(error) {
         if (active) setLookupError(error.message);
