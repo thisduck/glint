@@ -2,11 +2,12 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChoiceSelect, MicrophoneCheckbox } from "./components/ui/controls";
 import * as Collapsible from "@radix-ui/react-collapsible";
 import { Folder, ChevronDown } from "lucide-react";
+import { SourcePicker, type CaptureSource } from "./source-picker";
 const api = window.desk;
 export function Studio({ profile, refreshProfile, lock, fail }) {
-  const [sources, setSources] = useState([]),
-    [source, choose] = useState(""),
-    [mic, setMic] = useState(true);
+  const [source, choose] = useState<CaptureSource | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [mic, setMic] = useState(true);
   const [phase, setPhase] = useState("idle"),
     [videos, setVideos] = useState([]),
     [preview, play] = useState("");
@@ -41,19 +42,31 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   useEffect(() => {
     refresh().catch((e) => fail(e.message));
   }, []);
-  async function load() {
-    try {
-      const items = await api.sources();
-      setSources(items);
-      choose(items[0]?.id || "");
-      if (!items.length)
-        fail(
-          "No sources available. Check Screen Recording in macOS System Settings.",
-        );
-    } catch (e) {
-      fail(e.message);
-    }
+  function sourceLost() {
+    choose(null);
+    setNotice("The capture source closed. Choose another screen or window.");
   }
+  useEffect(() => {
+    if (!source || phase !== "idle" || pickerOpen) return;
+    let active = true;
+    let timer;
+    async function check() {
+      try {
+        if (!(await api.sourceAvailable(source.id)) && active) {
+          sourceLost();
+          return;
+        }
+      } catch {
+        /* Start recording also validates the source. */
+      }
+      if (active) timer = setTimeout(check, 3000);
+    }
+    timer = setTimeout(check, 3000);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [source, phase, pickerOpen]);
   async function start() {
     let tracks = [],
       id = null,
@@ -69,7 +82,11 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       lock(false);
     }
     try {
-      await api.source(source);
+      if (!(await api.source(source.id))) {
+        sourceLost();
+        reset();
+        return;
+      }
       const display = await navigator.mediaDevices.getDisplayMedia({
         video: true,
         audio: false,
@@ -119,73 +136,93 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           reset();
         }
       };
-      display.getVideoTracks()[0].onended = () => {
+      const videoTrack = display.getVideoTracks()[0];
+      if (!videoTrack || videoTrack.readyState === "ended") throw Error("Capture ended before recording started. Choose a capture source again.");
+      videoTrack.onended = () => {
+        sourceLost();
         if (r.state === "recording") r.stop();
       };
       r.start(1000);
       setPhase("recording");
     } catch (e) {
       if (id) await api.end(id).catch(() => {});
+      if (!(await api.sourceAvailable(source.id).catch(() => true)))
+        sourceLost();
+      else fail(e.message);
       reset();
-      fail(e.message);
     }
   }
   return (
     <>
+      {pickerOpen && (
+        <SourcePicker
+          current={source}
+          onCancel={() => setPickerOpen(false)}
+          onChoose={(item) => {
+            choose(item);
+            setPickerOpen(false);
+            setNotice("");
+            fail("");
+          }}
+        />
+      )}
       {busy && <p role="status">{busy}</p>}
       {notice && <p role="status">{notice}</p>}
       <section className="overflow-hidden rounded-xl border border-line bg-paper">
         <div className="stage">
-          <svg
-            viewBox="0 0 92 65"
-            className="h-12 w-[68px]"
-            fill="none"
-            aria-hidden="true"
-          >
-            <rect
-              x="9"
-              y="11"
-              width="54"
-              height="36"
-              rx="5"
-              stroke="var(--glass)"
-              transform="rotate(-10 36 29)"
+          {source?.thumbnail ? (
+            <img
+              src={source.thumbnail}
+              alt=""
+              className="max-h-44 max-w-full rounded-md object-contain"
             />
-            <rect
-              x="25"
-              y="15"
-              width="58"
-              height="39"
-              rx="5"
-              stroke="var(--shine)"
-              strokeWidth="1.6"
-              fill="var(--deep)"
-            />
-            <path
-              d="M26 24h55M36 43l8-10m-3 13 5-6"
-              stroke="var(--glass)"
-              strokeLinecap="round"
-            />
-            <circle cx="31" cy="20" r="1" fill="var(--shine)" />
-          </svg>
+          ) : (
+            <svg
+              viewBox="0 0 92 65"
+              className="h-12 w-[68px]"
+              fill="none"
+              aria-hidden="true"
+            >
+              <rect
+                x="9"
+                y="11"
+                width="54"
+                height="36"
+                rx="5"
+                stroke="var(--glass)"
+                transform="rotate(-10 36 29)"
+              />
+              <rect
+                x="25"
+                y="15"
+                width="58"
+                height="39"
+                rx="5"
+                stroke="var(--shine)"
+                strokeWidth="1.6"
+                fill="var(--deep)"
+              />
+              <path
+                d="M26 24h55M36 43l8-10m-3 13 5-6"
+                stroke="var(--glass)"
+                strokeLinecap="round"
+              />
+              <circle cx="31" cy="20" r="1" fill="var(--shine)" />
+            </svg>
+          )}
           <h3 className="max-w-full break-words font-display text-2xl">
-            {sources.find((s) => s.id === source)?.name || "Screen capture"}
+            {source?.name || "Screen capture"}
           </h3>
           {phase === "recording" && (
             <span role="status">Recording in progress</span>
           )}
-          {!!sources.length && (
-            <ChoiceSelect
-              label="Capture source"
-              value={source}
-              onChange={choose}
-              disabled={phase !== "idle"}
-              options={sources.map((s) => ({ value: s.id, label: s.name }))}
-            />
-          )}
           {!!source && phase === "idle" && (
-            <button className="refresh" onClick={load}>
-              Refresh sources
+            <button
+              className="refresh"
+              disabled={!!busy}
+              onClick={() => setPickerOpen(true)}
+            >
+              Change
             </button>
           )}
         </div>
@@ -203,7 +240,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                 ? recorder.current.stop()
                 : source
                   ? start()
-                  : load()
+                  : setPickerOpen(true)
             }
           >
             {

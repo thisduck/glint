@@ -46,10 +46,10 @@ app.whenReady().then(() => {
       { headers: req.headers },
     ),
   );
-  const sources = () =>
+  const sources = (thumbnailSize = { width: 0, height: 0 }) =>
     desktopCapturer.getSources({
       types: ["screen", "window"],
-      thumbnailSize: { width: 0, height: 0 },
+      thumbnailSize,
     });
   let selected = null;
   const { Google } = require("./google.cjs");
@@ -72,10 +72,23 @@ app.whenReady().then(() => {
     return copy ? clipboard.writeText(url) : shell.openExternal(url);
   });
   handle("sources", async () =>
-    (await sources()).map(({ id, name }) => ({ id, name })),
+    (await sources({ width: 400, height: 225 })).map(
+      ({ id, name, thumbnail }) => ({
+        id,
+        name,
+        thumbnail: thumbnail.isEmpty()
+          ? null
+          : "data:image/jpeg;base64," + thumbnail.toJPEG(75).toString("base64"),
+      }),
+    ),
   );
-  handle("source", (id) => {
+  const available = async (id) =>
+    (await sources()).some((item) => item.id === id);
+  handle("sourceAvailable", available);
+  handle("source", async (id) => {
+    if (!(await available(id))) return false;
     selected = id;
+    return true;
   });
   session.defaultSession.setDisplayMediaRequestHandler(async (req, cb) => {
     const id = selected;
