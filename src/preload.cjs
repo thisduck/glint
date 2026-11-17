@@ -4,6 +4,8 @@ const methods = [
   "save",
   "sources",
   "source",
+  "countdown",
+  "showStudio",
   "begin",
   "append",
   "end",

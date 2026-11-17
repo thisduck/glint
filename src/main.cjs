@@ -128,6 +128,8 @@ app.whenReady().then(() => {
     selected = null;
     cb({ video });
   });
+  handle("countdown", () => require("./countdown.cjs").countdown(win));
+  handle("showStudio", () => win.show());
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
   handle("end", (id, complete = true) => {

@@ -214,6 +214,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     lock(true);
     fail("");
     function reset() {
+      api.showStudio().catch(e => fail(e.message));
       microphone?.close();
       releaseCapture();
       choose(null);
@@ -245,6 +246,14 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       }
       const stream = new MediaStream(tracks);
       const r = new MediaRecorder(stream, { mimeType: "video/webm" });
+      if (!(await api.countdown())) {
+        microphone?.close();
+        await api.showStudio();
+        setPhase("idle");
+        lock(false);
+        return;
+      }
+      await api.showStudio();
       id = await api.begin(profile.id);
       recorder.current = r;
       r.ondataavailable = (e) => {
