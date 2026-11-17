@@ -80,7 +80,7 @@ class Uploads {
         },
         body: JSON.stringify({
           id: driveId,
-          name: "snow white " + video.created + ".webm",
+          name: "glint " + video.created + ".webm",
           parents: [video.folder],
         }),
       },

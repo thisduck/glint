@@ -60,7 +60,7 @@ function App() {
         <header className="flex items-center justify-between gap-4">
           <h1 className="flex shrink-0 items-center gap-2 font-display text-2xl leading-none tracking-tight">
             <Logo />
-            snow white
+            glint
           </h1>
           <Popover.Root open={settingsOpen} onOpenChange={setSettingsOpen}>
             <Popover.Trigger

@@ -20,10 +20,14 @@ protocol.registerSchemesAsPrivileged([
     privileges: { standard: true, secure: true, stream: true },
   },
 ]);
-// Keep existing libraries available when upgrading from the original app name.
-const legacyData = path.join(app.getPath("appData"), "cinderella");
-if (require("node:fs").existsSync(path.join(legacyData, "library.sqlite"))) {
-  app.setPath("userData", legacyData);
+// Earlier releases reused the original library whenever it was present.
+const { existsSync } = require("node:fs");
+const hasLibrary = (dir) => existsSync(path.join(dir, "library.sqlite"));
+if (!hasLibrary(app.getPath("userData"))) {
+  const previous = ["cinderella", "snow white", "snow-white"]
+    .map((name) => path.join(app.getPath("appData"), name))
+    .find(hasLibrary);
+  if (previous) app.setPath("userData", previous);
 }
 let win, store, library;
 if (!app.requestSingleInstanceLock()) app.quit();
