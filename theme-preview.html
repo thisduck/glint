@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="cobalt">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -447,7 +447,7 @@
             </g>
           </g>
         </symbol>
-        <symbol id="mark-arch" viewBox="0 0 34 42">
+        <symbol id="mark-wall-mirror" viewBox="0 0 34 42">
           <g
             fill="none"
             stroke="currentColor"
@@ -455,8 +455,10 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M6 35V17a11 11 0 0 1 22 0v18z" fill="var(--tint)" />
-            <path d="m12 22 7-10m-4 14 4-6" />
+            <path d="m8 13 9-10 9 10" stroke-width="1.5"/>
+            <circle cx="17" cy="3" r="1.35" fill="currentColor" stroke="none"/>
+            <rect x="5" y="12" width="24" height="27" rx="10" fill="var(--tint)"/>
+            <path d="m11 25 6-8m-3 12 4-5"/>
           </g>
         </symbol>
         <symbol id="mark-vanity" viewBox="0 0 34 42">
@@ -518,21 +520,21 @@
           <option value="lilac">Lilac only</option>
           <option value="grove">Grove only</option>
           <option value="clay">Clay only</option>
-          <option value="cobalt">Cobalt only</option>
+          <option value="cobalt" selected>Cobalt only</option>
           <option value="marigold">Marigold only</option>
           <option value="midnight">Midnight only</option>
         </select>
       </div>
       <h2 class="logo-title">Mirror logo</h2>
       <div class="logos" role="group" aria-label="Mirror logo">
-        <button data-mark="hand-mirror" aria-pressed="true">
+        <button data-mark="hand-mirror" aria-pressed="false">
           <svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
             <use href="#mark-hand-mirror" /></svg
           >Hand mirror</button
-        ><button data-mark="arch" aria-pressed="false">
+        ><button data-mark="wall-mirror" aria-pressed="true">
           <svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
-            <use href="#mark-arch" /></svg
-          >Arch</button
+            <use href="#mark-wall-mirror" /></svg
+          >Wall mirror</button
         ><button data-mark="vanity" aria-pressed="false">
           <svg class="mirror" viewBox="0 0 34 42" aria-hidden="true">
             <use href="#mark-vanity" /></svg
@@ -927,6 +929,7 @@
             picker.value && card.dataset.theme !== picker.value,
           );
       });
+      picker.dispatchEvent(new Event("change"));
       for (const button of document.querySelectorAll("[data-mark]")) {
         button.onclick = () => {
           for (const item of document.querySelectorAll("[data-mark]"))

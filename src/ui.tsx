@@ -13,10 +13,10 @@ const themes = [
 ];
 function App() {
   const [theme, setTheme] = useState(
-    () => themes.find((t) => t.id === localStorage.appearance)?.id || "lilac",
+    () => themes.find((t) => t.id === localStorage.appearance)?.id || "cobalt",
   );
   const [mark, setMark] = useState(() =>
-    mirrors.includes(localStorage.mirror) ? localStorage.mirror : mirrors[0],
+    mirrors.includes(localStorage.mirror) ? localStorage.mirror : "Wall mirror",
   );
   const [profiles, setProfiles] = useState([]),
     [id, select] = useState(Number(localStorage.profile) || 1);

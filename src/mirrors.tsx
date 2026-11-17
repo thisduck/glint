@@ -1,5 +1,5 @@
 import React from "react";
-export const mirrors = ["Hand mirror", "Arch", "Vanity", "Compact", "Ripple"];
+export const mirrors = ["Hand mirror", "Wall mirror", "Vanity", "Compact", "Ripple"];
 export function MirrorShapes() {
   return (
     <svg width="0" height="0" aria-hidden="true" className="absolute">
@@ -23,7 +23,7 @@ export function MirrorShapes() {
             </g>
           </g>
         </symbol>
-        <symbol id="mark-arch" viewBox="0 0 34 42">
+        <symbol id="mark-wall-mirror" viewBox="0 0 34 42">
           <g
             fill="none"
             stroke="currentColor"
@@ -31,8 +31,10 @@ export function MirrorShapes() {
             strokeLinecap="round"
             strokeLinejoin="round"
           >
-            <path d="M6 35V17a11 11 0 0 1 22 0v18z" fill="var(--tint)" />
-            <path d="m12 22 7-10m-4 14 4-6" />
+            <path d="m8 13 9-10 9 10" strokeWidth="1.5"/>
+            <circle cx="17" cy="3" r="1.35" fill="currentColor" stroke="none"/>
+            <rect x="5" y="12" width="24" height="27" rx="10" fill="var(--tint)"/>
+            <path d="m11 25 6-8m-3 12 4-5"/>
           </g>
         </symbol>
         <symbol id="mark-vanity" viewBox="0 0 34 42">
