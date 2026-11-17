@@ -150,11 +150,11 @@ app.whenReady().then(() => {
   handle("append", (id, data) => library.append(id, data));
   handle("trimRecording",(id,start,end) => require("./trim.cjs").trimRecording(library,id,start,end));
   handle("renameRecording",(id,title) => library.rename(id,title));
-  handle("end", (id, complete = true,durationMs) => {
-    library.end(id, complete,durationMs);
+  handle("end", (id, complete = true,durationMs,issue) => {
+    library.end(id, complete,durationMs,issue);
     resumeUploads();
   });
-  handle("list", (id) => library.list(id));
+  handle("list", (id) => library.list(id).map(v => ({...v,progress:uploads.progress.get(v.id)})));
   handle("profiles", () => store.profiles());
   handle("save", (name, id) => store.save(name, id));
   win = new BrowserWindow({

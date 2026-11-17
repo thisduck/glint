@@ -285,9 +285,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         tracks.forEach((t) => t.stop());
         try {
           await pending;
-          await api.end(id, !failure,duration);
+          await api.end(id, !failure,duration,failure?.message);
           await refresh();
-          if (failure) throw failure;
           play(id);
         } catch (e) {
           fail(e.message);

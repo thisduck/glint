@@ -46,7 +46,7 @@ export function RecordingPage({video,profile,onOpen,onBack,refresh}) {
   const pending = video.uploadState === "pending";
   const uploading = busy === "Upload" || pending;
   const failed = video.uploadState === "failed";
-  const cloudStatus = video.remote ? "Uploaded" : uploading ? "Uploading…" : failed ? "Upload failed" : "Local copy only";
+  const cloudStatus = video.remote ? "Uploaded" : uploading ? video.progress != null ? "Uploading · " + video.progress + "%" : "Preparing upload…" : failed ? "Upload failed" : "Local copy only";
   return <section className="mt-6">
     <button className="quiet inline-flex items-center gap-2" onClick={onBack}><ArrowLeft size={15}/> Recording studio</button>
     <header className="my-5">
@@ -54,7 +54,7 @@ export function RecordingPage({video,profile,onOpen,onBack,refresh}) {
       {editing ? <form className="mt-2 flex flex-wrap gap-2" onSubmit={e => {
         e.preventDefault(); run("Rename",async()=>{await api.renameRecording(video.id,title);await refresh();setEditing(false);});
       }}><input aria-label="Title in glint" placeholder="Recording title" autoFocus maxLength={160} value={title} onChange={e=>setTitle(e.target.value)}/><button disabled={!!busy || !title.trim()}>Save title</button><button type="button" onClick={()=>setEditing(false)}>Cancel</button></form> :
-      <div className="mt-1 flex items-center gap-3"><h2 className="break-words text-3xl font-medium tracking-tight">{video.title || "Recording saved"}</h2><button className="quiet" onClick={()=>{setTitle(video.title || "");setEditing(true);}}>{video.title ? "Edit title" : "Add title"}</button></div>}
+      <div className="mt-1 flex items-center gap-3"><h2 className="break-words text-3xl font-medium tracking-tight">{video.title || (video.captureIssue ? "Recovered recording" : "Recording saved")}</h2><button className="quiet" onClick={()=>{setTitle(video.title || "");setEditing(true);}}>{video.title ? "Edit title" : "Add title"}</button></div>}
       {video.durationMs > 0 && <p className="mt-1 text-sm text-muted">{Math.floor(video.durationMs/60000)}m {Math.floor(video.durationMs/1000)%60}s</p>}
     </header>
     <video controls playsInline preload="metadata" aria-label="Local recording" src={"clip://library/"+video.id} className="aspect-video max-h-[48vh] w-full rounded-xl bg-deep"/>
@@ -85,6 +85,12 @@ export function RecordingPage({video,profile,onOpen,onBack,refresh}) {
       </form>
       <p className="mt-2 text-sm text-muted">Saves a new local recording in {profile.name}.</p>
     </details>
-    {(issue || video.uploadError || lookupError) && <p role="alert" className="mt-3">{issue || video.uploadError || lookupError}</p>}
+    {(issue || video.captureIssue || video.uploadError || lookupError) && <details open className="destination p-4">
+      <summary className="cursor-pointer font-medium">Recording issues</summary>
+      <dl className="mt-3 grid gap-2 text-sm">{[
+        ["Capture",video.captureIssue], [video.remote ? "Sharing" : "Upload",video.uploadError],
+        ["Drive status",lookupError], ["Last action",issue]
+      ].filter(([,message])=>message).map(([label,message])=><div key={label}><dt className="font-medium">{label}</dt><dd className="text-muted">{message}</dd></div>)}</dl>
+    </details>}
   </section>;
 }

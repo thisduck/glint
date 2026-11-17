@@ -5,6 +5,7 @@ class Uploads {
     this.google = google;
     this.request = request;
     this.busy = new Set();
+    this.progress = new Map();
     library.db.exec(
       "CREATE TABLE IF NOT EXISTS upload_ids(video TEXT PRIMARY KEY, driveId TEXT NOT NULL)",
     );
@@ -15,20 +16,12 @@ class Uploads {
     try {
       for (;;) {
         const next = this.library.db
-          .prepare(
-            "SELECT id FROM videos WHERE ready=1 AND uploadState='pending' ORDER BY created LIMIT 1",
-          )
-          .get();
+          .prepare("SELECT id FROM videos WHERE ready=1 AND uploadState='pending' ORDER BY created")
+          .all().find(row => !this.busy.has(row.id));
         if (!next) break;
-        try {
-          await this.send(next.id);
-        } catch {
-          this.library.db
-            .prepare(
-              "UPDATE videos SET uploadState='failed' WHERE id=? ",
-            )
-            .run(next.id);
-        }
+        // send records failures against the video so the queue can continue.
+        await this.send(next.id).catch(() => {});
+
       }
     } finally {
       this.draining = false;
@@ -38,12 +31,14 @@ class Uploads {
     if (this.busy.has(id)) throw Error("Upload already running");
     this.busy.add(id);
     try {
+      this.library.db.prepare("UPDATE videos SET uploadState='pending',uploadError=NULL WHERE id=? AND ready=1 AND (remote IS NULL OR uploadState IS NOT NULL)").run(id);
       return await this.upload(id);
     } catch (error) {
       this.library.db.prepare("UPDATE videos SET uploadState='failed',uploadError=? WHERE id=?").run(error.message,id);
       throw error;
     } finally {
       this.busy.delete(id);
+      this.progress.delete(id);
     }
   }
   async upload(id) {
@@ -138,12 +133,26 @@ class Uploads {
       !location.hostname.endsWith(".googleapis.com")
     )
       throw Error("Invalid Drive upload URL");
-    const res = await this.request(location, {
+    const input = fs.createReadStream(file);
+    const progress = this.progress;
+    async function* body() {
+      let sent = 0;
+      for await (const chunk of input) {
+        yield chunk;
+        sent += chunk.length;
+        progress.set(id,Math.min(99,Math.floor(sent * 100 / size)));
+      }
+    }
+    this.progress.set(id,0);
+    let res;
+    try {
+      res = await this.request(location, {
       method: "PUT",
-      body: fs.createReadStream(file),
+      body: body(),
       duplex: "half",
       headers: { "Content-Type": "video/webm", "Content-Length": String(size) },
     });
+    } finally {input.destroy();}
     if (!res.ok)
       throw Error(
         "Upload interrupted (" +

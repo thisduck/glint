@@ -52,12 +52,12 @@ class Library {
     if (this.open?.id !== id) throw Error("Recording is closed");
     fs.writeFileSync(this.open.fd, Buffer.from(bytes));
   }
-  finishRow(id, complete = true) {
+  finishRow(id, complete = true, issue) {
     this.db
       .prepare(
-        "UPDATE videos SET ready=1,uploadState=CASE WHEN ? THEN uploadState ELSE NULL END WHERE id=?",
+        "UPDATE videos SET ready=1,captureIssue=?,uploadState=CASE WHEN ? THEN uploadState ELSE NULL END WHERE id=?",
       )
-      .run(Number(complete), id);
+      .run(complete ? null : issue || "Capture ended early. Play the local copy to review it.", Number(complete), id);
   }
   remove(id) {
     fs.rmSync(this.file(id), { force: true });
@@ -67,7 +67,7 @@ class Library {
     if (typeof title !== "string" || !title.trim() || title.trim().length > 160) throw Error("Use a title between 1 and 160 characters.");
     if (!this.db.prepare("UPDATE videos SET title=? WHERE id=? AND ready=1").run(title.trim(),id).changes) throw Error("Recording unavailable.");
   }
-  end(id, complete = true, durationMs) {
+  end(id, complete = true, durationMs, issue) {
     if (this.open?.id !== id) throw Error("Recording is closed");
     fs.closeSync(this.open.fd);
     this.open = null;
@@ -76,7 +76,7 @@ class Library {
       throw Error("Captured no video");
     }
     if (Number.isSafeInteger(durationMs) && durationMs > 0) this.db.prepare("UPDATE videos SET durationMs=? WHERE id=?").run(durationMs,id);
-    this.finishRow(id,complete);
+    this.finishRow(id,complete,issue);
   }
   list(profile) {
     return this.db
