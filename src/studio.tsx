@@ -208,7 +208,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     }
   }
   async function start() {
-    let microphone,
+    let startedAt, microphone,
       writeFailed = false;
     let tracks = [],
       id = null,
@@ -280,11 +280,12 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         if (r.state === "recording") r.stop();
       };
       r.onstop = async () => {
+        const duration = Math.round(performance.now() - startedAt);
         setPhase("saving");
         tracks.forEach((t) => t.stop());
         try {
           await pending;
-          await api.end(id, !failure);
+          await api.end(id, !failure,duration);
           await refresh();
           if (failure) throw failure;
           play(id);
@@ -301,6 +302,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         );
       await api.recordingMenu();
       if (failure) throw failure;
+      startedAt = performance.now();
       r.start(1000);
       setPhase("recording");
     } catch (e) {
@@ -643,7 +645,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         )}
         {videos.map((v) => (
           <article key={v.id}>
-            <time>{new Date(v.created).toLocaleString()}</time>{" "}
+            <time>{v.title || new Date(v.created).toLocaleString()}</time>{" "}
             <button disabled={!!busy || phase !== "idle"} onClick={() => {releaseCapture(); choose(null); play(v.id);}}>View recording</button>
             {v.remote ? (
               <>

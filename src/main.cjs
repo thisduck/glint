@@ -148,8 +148,9 @@ app.whenReady().then(() => {
   });
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
-  handle("end", (id, complete = true) => {
-    library.end(id, complete);
+  handle("renameRecording",(id,title) => library.rename(id,title));
+  handle("end", (id, complete = true,durationMs) => {
+    library.end(id, complete,durationMs);
     resumeUploads();
   });
   handle("list", (id) => library.list(id));

@@ -10,6 +10,7 @@ const methods = [
   "begin",
   "append",
   "end",
+  "renameRecording",
   "list",
   "setAutoUpload",
   "setPrivacy",

@@ -125,7 +125,7 @@ class Uploads {
         },
         body: JSON.stringify({
           id: driveId,
-          name: "glint " + video.created + ".webm",
+          name: (video.title || "glint " + video.created) + ".webm",
           parents: [video.folder],
         }),
       },

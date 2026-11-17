@@ -63,7 +63,11 @@ class Library {
     fs.rmSync(this.file(id), { force: true });
     this.db.prepare("DELETE FROM videos WHERE id=?").run(id);
   }
-  end(id, complete = true) {
+  rename(id, title) {
+    if (typeof title !== "string" || !title.trim() || title.trim().length > 160) throw Error("Use a title between 1 and 160 characters.");
+    if (!this.db.prepare("UPDATE videos SET title=? WHERE id=? AND ready=1").run(title.trim(),id).changes) throw Error("Recording unavailable.");
+  }
+  end(id, complete = true, durationMs) {
     if (this.open?.id !== id) throw Error("Recording is closed");
     fs.closeSync(this.open.fd);
     this.open = null;
@@ -71,6 +75,7 @@ class Library {
       this.remove(id);
       throw Error("Captured no video");
     }
+    if (Number.isSafeInteger(durationMs) && durationMs > 0) this.db.prepare("UPDATE videos SET durationMs=? WHERE id=?").run(durationMs,id);
     this.finishRow(id,complete);
   }
   list(profile) {

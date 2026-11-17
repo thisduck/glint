@@ -8,6 +8,8 @@ export function RecordingPage({video,profile,onBack,refresh}) {
   const [lookupError,setLookupError] = useState("");
   const [checking,checkAgain] = useState(0);
   const [busy,setBusy] = useState("");
+  const [editing,setEditing] = useState(false);
+  const [title,setTitle] = useState("");
   const [copied,setCopied] = useState(false);
   useEffect(() => {
     if (!video.remote) return;
@@ -47,7 +49,11 @@ export function RecordingPage({video,profile,onBack,refresh}) {
     <button className="quiet inline-flex items-center gap-2" onClick={onBack}><ArrowLeft size={15}/> Recording studio</button>
     <header className="my-5">
       <p className="text-sm text-muted">{profile.name} · {new Date(video.created).toLocaleString()}</p>
-      <h2 className="mt-1 text-3xl font-medium tracking-tight">Recording saved</h2>
+      {editing ? <form className="mt-2 flex flex-wrap gap-2" onSubmit={e => {
+        e.preventDefault(); run("Rename",async()=>{await api.renameRecording(video.id,title);await refresh();setEditing(false);});
+      }}><input aria-label="Title in glint" placeholder="Recording title" autoFocus maxLength={160} value={title} onChange={e=>setTitle(e.target.value)}/><button disabled={!!busy || !title.trim()}>Save title</button><button type="button" onClick={()=>setEditing(false)}>Cancel</button></form> :
+      <div className="mt-1 flex items-center gap-3"><h2 className="break-words text-3xl font-medium tracking-tight">{video.title || "Recording saved"}</h2><button className="quiet" onClick={()=>{setTitle(video.title || "");setEditing(true);}}>{video.title ? "Edit title" : "Add title"}</button></div>}
+      {video.durationMs > 0 && <p className="mt-1 text-sm text-muted">{Math.floor(video.durationMs/60000)}m {Math.floor(video.durationMs/1000)%60}s</p>}
     </header>
     <video controls playsInline preload="metadata" aria-label="Local recording" src={"clip://library/"+video.id} className="aspect-video max-h-[48vh] w-full rounded-xl bg-deep"/>
     <div className="my-4 flex flex-wrap items-center gap-2">

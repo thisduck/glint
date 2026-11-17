@@ -45,6 +45,9 @@ class Store {
     }
     if (!this.db.prepare("PRAGMA table_info(videos)").all().some(c => c.name === "uploadError"))
       this.db.exec("ALTER TABLE videos ADD COLUMN uploadError TEXT");
+    const videoColumns = this.db.prepare("PRAGMA table_info(videos)").all().map(c => c.name);
+    if (!videoColumns.includes("title")) this.db.exec("ALTER TABLE videos ADD COLUMN title TEXT");
+    if (!videoColumns.includes("durationMs")) this.db.exec("ALTER TABLE videos ADD COLUMN durationMs INTEGER");
   }
   setPrivacy(profile, privacy) {
     if (!["private","link","folder"].includes(privacy)) throw Error("Unknown sharing preference.");
