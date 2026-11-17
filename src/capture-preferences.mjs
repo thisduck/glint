@@ -3,7 +3,13 @@ const key = (id, option) => "glint.profile." + id + ".pending." + option;
 
 // Reloading the renderer can load newer UI while the original desktop process
 // still owns the database. Keep explicit choices until that process upgrades.
-export async function saveCaptureSwitch(api, storage, profile, option, enabled) {
+export async function saveCaptureSwitch(
+  api,
+  storage,
+  profile,
+  option,
+  enabled,
+) {
   if (!switches.includes(option) || typeof enabled !== "boolean")
     throw Error("Invalid capture preference.");
   if (profile.canSaveCaptureOptions && api.setCaptureOption) {
@@ -32,4 +38,29 @@ export async function loadProfiles(api, storage) {
     }
   }
   return profiles;
+}
+
+export function loadCameraFrame(storage, id) {
+  const fallback = { x: 1, y: 1, scale: 0.23 };
+  try {
+    const point = JSON.parse(
+      storage.getItem("glint.profile." + id + ".cameraFrame"),
+    );
+    if (
+      point &&
+      [point.x, point.y].every((n) => Number.isFinite(n) && n >= 0 && n <= 1) &&
+      Number.isFinite(point.scale) &&
+      point.scale >= 0.1 &&
+      point.scale <= 0.48
+    )
+      return point;
+  } catch {}
+  return fallback;
+}
+
+export function saveCameraFrame(storage, id, point) {
+  storage.setItem(
+    "glint.profile." + id + ".cameraFrame",
+    JSON.stringify(point),
+  );
 }

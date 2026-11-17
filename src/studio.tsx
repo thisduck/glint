@@ -17,7 +17,11 @@ import {
 } from "lucide-react";
 import { RecordingLibrary } from "./recording-library";
 import { RecordingPage } from "./recording-page";
-import { saveCaptureSwitch } from "./capture-preferences.mjs";
+import {
+  saveCaptureSwitch,
+  loadCameraFrame,
+  saveCameraFrame,
+} from "./capture-preferences.mjs";
 import { cameraComposition } from "./camera.mjs";
 import { openMicrophone } from "./microphone.mjs";
 import { SourcePicker, type CaptureSource } from "./source-picker";
@@ -215,15 +219,26 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   }
   const capture = useRef<MediaStream | null>(null);
   const composition = useRef(null);
-  const cameraPosition = useRef({ x: 1, y: 1, scale: 0.23 });
-  const [cameraScale, setCameraScale] = useState(0.23);
+  const [initialFrame] = useState(() =>
+    loadCameraFrame(localStorage, profile.id),
+  );
+  const cameraPosition = useRef(initialFrame);
+  const [cameraScale, setCameraScale] = useState(initialFrame.scale);
+  const controlsKey = "glint.profile." + profile.id + ".controlsOpen";
+  const [controlsOpen, setControlsOpen] = useState(
+    () => localStorage.getItem(controlsKey) === "true",
+  );
+  function updateCameraFrame(changes) {
+    cameraPosition.current = { ...cameraPosition.current, ...changes };
+    setCameraScale(cameraPosition.current.scale);
+    saveCameraFrame(localStorage, profile.id, cameraPosition.current);
+  }
   const [cameraLive, setCameraLive] = useState(false);
   const cameraOn = source ? cameraLive : cameraEnabled;
   useEffect(
     () =>
       api.onCameraPosition?.((point) => {
-        cameraPosition.current = { ...cameraPosition.current, ...point };
-        setCameraScale(cameraPosition.current.scale);
+        updateCameraFrame(point);
       }),
     [],
   );
@@ -247,25 +262,41 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         .catch((e) => fail(e.message));
   }, [cameraOn, cameraScale, mic, busy, phase]);
   function resizeCamera(scale) {
-    cameraPosition.current = { ...cameraPosition.current, scale };
-    setCameraScale(scale);
+    updateCameraFrame({ scale });
   }
   async function toggleCamera(enabled) {
-    await action(enabled && capture.current ? "Opening camera…" : "Saving camera preference…", async () => {
-      await saveCaptureSwitch(api, localStorage, profile, "cameraEnabled", enabled);
-      await refreshProfile();
-      if (!enabled) {
-        composition.current?.close();
-        composition.current = null;
-        setCameraLive(false);
-      } else if (capture.current) {
-        await attachCamera(capture.current);
-      }
-    });
+    await action(
+      enabled && capture.current
+        ? "Opening camera…"
+        : "Saving camera preference…",
+      async () => {
+        await saveCaptureSwitch(
+          api,
+          localStorage,
+          profile,
+          "cameraEnabled",
+          enabled,
+        );
+        await refreshProfile();
+        if (!enabled) {
+          composition.current?.close();
+          composition.current = null;
+          setCameraLive(false);
+        } else if (capture.current) {
+          await attachCamera(capture.current);
+        }
+      },
+    );
   }
   function setToolbar(enabled) {
     return action("Saving toolbar preference…", async () => {
-      await saveCaptureSwitch(api, localStorage, profile, "toolbarEnabled", enabled);
+      await saveCaptureSwitch(
+        api,
+        localStorage,
+        profile,
+        "toolbarEnabled",
+        enabled,
+      );
       await refreshProfile();
     });
   }
@@ -361,15 +392,14 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     const inset =
       Math.min(bounds.width, bounds.height) *
       (0.025 + cameraPosition.current.scale / 2);
-    cameraPosition.current = {
-      ...cameraPosition.current,
+    updateCameraFrame({
       x: clamp(
         (event.clientX - bounds.left - inset) / (bounds.width - 2 * inset),
       ),
       y: clamp(
         (event.clientY - bounds.top - inset) / (bounds.height - 2 * inset),
       ),
-    };
+    });
   }
   async function start() {
     if (startPending.current || recorder.current || phase !== "idle") return;
@@ -733,7 +763,15 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
               </p>
             )}
           </section>
-          <details className="setup-option setup-more">
+          <details
+            className="setup-option setup-more"
+            open={controlsOpen}
+            onToggle={(event) => {
+              const open = event.currentTarget.open;
+              setControlsOpen(open);
+              localStorage.setItem(controlsKey, String(open));
+            }}
+          >
             <summary>
               <SlidersHorizontal size={15} />
               Recording controls
