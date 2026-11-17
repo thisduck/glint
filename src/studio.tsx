@@ -129,18 +129,82 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   }
   return (
     <>
-      <section>
-        <h2>Google Drive</h2>
-        <p>
-          {profile.folderName
-            ? (accounts.find((a) => a.id === profile.account)?.email ||
-                "Google Drive") +
-              " → " +
-              profile.folderName
-            : "Saving locally"}
-        </p>
+      {busy && <p role="status">{busy}</p>}
+      {notice && <p role="status">{notice}</p>}
+      <section className="console">
+        <div className="stage">
+          <div className="monitor" aria-hidden="true">
+            <i />
+          </div>
+          <h3>
+            {sources.find((s) => s.id === source)?.name ||
+              "Choose a capture source"}
+          </h3>
+          {phase === "recording" && (
+            <span role="status">Recording in progress</span>
+          )}
+          <button disabled={phase !== "idle"} onClick={load}>
+            {sources.length ? "Refresh sources" : "Choose screen or window"}
+          </button>
+          {!!sources.length && (
+            <select
+              aria-label="Capture source"
+              disabled={phase !== "idle"}
+              value={source}
+              onChange={(e) => choose(e.target.value)}
+            >
+              {sources.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+        <div className="transport">
+          <label>
+            <input
+              type="checkbox"
+              checked={mic}
+              disabled={phase !== "idle"}
+              onChange={(e) => setMic(e.target.checked)}
+            />
+            Microphone
+          </label>
+          <button
+            className="primary"
+            disabled={
+              !!busy || (phase === "idle" ? !source : phase !== "recording")
+            }
+            onClick={() =>
+              phase === "recording" ? recorder.current.stop() : start()
+            }
+          >
+            {
+              {
+                idle: "Start recording",
+                recording: "Stop recording",
+                starting: "Starting…",
+                saving: "Saving…",
+              }[phase]
+            }
+          </button>
+        </div>
+      </section>
+      <details className="destination">
+        <summary>
+          <strong>Destination</strong>
+          <span>
+            {profile.folderName
+              ? (accounts.find((a) => a.id === profile.account)?.email ||
+                  "Google Drive") +
+                " / " +
+                profile.folderName
+              : "Local recordings"}
+          </span>
+        </summary>
         <fieldset disabled={!!busy || phase !== "idle"}>
-          <legend>Destination</legend>
+          <legend>Google Drive</legend>
           <select
             aria-label="Google account"
             value={account}
@@ -175,57 +239,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             Choose folder
           </button>
         </fieldset>
-      </section>
-      {busy && <p role="status">{busy}</p>}
-      {notice && <p role="status">{notice}</p>}
-      <section>
-        <h2>Record</h2>
-        <button disabled={phase !== "idle"} onClick={load}>
-          {sources.length ? "Refresh sources" : "Choose screen or window"}
-        </button>
-        {!!sources.length && (
-          <select
-            aria-label="Capture source"
-            disabled={phase !== "idle"}
-            value={source}
-            onChange={(e) => choose(e.target.value)}
-          >
-            {sources.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        )}
-        <label>
-          <input
-            type="checkbox"
-            checked={mic}
-            disabled={phase !== "idle"}
-            onChange={(e) => setMic(e.target.checked)}
-          />
-          Microphone
-        </label>
-        <button
-          className="primary"
-          disabled={
-            !!busy || (phase === "idle" ? !source : phase !== "recording")
-          }
-          onClick={() =>
-            phase === "recording" ? recorder.current.stop() : start()
-          }
-        >
-          {
-            {
-              idle: "Start recording",
-              recording: "Stop recording",
-              starting: "Starting…",
-              saving: "Saving…",
-            }[phase]
-          }
-        </button>
-      </section>
-      <section>
+      </details>
+      <section className="library">
         <h2>Recordings</h2>
         {preview && <video controls src={"clip://library/" + preview} />}
         {!videos.length && (

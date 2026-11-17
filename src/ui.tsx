@@ -34,43 +34,46 @@ function App() {
   }
   return (
     <main>
-      <header>
-        <h1>cinderella</h1>
-        <span>Recording studio</span>
-      </header>
-      <section>
-        <label>
-          Profile{" "}
-          <select
+      <aside>
+        <h1>
+          <i aria-hidden="true" className="brand-mark" />
+          cinderella
+        </h1>
+        <h2 className="rail-label">Profiles</h2>
+        <nav aria-label="Profiles">
+          {profiles.map((p) => (
+            <button
+              key={p.id}
+              className="profile-tab"
+              aria-current={p.id === profile?.id ? "true" : undefined}
+              disabled={locked}
+              onClick={() => choose(p.id)}
+            >
+              <span aria-hidden="true">{p.name.slice(0, 1).toUpperCase()}</span>
+              {p.name}
+            </button>
+          ))}
+        </nav>
+        <div className="profile-actions">
+          <button
             disabled={locked}
-            value={profile?.id || ""}
-            onChange={(e) => choose(Number(e.target.value))}
+            onClick={() => {
+              setEdit(0);
+              setName("");
+            }}
           >
-            {profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          disabled={locked}
-          onClick={() => {
-            setEdit(0);
-            setName("");
-          }}
-        >
-          Add profile
-        </button>
-        <button
-          disabled={locked || !profile}
-          onClick={() => {
-            setEdit(profile.id);
-            setName(profile.name);
-          }}
-        >
-          Rename
-        </button>
+            Add profile
+          </button>
+          <button
+            disabled={locked || !profile}
+            onClick={() => {
+              setEdit(profile.id);
+              setName(profile.name);
+            }}
+          >
+            Rename
+          </button>
+        </div>
         {!locked && edit !== null && (
           <form onSubmit={save}>
             <input
@@ -87,17 +90,22 @@ function App() {
             </button>
           </form>
         )}
-      </section>
-      {profile && (
-        <Studio
-          key={profile.id}
-          profile={profile}
-          refreshProfile={refresh}
-          lock={lock}
-          fail={fail}
-        />
-      )}
-      {error && <p role="alert">{error}</p>}
+      </aside>
+      <div className="workspace">
+        <header>
+          <h2>Recording studio</h2>
+        </header>
+        {profile && (
+          <Studio
+            key={profile.id}
+            profile={profile}
+            refreshProfile={refresh}
+            lock={lock}
+            fail={fail}
+          />
+        )}
+        {error && <p role="alert">{error}</p>}
+      </div>
     </main>
   );
 }
