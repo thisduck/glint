@@ -8,6 +8,7 @@ const methods = [
   "append",
   "end",
   "list",
+  "setAutoUpload",
   "driveConfigured",
   "accounts",
   "connect",

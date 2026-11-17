@@ -21,6 +21,8 @@ A reported issue showed “The capture source closed” immediately after pressi
 
 Click **Connect Google account** to sign in through your browser. Select a connected account and click **Choose folder** to apply the destination to the current profile. The app requests per-file Drive access. It encrypts refresh tokens using Electron safeStorage and the macOS Keychain.
 
+Enable **Auto-upload new recordings to Drive** after choosing a folder. This preference belongs to the profile. glint saves each recording locally, then uploads it in the background. Pending uploads resume when glint reopens. If an upload fails, use **Retry Drive upload** in the recording library.
+
 **Save to Drive** streams the local file directly to Google. Recordings keep the destination selected at capture time. For a recording made without a destination, the first upload uses its profile's configured folder. An interrupted upload can be retried. **Copy link** copies the Drive viewing URL. **Open in Drive** opens the file where you can change sharing permissions.
 
 ## Publisher and source-build setup

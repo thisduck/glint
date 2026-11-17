@@ -9,6 +9,31 @@ class Uploads {
       "CREATE TABLE IF NOT EXISTS upload_ids(video TEXT PRIMARY KEY, driveId TEXT NOT NULL)",
     );
   }
+  async drain() {
+    if (this.draining) return;
+    this.draining = true;
+    try {
+      for (;;) {
+        const next = this.library.db
+          .prepare(
+            "SELECT id FROM videos WHERE ready=1 AND uploadState='pending' AND remote IS NULL ORDER BY created LIMIT 1",
+          )
+          .get();
+        if (!next) break;
+        try {
+          await this.send(next.id);
+        } catch {
+          this.library.db
+            .prepare(
+              "UPDATE videos SET uploadState='failed' WHERE id=? AND remote IS NULL",
+            )
+            .run(next.id);
+        }
+      }
+    } finally {
+      this.draining = false;
+    }
+  }
   async send(id) {
     if (this.busy.has(id)) throw Error("Upload already running");
     this.busy.add(id);
@@ -46,7 +71,10 @@ class Uploads {
       .prepare("SELECT driveId FROM upload_ids WHERE video=?")
       .get(id)?.driveId;
     const finish = () => {
-      db.prepare("UPDATE videos SET remote=? WHERE id=?").run(driveId, id);
+      db.prepare("UPDATE videos SET remote=?,uploadState=NULL WHERE id=?").run(
+        driveId,
+        id,
+      );
       return driveId;
     };
     if (driveId) {

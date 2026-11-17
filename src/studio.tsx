@@ -11,13 +11,16 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   const [phase, setPhase] = useState("idle"),
     [videos, setVideos] = useState([]),
     [preview, play] = useState("");
-  const [configured,setConfigured]=useState(false);
+  const [configured, setConfigured] = useState(false);
   const [accounts, setAccounts] = useState([]),
     [account, setAccount] = useState(profile.account || ""),
     [busy, setBusy] = useState(""),
     [notice, setNotice] = useState("");
   useEffect(() => {
-    api.driveConfigured().then(setConfigured).catch(e=>fail(e.message));
+    api
+      .driveConfigured()
+      .then(setConfigured)
+      .catch((e) => fail(e.message));
     api
       .accounts()
       .then(setAccounts)
@@ -44,6 +47,26 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   useEffect(() => {
     refresh().catch((e) => fail(e.message));
   }, []);
+  const pendingUploads = videos.some((v) => v.uploadState === "pending");
+  useEffect(() => {
+    if (!pendingUploads) return;
+    let active = true;
+    let timer;
+    const poll = async () => {
+      try {
+        const rows = await api.list(profile.id);
+        if (active) setVideos(rows);
+      } catch (e) {
+        if (active) fail(e.message);
+      }
+      if (active) timer = setTimeout(poll, 1500);
+    };
+    timer = setTimeout(poll, 1500);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [pendingUploads, profile.id]);
   const capture = useRef<MediaStream | null>(null);
   const previewVideo = useRef<HTMLVideoElement>(null);
   const mounted = useRef(true);
@@ -317,7 +340,12 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         <Collapsible.Content>
           <fieldset disabled={!!busy || phase !== "idle"}>
             <legend>Google Drive</legend>
-            {!configured && <p>This build uses local storage. Google Drive requires a configured glint build.</p>}
+            {!configured && (
+              <p>
+                This build uses local storage. Google Drive requires a
+                configured glint build.
+              </p>
+            )}
             {!!accounts.length && (
               <ChoiceSelect
                 label="Google account"
@@ -327,7 +355,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                 options={accounts.map((a) => ({ value: a.id, label: a.email }))}
               />
             )}
-            <button disabled={!configured}
+            <button
+              disabled={!configured}
               onClick={() =>
                 action("Connecting…", async () => {
                   setAccount(await api.connect());
@@ -349,6 +378,23 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
               >
                 Choose folder
               </button>
+            )}
+            {configured && profile.account && profile.folder && (
+              <label className="flex w-full cursor-pointer items-center gap-2 py-2">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={Boolean(profile.autoUpload)}
+                  onChange={(e) => {
+                    const enabled = e.target.checked;
+                    action("Saving preference…", async () => {
+                      await api.setAutoUpload(profile.id, enabled);
+                      await refreshProfile();
+                    });
+                  }}
+                />{" "}
+                Auto-upload new recordings to Drive
+              </label>
             )}
           </fieldset>
         </Collapsible.Content>
@@ -396,7 +442,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             ) : (
               <button
                 disabled={
-                  !!busy || phase !== "idle" || !(v.folder || profile.folder)
+                  !!busy ||
+                  phase !== "idle" ||
+                  v.uploadState === "pending" ||
+                  !(v.folder || profile.folder)
                 }
                 onClick={() =>
                   action("Uploading…", async () => {
@@ -405,7 +454,11 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                   })
                 }
               >
-                Save to Drive
+                {v.uploadState === "pending"
+                  ? "Uploading…"
+                  : v.uploadState === "failed"
+                    ? "Retry Drive upload"
+                    : "Save to Drive"}
               </button>
             )}
           </article>

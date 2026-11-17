@@ -70,3 +70,42 @@ test("account list omits credentials and missing OAuth settings fail before open
   );
   await assert.rejects(g.connect(), /GOOGLE_CLIENT_ID/);
 });
+
+test("auto-upload is opt-in, snapshots the folder and resumes saved work", async (t) => {
+  const store = new Store(":memory:"),
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), "glint-auto-"));
+  t.after(() => fs.rmSync(dir, { recursive: true }));
+  const lib = new Library(store, dir);
+  assert.throws(() => store.setAutoUpload(1, true), /folder/);
+  store.db
+    .prepare("UPDATE profiles SET account='work',folder='old' WHERE id=1")
+    .run();
+  store.setAutoUpload(1, true);
+  function record(profile) {
+    const id = lib.begin(profile);
+    lib.append(id, [1]);
+    lib.end(id);
+    return id;
+  }
+  const automatic = record(1),
+    local = record(2);
+  store.setAutoUpload(1, false);
+  store.db.prepare("UPDATE profiles SET folder='new' WHERE id=1").run();
+  const manual = record(1),
+    calls = [];
+  const worker = new Uploads(lib, {
+    access: async (account) => {
+      calls.push(account);
+      throw Error("offline");
+    },
+  });
+  await Promise.all([worker.drain(), worker.drain()]);
+  const row = (id) =>
+    store.db.prepare("SELECT * FROM videos WHERE id=?").get(id);
+  assert.deepEqual(calls, ["work"]);
+  assert.equal(row(automatic).uploadState, "failed");
+  assert.equal(row(automatic).folder, "old");
+  assert.equal(row(manual).uploadState, null);
+  assert.equal(row(local).uploadState, null);
+  assert.ok(fs.existsSync(lib.file(automatic)));
+});

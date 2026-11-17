@@ -11,7 +11,7 @@ class Library {
       .prepare("SELECT id FROM videos WHERE ready=0")
       .all()) {
       if (fs.existsSync(this.file(id)) && fs.statSync(this.file(id)).size)
-        this.finishRow(id);
+        this.finishRow(id, false);
       else this.remove(id);
     }
   }
@@ -29,9 +29,16 @@ class Library {
     if (!row) throw Error("Choose a profile");
     this.db
       .prepare(
-        "INSERT INTO videos(id,created,profile,account,folder) VALUES(?,?,?,?,?)",
+        "INSERT INTO videos(id,created,profile,account,folder,uploadState) VALUES(?,?,?,?,?,?)",
       )
-      .run(id, created, profile, row.account, row.folder);
+      .run(
+        id,
+        created,
+        profile,
+        row.account,
+        row.folder,
+        row.autoUpload && row.account && row.folder ? "pending" : null,
+      );
     const fd = fs.openSync(this.file(id), "wx");
     this.open = { id, fd };
     return id;
@@ -40,8 +47,12 @@ class Library {
     if (this.open?.id !== id) throw Error("Recording is closed");
     fs.writeFileSync(this.open.fd, Buffer.from(bytes));
   }
-  finishRow(id) {
-    this.db.prepare("UPDATE videos SET ready=1 WHERE id=?").run(id);
+  finishRow(id, complete = true) {
+    this.db
+      .prepare(
+        "UPDATE videos SET ready=1,uploadState=CASE WHEN ? THEN uploadState ELSE NULL END WHERE id=?",
+      )
+      .run(Number(complete), id);
   }
   remove(id) {
     fs.rmSync(this.file(id), { force: true });
