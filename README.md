@@ -54,3 +54,15 @@ For a desktop smoke test, add a profile, rename it, restart, and confirm its nam
 Each profile remembers its recording microphone and whether microphone capture is on. Choose **System default** to follow the computer’s input setting. If a preferred input is unavailable, glint tries the system default and remembers the preferred input for later recordings.
 
 In the destination panel, open **Manage accounts** to reconnect an email or disconnect it from glint. Disconnecting clears the saved Drive destination and turns off auto-upload for every profile using that account.
+
+### Camera and recording controls
+
+After selecting a screen or window, turn on **Camera bubble** and drag on the preview to place it. During recording you can drag the dot in the floating toolbar or choose a corner from the menu bar. The camera is composited into the saved video.
+
+Drag the floating toolbar by its grip. Use **Pause**, **Resume**, **Stop**, or **Hide**. The menu bar can restore the toolbar. Floating controls default to visible for a window capture and hidden for a whole display, where macOS can capture floating windows.
+
+### Editing and managing a recording
+
+Choose **Full-screen editor** above the video for a larger view with the timeline. Choose **Cut sections**, mark a range, then **Add cut**. Add more ranges or click a range’s × to undo it. **Preview clip** skips marked sections. **Save clip as copy** exports the edit with its audio.
+
+Use **Change link access** on an uploaded recording to grant anyone-with-link viewing or remove that file’s public link grant. Folder permissions and organization policies still apply. **Delete recording** moves the local video to the Mac’s Trash. Select the separate Drive option to also move its upload to Drive Trash.
