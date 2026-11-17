@@ -370,7 +370,7 @@ app.whenReady().then(() => {
       .map((v) => ({ ...v, progress: uploads.progress.get(v.id) })),
   );
   handle("profiles", () =>
-    store.profiles().map((profile) => ({ ...profile, canSetPrivacy: true })),
+    store.profiles().map((profile) => ({ ...profile, canSetPrivacy: true, canSaveCaptureOptions: true })),
   );
   handle("save", (name, id) => store.save(name, id));
   win = new BrowserWindow({

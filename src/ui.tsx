@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
+import { loadProfiles } from "./capture-preferences.mjs";
 import { Studio } from "./studio";
 import { Logo } from "./logo";
 import * as Popover from "@radix-ui/react-popover";
@@ -32,7 +33,7 @@ function App() {
   }, [theme]);
   const [locked, lock] = useState(false);
   async function refresh() {
-    setProfiles(await api.profiles());
+    setProfiles(await loadProfiles(api, localStorage));
   }
   useEffect(() => {
     refresh().catch((e) => fail(e.message));

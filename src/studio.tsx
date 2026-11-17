@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { RecordingLibrary } from "./recording-library";
 import { RecordingPage } from "./recording-page";
+import { saveCaptureSwitch } from "./capture-preferences.mjs";
 import { cameraComposition } from "./camera.mjs";
 import { openMicrophone } from "./microphone.mjs";
 import { SourcePicker, type CaptureSource } from "./source-picker";
@@ -251,7 +252,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   }
   async function toggleCamera(enabled) {
     await action(enabled && capture.current ? "Opening camera…" : "Saving camera preference…", async () => {
-      await api.setCaptureOption(profile.id, "cameraEnabled", enabled);
+      await saveCaptureSwitch(api, localStorage, profile, "cameraEnabled", enabled);
       await refreshProfile();
       if (!enabled) {
         composition.current?.close();
@@ -264,7 +265,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   }
   function setToolbar(enabled) {
     return action("Saving toolbar preference…", async () => {
-      await api.setCaptureOption(profile.id, "toolbarEnabled", enabled);
+      await saveCaptureSwitch(api, localStorage, profile, "toolbarEnabled", enabled);
       await refreshProfile();
     });
   }
