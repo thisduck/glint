@@ -1,9 +1,18 @@
-const test=require("node:test"),assert=require("node:assert/strict");
-test("camera bubble fits landscape and portrait captures in all four corners",async()=>{
-  const {bubbleBounds}=await import("../src/camera.mjs");
-  for(const [width,height] of [[1920,1080],[720,1280]])for(const x of [0,1])for(const y of [0,1]){
-    const b=bubbleBounds(width,height,{x,y});
-    assert.ok(b.x>0 && b.y>0 && b.x+b.size<width && b.y+b.size<height);
-    assert.equal(b.x>width/2,!!x);assert.equal(b.y>height/2,!!y);
-  }
+const test = require("node:test"),
+  assert = require("node:assert/strict");
+test("camera bubble fits landscape and portrait captures in all four corners", async () => {
+  const { bubbleBounds } = await import("../src/camera.mjs");
+  for (const [width, height] of [
+    [1920, 1080],
+    [720, 1280],
+  ])
+    for (const x of [0, 1])
+      for (const y of [0, 1]) {
+        const b = bubbleBounds(width, height, { x, y });
+        assert.ok(
+          b.x > 0 && b.y > 0 && b.x + b.size < width && b.y + b.size < height,
+        );
+        assert.equal(b.x > width / 2, !!x);
+        assert.equal(b.y > height / 2, !!y);
+      }
 });

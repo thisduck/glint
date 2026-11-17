@@ -88,15 +88,27 @@ app.whenReady().then(() => {
   );
   handle("folder", (profile, account) => google.folder(profile, account));
   const editingFiles = new Set();
-  async function editFile(id,operation) {
-    const video=store.db.prepare("SELECT * FROM videos WHERE id=? AND ready=1").get(id);
-    if(!video) throw Error("Recording unavailable.");
-    if(editingFiles.has(id) || uploads.busy.has(id) || video.uploadState==="pending") throw Error("Wait for the current operation to finish.");
+  async function editFile(id, operation) {
+    const video = store.db
+      .prepare("SELECT * FROM videos WHERE id=? AND ready=1")
+      .get(id);
+    if (!video) throw Error("Recording unavailable.");
+    if (
+      editingFiles.has(id) ||
+      uploads.busy.has(id) ||
+      video.uploadState === "pending"
+    )
+      throw Error("Wait for the current operation to finish.");
     editingFiles.add(id);
-    try {return await operation(video);} finally {editingFiles.delete(id);}
+    try {
+      return await operation(video);
+    } finally {
+      editingFiles.delete(id);
+    }
   }
   handle("upload", (id) => {
-    if(editingFiles.has(id)) throw Error("Wait for the recording change to finish.");
+    if (editingFiles.has(id))
+      throw Error("Wait for the recording change to finish.");
     const queued = store.db
       .prepare(
         "UPDATE videos SET uploadState='pending',uploadError=NULL WHERE id=? AND ready=1 AND (remote IS NULL OR uploadState='failed')",
@@ -133,19 +145,34 @@ app.whenReady().then(() => {
       link: info.webViewLink,
     };
   }
-  handle("deleteRecording",(id,alsoDrive)=>editFile(id,async video=>{
-    if(alsoDrive===true && video.remote) await google.trashFile(video.remote,video.account);
-    await library.trash(id,file=>shell.trashItem(file));
-  }));
+  handle("deleteRecording", (id, alsoDrive) =>
+    editFile(id, async (video) => {
+      if (alsoDrive === true && video.remote)
+        await google.trashFile(video.remote, video.account);
+      await library.trash(id, (file) => shell.trashItem(file));
+    }),
+  );
   handle("driveDetails", driveDetails);
-  handle("setFileAccess",(id,privacy)=>editFile(id,async video=>{
-    if(!["folder","private","link"].includes(privacy)) throw Error("Unknown access setting.");
-    if(video.remote) {
-      if(privacy==="private") throw Error("Choose restricted link access for uploaded files.");
-      await google.changeLink(video.remote,{Authorization:"Bearer "+await google.access(video.account)},privacy==="link");
-    }
-    store.db.prepare("UPDATE videos SET privacy=?,uploadState=CASE WHEN remote IS NULL THEN uploadState ELSE NULL END,uploadError=CASE WHEN remote IS NULL THEN uploadError ELSE NULL END WHERE id=?").run(privacy,id);
-  }));
+  handle("setFileAccess", (id, privacy) =>
+    editFile(id, async (video) => {
+      if (!["folder", "private", "link"].includes(privacy))
+        throw Error("Unknown access setting.");
+      if (video.remote) {
+        if (privacy === "private")
+          throw Error("Choose restricted link access for uploaded files.");
+        await google.changeLink(
+          video.remote,
+          { Authorization: "Bearer " + (await google.access(video.account)) },
+          privacy === "link",
+        );
+      }
+      store.db
+        .prepare(
+          "UPDATE videos SET privacy=?,uploadState=CASE WHEN remote IS NULL THEN uploadState ELSE NULL END,uploadError=CASE WHEN remote IS NULL THEN uploadError ELSE NULL END WHERE id=?",
+        )
+        .run(privacy, id);
+    }),
+  );
   handle("reveal", (id) => shell.showItemInFolder(library.file(id)));
   handle("share", async (id, copy) => {
     const { info } = await uploadedFile(id);
@@ -194,25 +221,29 @@ app.whenReady().then(() => {
     if (!win.isDestroyed()) win.show();
   }
   handle("showStudio", restoreStudio);
-  handle("recordingMenu", (showToolbar,cameraOn,position) => {
+  handle("recordingMenu", (showToolbar, cameraOn, position) => {
     if (!library.open || closeRecordingMenu)
       throw Error("Recording unavailable.");
     closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(
       () => win.webContents.send("stopRecording"),
       () => win.webContents.send("toggleRecording"),
-      showToolbar===true,
-      cameraOn ? point=>win.webContents.send("cameraPosition",point) : null,
-      position || {x:1,y:1},
+      showToolbar === true,
+      cameraOn
+        ? (point) => win.webContents.send("cameraPosition", point)
+        : null,
+      position || { x: 1, y: 1 },
     );
   });
-  handle("recordingStatus",(paused,ms)=>closeRecordingMenu?.update(paused,ms));
+  handle("recordingStatus", (paused, ms) =>
+    closeRecordingMenu?.update(paused, ms),
+  );
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
   handle("filmstrip", (id) =>
     require("./filmstrip.cjs").filmstrip(library, id),
   );
-  handle("trimRecording", (id, start, end,cuts) =>
-    require("./trim.cjs").trimRecording(library, id, start, end,cuts),
+  handle("trimRecording", (id, start, end, cuts) =>
+    require("./trim.cjs").trimRecording(library, id, start, end, cuts),
   );
   handle("renameRecording", (id, title) => library.rename(id, title));
   handle("end", (id, complete = true, durationMs, issue) => {

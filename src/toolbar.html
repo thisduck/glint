@@ -1,5 +1,82 @@
-<!doctype html><html lang="en"><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><title>glint recording controls</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#1b2236;color:white;height:60px;display:flex;align-items:center;justify-content:space-evenly;gap:5px;padding:8px;font:14px "Helvetica Neue",sans-serif;-webkit-app-region:drag}time{font-variant-numeric:tabular-nums}i{background:#ff797b;border-radius:50%;width:9px;height:9px}.paused i{background:#ffca70}button{font:inherit;color:inherit;background:#333d58;border:0;border-radius:7px;padding:7px;cursor:pointer;-webkit-app-region:no-drag}button:hover{background:#485674}
-#position{position:relative;width:64px;height:36px;padding:0;touch-action:none;background:#101626;border:1px solid #8490b1}#position b{position:absolute;width:9px;height:9px;border-radius:50%;background:#b9c7ff;pointer-events:none}
-</style><body><span aria-hidden="true">⠿</span><i></i><time>0:00</time><button id="pause" data-command="toggle">Pause</button><button data-command="stop">Stop</button><button hidden id="position" title="Drag to position camera" aria-label="Camera position, drag or use arrow keys"><b></b></button><button data-command="hide">Hide</button></body></html>
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" /><meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'none'; style-src 'unsafe-inline'"
+  /><title>glint recording controls</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: #1b2236;
+      color: white;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-evenly;
+      gap: 5px;
+      padding: 8px;
+      font:
+        14px "Helvetica Neue",
+        sans-serif;
+      -webkit-app-region: drag;
+    }
+    time {
+      font-variant-numeric: tabular-nums;
+    }
+    i {
+      background: #ff797b;
+      border-radius: 50%;
+      width: 9px;
+      height: 9px;
+    }
+    .paused i {
+      background: #ffca70;
+    }
+    button {
+      font: inherit;
+      color: inherit;
+      background: #333d58;
+      border: 0;
+      border-radius: 7px;
+      padding: 7px;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+    }
+    button:hover {
+      background: #485674;
+    }
+    #position {
+      position: relative;
+      width: 64px;
+      height: 36px;
+      padding: 0;
+      touch-action: none;
+      background: #101626;
+      border: 1px solid #8490b1;
+    }
+    #position b {
+      position: absolute;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #b9c7ff;
+      pointer-events: none;
+    }
+  </style>
+  <body>
+    <span aria-hidden="true">⠿</span><i></i><time>0:00</time
+    ><button id="pause" data-command="toggle">Pause</button
+    ><button data-command="stop">Stop</button
+    ><button
+      hidden
+      id="position"
+      title="Drag to position camera"
+      aria-label="Camera position, drag or use arrow keys"
+    >
+      <b></b></button
+    ><button data-command="hide">Hide</button>
+  </body>
+</html>

@@ -11,8 +11,8 @@ const api = window.desk;
 export function Studio({ profile, refreshProfile, lock, fail }) {
   const [source, choose] = useState<CaptureSource | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [toolbar,setToolbar]=useState<boolean|null>(null);
-  const showToolbar=toolbar ?? Boolean(source?.id.startsWith("window:"));
+  const [toolbar, setToolbar] = useState<boolean | null>(null);
+  const showToolbar = toolbar ?? Boolean(source?.id.startsWith("window:"));
   const mic = Boolean(profile.micEnabled);
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const deviceRevision = useRef(0);
@@ -125,15 +125,20 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   useEffect(
     () =>
       api.onStopRecording(() => {
-        if (recorder.current && recorder.current.state !== "inactive") recorder.current.stop();
+        if (recorder.current && recorder.current.state !== "inactive")
+          recorder.current.stop();
       }),
     [],
   );
-  useEffect(()=>api.onRecordingToggle?.(()=>{
-    const r=recorder.current;
-    if(r?.state==="recording")r.pause();
-    else if(r?.state==="paused")r.resume();
-  }),[]);
+  useEffect(
+    () =>
+      api.onRecordingToggle?.(() => {
+        const r = recorder.current;
+        if (r?.state === "recording") r.pause();
+        else if (r?.state === "paused") r.resume();
+      }),
+    [],
+  );
   async function refresh() {
     setVideos(await api.list(profile.id));
   }
@@ -162,23 +167,42 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   }, [pendingUploads, profile.id]);
   const capture = useRef<MediaStream | null>(null);
   const composition = useRef(null);
-  const cameraPosition=useRef({x:1,y:1});
-  const [cameraOn,setCameraOn]=useState(false);
-  useEffect(()=>api.onCameraPosition?.(point=>{cameraPosition.current=point;}),[]);
-  async function toggleCamera(enabled){
-    if(!enabled){composition.current?.close();composition.current=null;setCameraOn(false);return;}
-    const display=capture.current;
-    if(!display)return;
-    await action("Opening camera…",async()=>{
-      const result=await cameraComposition(display,cameraPosition,()=>setNotice("Camera disconnected. Screen recording continues."));
-      if(capture.current!==display){result.close();return;}
-      composition.current=result;setCameraOn(true);
+  const cameraPosition = useRef({ x: 1, y: 1 });
+  const [cameraOn, setCameraOn] = useState(false);
+  useEffect(
+    () =>
+      api.onCameraPosition?.((point) => {
+        cameraPosition.current = point;
+      }),
+    [],
+  );
+  async function toggleCamera(enabled) {
+    if (!enabled) {
+      composition.current?.close();
+      composition.current = null;
+      setCameraOn(false);
+      return;
+    }
+    const display = capture.current;
+    if (!display) return;
+    await action("Opening camera…", async () => {
+      const result = await cameraComposition(display, cameraPosition, () =>
+        setNotice("Camera disconnected. Screen recording continues."),
+      );
+      if (capture.current !== display) {
+        result.close();
+        return;
+      }
+      composition.current = result;
+      setCameraOn(true);
     });
   }
   const previewVideo = useRef<HTMLVideoElement>(null);
   const mounted = useRef(true);
   function releaseCapture() {
-    composition.current?.close();composition.current=null;setCameraOn(false);
+    composition.current?.close();
+    composition.current = null;
+    setCameraOn(false);
     const stream = capture.current;
     capture.current = null;
     stream?.getTracks().forEach((track) => {
@@ -194,8 +218,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     };
   }, []);
   useEffect(() => {
-    if (previewVideo.current) previewVideo.current.srcObject = composition.current?.stream || capture.current;
-  }, [source, phase,cameraOn]);
+    if (previewVideo.current)
+      previewVideo.current.srcObject =
+        composition.current?.stream || capture.current;
+  }, [source, phase, cameraOn]);
   async function selectSource(item: CaptureSource) {
     setPickerOpen(false);
     setPhase("previewing");
@@ -223,7 +249,8 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         releaseCapture();
         choose(null);
         setNotice("Screen sharing ended. Choose another screen or window.");
-        if (recorder.current && recorder.current.state !== "inactive") recorder.current.stop();
+        if (recorder.current && recorder.current.state !== "inactive")
+          recorder.current.stop();
       };
       choose(item);
     } catch (e) {
@@ -235,14 +262,22 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       }
     }
   }
-  function placeCamera(event){
-    const bounds=event.currentTarget.getBoundingClientRect();
-    const clamp=n=>Math.max(0,Math.min(1,n));
-    const inset=Math.min(bounds.width,bounds.height)*0.14;
-    cameraPosition.current={x:clamp((event.clientX-bounds.left-inset)/(bounds.width-2*inset)),y:clamp((event.clientY-bounds.top-inset)/(bounds.height-2*inset))};
+  function placeCamera(event) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const clamp = (n) => Math.max(0, Math.min(1, n));
+    const inset = Math.min(bounds.width, bounds.height) * 0.14;
+    cameraPosition.current = {
+      x: clamp(
+        (event.clientX - bounds.left - inset) / (bounds.width - 2 * inset),
+      ),
+      y: clamp(
+        (event.clientY - bounds.top - inset) / (bounds.height - 2 * inset),
+      ),
+    };
   }
   async function start() {
-    let activeMs=0, startedAt,
+    let activeMs = 0,
+      startedAt,
       microphone,
       writeFailed = false;
     let tracks = [],
@@ -314,9 +349,22 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         failure = e.error || Error("Capture interrupted");
         if (r.state !== "inactive") r.stop();
       };
-      function elapsed() {return Math.round(activeMs+(startedAt==null ? 0 : performance.now()-startedAt));}
-      r.onpause=()=>{activeMs=elapsed();startedAt=null;setPhase("paused");api.recordingStatus(true,activeMs).catch(e=>fail(e.message));};
-      r.onresume=()=>{startedAt=performance.now();setPhase("recording");api.recordingStatus(false,activeMs).catch(e=>fail(e.message));};
+      function elapsed() {
+        return Math.round(
+          activeMs + (startedAt == null ? 0 : performance.now() - startedAt),
+        );
+      }
+      r.onpause = () => {
+        activeMs = elapsed();
+        startedAt = null;
+        setPhase("paused");
+        api.recordingStatus(true, activeMs).catch((e) => fail(e.message));
+      };
+      r.onresume = () => {
+        startedAt = performance.now();
+        setPhase("recording");
+        api.recordingStatus(false, activeMs).catch((e) => fail(e.message));
+      };
       r.onstop = async () => {
         const duration = elapsed();
         setPhase("saving");
@@ -337,7 +385,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         throw Error(
           "Capture ended before recording started. Choose a capture source again.",
         );
-      await api.recordingMenu(showToolbar,cameraOn,cameraPosition.current);
+      await api.recordingMenu(showToolbar, cameraOn, cameraPosition.current);
       if (failure) throw failure;
       startedAt = performance.now();
       r.start(1000);
@@ -379,8 +427,16 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           {source ? (
             <video
               title={cameraOn ? "Drag to position your camera" : undefined}
-              onPointerDown={e=>{if(cameraOn){e.currentTarget.setPointerCapture(e.pointerId);placeCamera(e);}}}
-              onPointerMove={e=>{if(cameraOn && e.currentTarget.hasPointerCapture(e.pointerId))placeCamera(e);}}
+              onPointerDown={(e) => {
+                if (cameraOn) {
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  placeCamera(e);
+                }
+              }}
+              onPointerMove={(e) => {
+                if (cameraOn && e.currentTarget.hasPointerCapture(e.pointerId))
+                  placeCamera(e);
+              }}
               aria-label="Selected capture source preview"
               ref={previewVideo}
               autoPlay
@@ -453,10 +509,30 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 bg-paper px-5 py-4">
           <div className="flex flex-wrap items-center gap-3">
-            <label className="flex items-center gap-2"><input type="checkbox" checked={showToolbar} disabled={!!busy || phase!=="idle"} onChange={e=>setToolbar(e.target.checked)}/>Floating controls</label>
-            {showToolbar && source?.id.startsWith("screen:") && <small>Controls may appear in full-display recordings.</small>}
-            <label className="flex items-center gap-2"><input type="checkbox" checked={cameraOn} disabled={!source || !!busy || phase!=="idle"} onChange={e=>toggleCamera(e.target.checked)}/>Camera bubble</label>
-            {cameraOn && <small>Drag on the preview to position your camera.</small>}
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={showToolbar}
+                disabled={!!busy || phase !== "idle"}
+                onChange={(e) => setToolbar(e.target.checked)}
+              />
+              Floating controls
+            </label>
+            {showToolbar && source?.id.startsWith("screen:") && (
+              <small>Controls may appear in full-display recordings.</small>
+            )}
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={cameraOn}
+                disabled={!source || !!busy || phase !== "idle"}
+                onChange={(e) => toggleCamera(e.target.checked)}
+              />
+              Camera bubble
+            </label>
+            {cameraOn && (
+              <small>Drag on the preview to position your camera.</small>
+            )}
             <MicrophoneCheckbox
               checked={mic}
               disabled={!!busy || phase !== "idle"}
@@ -492,9 +568,12 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           </div>
           <button
             className="min-h-11 rounded-lg border-0 bg-accent px-5 font-semibold text-white hover:bg-deep"
-            disabled={!!busy || (phase !== "idle" && phase !== "recording" && phase !== "paused")}
+            disabled={
+              !!busy ||
+              (phase !== "idle" && phase !== "recording" && phase !== "paused")
+            }
             onClick={() =>
-              (phase === "recording" || phase === "paused")
+              phase === "recording" || phase === "paused"
                 ? recorder.current.stop()
                 : source
                   ? start()
@@ -686,7 +765,12 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             <ChoiceSelect
               label="Sharing for new uploads"
               value={profile.privacy || ""}
-              disabled={!profile.canSetPrivacy || !api.setPrivacy || !!busy || phase !== "idle"}
+              disabled={
+                !profile.canSetPrivacy ||
+                !api.setPrivacy ||
+                !!busy ||
+                phase !== "idle"
+              }
               options={[
                 { value: "private", label: "Private · only me" },
                 { value: "folder", label: "Use folder access" },
@@ -699,8 +783,12 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                   "Sharing preference saved for new recordings.",
                 )
               }
-            /> 
-            {(!profile.canSetPrivacy || !api.setPrivacy) && <p className="w-full text-sm text-muted">Quit glint with ⌘Q and reopen it to enable sharing settings.</p>}
+            />
+            {(!profile.canSetPrivacy || !api.setPrivacy) && (
+              <p className="w-full text-sm text-muted">
+                Quit glint with ⌘Q and reopen it to enable sharing settings.
+              </p>
+            )}
           </div>
         )}
         <div aria-live="polite" className="text-sm text-muted">
@@ -719,8 +807,12 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         )}
         {videos.map((v) => (
           <article key={v.id}>
-            
-            <button className="group flex min-w-0 flex-1 items-center gap-3 border-transparent bg-transparent p-1 text-left" aria-label={"View recording: " + (v.title || new Date(v.created).toLocaleString())}
+            <button
+              className="group flex min-w-0 flex-1 items-center gap-3 border-transparent bg-transparent p-1 text-left"
+              aria-label={
+                "View recording: " +
+                (v.title || new Date(v.created).toLocaleString())
+              }
               disabled={!!busy || phase !== "idle"}
               onClick={() => {
                 releaseCapture();
@@ -728,9 +820,20 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                 play(v.id);
               }}
             >
-              <RecordingThumbnail video={v}/>
-              <span className="min-w-0"><span className="block truncate font-semibold">{v.title || "Screen recording"}</span>
-                <time className="mt-1 block text-xs text-muted" dateTime={v.created}>{new Date(v.created).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"})}</time>
+              <RecordingThumbnail video={v} />
+              <span className="min-w-0">
+                <span className="block truncate font-semibold">
+                  {v.title || "Screen recording"}
+                </span>
+                <time
+                  className="mt-1 block text-xs text-muted"
+                  dateTime={v.created}
+                >
+                  {new Date(v.created).toLocaleString(undefined, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </time>
               </span>
             </button>
             {v.remote ? (

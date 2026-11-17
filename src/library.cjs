@@ -70,15 +70,18 @@ class Library {
     this.db.prepare("DELETE FROM videos WHERE id=?").run(id);
   }
   async trash(id, trashItem) {
-    const file=this.file(id);
+    const file = this.file(id);
     if (fs.existsSync(file)) await trashItem(file);
-    fs.rmSync(path.join(this.dir,id+".timeline.jpg"),{force:true});
+    fs.rmSync(path.join(this.dir, id + ".timeline.jpg"), { force: true });
     this.db.exec("BEGIN");
     try {
       this.db.prepare("DELETE FROM upload_ids WHERE video=?").run(id);
       this.db.prepare("DELETE FROM videos WHERE id=?").run(id);
       this.db.exec("COMMIT");
-    } catch(error){this.db.exec("ROLLBACK");throw error;}
+    } catch (error) {
+      this.db.exec("ROLLBACK");
+      throw error;
+    }
   }
   rename(id, title) {
     if (typeof title !== "string" || !title.trim() || title.trim().length > 160)

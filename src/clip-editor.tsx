@@ -13,7 +13,7 @@ function time(seconds: number) {
 }
 
 type Marker = "start" | "end" | "playhead";
-export function ClipEditor({ video, player, busy, onSave,onDuration }) {
+export function ClipEditor({ video, player, busy, onSave, onDuration }) {
   const [duration, setDuration] = useState((video.durationMs || 0) / 1000);
   const [start, setStart] = useState(0),
     [end, setEnd] = useState<number | null>(null);
@@ -24,13 +24,15 @@ export function ClipEditor({ video, player, busy, onSave,onDuration }) {
   const rail = useRef<HTMLDivElement>(null);
   const dragging = useRef<Marker | null>(null);
   const previewEnd = useRef<number | null>(null);
-  const [cutMode,setCutMode] = useState(false);
-  const [cuts,setCuts] = useState<[number,number][]>([]);
-  const skip = useRef<[number,number][]>([]);
+  const [cutMode, setCutMode] = useState(false);
+  const [cuts, setCuts] = useState<[number, number][]>([]);
+  const skip = useRef<[number, number][]>([]);
   const out = end ?? duration;
 
-  const remaining = duration-cuts.reduce((sum,[a,b])=>sum+b-a,0);
-  const canCut = remaining-(out-start)>0.05 && !cuts.some(([a,b])=>start<b && out>a);
+  const remaining = duration - cuts.reduce((sum, [a, b]) => sum + b - a, 0);
+  const canCut =
+    remaining - (out - start) > 0.05 &&
+    !cuts.some(([a, b]) => start < b && out > a);
   useEffect(() => {
     let active = true;
     const media = player.current;
@@ -50,7 +52,8 @@ export function ClipEditor({ video, player, busy, onSave,onDuration }) {
           throw Error("Quit and reopen glint to load timeline frames.");
         const strip = await window.desk.filmstrip(video.id);
         if (active) {
-          setDuration(strip.duration);onDuration(strip.duration);
+          setDuration(strip.duration);
+          onDuration(strip.duration);
           setImage(strip.image);
         }
       } catch (e) {
@@ -61,8 +64,10 @@ export function ClipEditor({ video, player, busy, onSave,onDuration }) {
     let frame;
     function sync() {
       if (previewEnd.current !== null) {
-        const gap = skip.current.find(([a,b])=>media.currentTime>=a && media.currentTime<b);
-        if (gap) media.currentTime=gap[1];
+        const gap = skip.current.find(
+          ([a, b]) => media.currentTime >= a && media.currentTime < b,
+        );
+        if (gap) media.currentTime = gap[1];
       }
       if (
         previewEnd.current !== null &&
@@ -182,15 +187,31 @@ export function ClipEditor({ video, player, busy, onSave,onDuration }) {
         </h3>
         {duration > 0 && (
           <span className="text-sm tabular-nums text-muted">
-            {time(cutMode ? remaining : out-start)} {cutMode ? "after cuts" : "selected"}
+            {time(cutMode ? remaining : out - start)}{" "}
+            {cutMode ? "after cuts" : "selected"}
           </span>
         )}
       </div>
-      <div className="mt-3 flex gap-1" aria-label="Edit mode">{["Trim ends","Cut sections"].map((label,i)=><button key={label} disabled={!!busy} aria-pressed={Number(cutMode)===i} className="aria-pressed:bg-tint" onClick={()=>{
-        player.current.pause();setCutMode(Boolean(i));
-      }}>{label}</button>)}</div>
+      <div className="mt-3 flex gap-1" aria-label="Edit mode">
+        {["Trim ends", "Cut sections"].map((label, i) => (
+          <button
+            key={label}
+            disabled={!!busy}
+            aria-pressed={Number(cutMode) === i}
+            className="aria-pressed:bg-tint"
+            onClick={() => {
+              player.current.pause();
+              setCutMode(Boolean(i));
+            }}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       <p className="mt-1 text-sm text-muted">
-        {cutMode ? "Drag the edges around a section to remove, then add the cut." : "Drag the edges to set your clip. Click the frames to scrub."}
+        {cutMode
+          ? "Drag the edges around a section to remove, then add the cut."
+          : "Drag the edges to set your clip. Click the frames to scrub."}
       </p>
       {duration > 0 ? (
         <>
@@ -234,7 +255,14 @@ export function ClipEditor({ video, player, busy, onSave,onDuration }) {
                 className="pointer-events-none absolute inset-y-0 border-y-[3px] border-accent"
                 style={{ left: percent(start), right: percent(duration - out) }}
               />
-              {cutMode && cuts.map(([a,b])=><div key={a} className="pointer-events-none absolute inset-y-0 border-x border-red-400 bg-red-900/70" style={{left:percent(a),width:percent(b-a)}}/>)}
+              {cutMode &&
+                cuts.map(([a, b]) => (
+                  <div
+                    key={a}
+                    className="pointer-events-none absolute inset-y-0 border-x border-red-400 bg-red-900/70"
+                    style={{ left: percent(a), width: percent(b - a) }}
+                  />
+                ))}
               <div
                 {...slider("playhead", "Playhead", position, 0, duration)}
                 data-marker="playhead"
@@ -272,10 +300,36 @@ export function ClipEditor({ video, player, busy, onSave,onDuration }) {
               <span>{time(out)} out</span>
             </div>
           </div>
-          {cutMode && <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button disabled={!!busy || !canCut} onClick={()=>{player.current.pause();setCuts([...cuts,[start,out] as [number,number]].sort((a,b)=>a[0]-b[0]));}}>Add cut</button>
-            {cuts.map(([a,b])=><button key={a} disabled={!!busy} aria-label={"Undo cut from "+time(a)+" to "+time(b)} onClick={()=>{player.current.pause();setCuts(cuts.filter(r=>r[0]!==a));}}>{time(a)}–{time(b)} ×</button>)}
-          </div>}
+          {cutMode && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <button
+                disabled={!!busy || !canCut}
+                onClick={() => {
+                  player.current.pause();
+                  setCuts(
+                    [...cuts, [start, out] as [number, number]].sort(
+                      (a, b) => a[0] - b[0],
+                    ),
+                  );
+                }}
+              >
+                Add cut
+              </button>
+              {cuts.map(([a, b]) => (
+                <button
+                  key={a}
+                  disabled={!!busy}
+                  aria-label={"Undo cut from " + time(a) + " to " + time(b)}
+                  onClick={() => {
+                    player.current.pause();
+                    setCuts(cuts.filter((r) => r[0] !== a));
+                  }}
+                >
+                  {time(a)}–{time(b)} ×
+                </button>
+              ))}
+            </div>
+          )}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
               disabled={!!busy}
@@ -287,10 +341,13 @@ export function ClipEditor({ video, player, busy, onSave,onDuration }) {
             </button>
             <button
               className="quiet"
-              disabled={!!busy || (cutMode ? !cuts.length : start === 0 && out === duration)}
+              disabled={
+                !!busy ||
+                (cutMode ? !cuts.length : start === 0 && out === duration)
+              }
               onClick={() => {
                 move("playhead", 0);
-                if(cutMode)setCuts([]);
+                if (cutMode) setCuts([]);
                 setStart(0);
                 setEnd(null);
               }}
@@ -299,11 +356,14 @@ export function ClipEditor({ video, player, busy, onSave,onDuration }) {
             </button>
             <button
               className="ml-auto border-0 bg-accent font-semibold text-white hover:bg-deep"
-              disabled={!!busy || (cutMode ? !cuts.length : start === 0 && out === duration)}
+              disabled={
+                !!busy ||
+                (cutMode ? !cuts.length : start === 0 && out === duration)
+              }
               onClick={() => {
                 player.current.pause();
-                if(cutMode)onSave(0,duration,cuts);
-                else onSave(start,out);
+                if (cutMode) onSave(0, duration, cuts);
+                else onSave(start, out);
               }}
             >
               {busy === "Trim" ? "Saving clip…" : "Save clip as copy"}

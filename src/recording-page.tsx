@@ -7,15 +7,15 @@ import { ClipEditor } from "./clip-editor";
 
 const api = window.desk;
 export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
-  const [deleting,setDeleting]=useState(false);
-  const [alsoDrive,setAlsoDrive]=useState(false);
-  const [changingAccess,setChangingAccess]=useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [alsoDrive, setAlsoDrive] = useState(false);
+  const [changingAccess, setChangingAccess] = useState(false);
   const [details, setDetails] = useState(null);
   const [issue, setIssue] = useState("");
   const [lookupError, setLookupError] = useState("");
   const [checking, checkAgain] = useState(0);
   const [busy, setBusy] = useState("");
-  const [mediaLength,setMediaLength] = useState(video.durationMs/1000 || 0);
+  const [mediaLength, setMediaLength] = useState(video.durationMs / 1000 || 0);
   const player = useRef<HTMLVideoElement>(null);
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
@@ -131,18 +131,19 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
         )}
       </header>
       <VideoPlayer video={video} player={player} mediaLength={mediaLength}>
-      <ClipEditor onDuration={setMediaLength}
-        video={video}
-        player={player}
-        busy={busy}
-        onSave={(start, end,cuts) =>
-          run("Trim", async () => {
-            const id = await api.trimRecording(video.id, start, end,cuts);
-            await refresh();
-            onOpen(id);
-          })
-        }
-      />
+        <ClipEditor
+          onDuration={setMediaLength}
+          video={video}
+          player={player}
+          busy={busy}
+          onSave={(start, end, cuts) =>
+            run("Trim", async () => {
+              const id = await api.trimRecording(video.id, start, end, cuts);
+              await refresh();
+              onOpen(id);
+            })
+          }
+        />
       </VideoPlayer>
       <div className="my-4 flex flex-wrap items-center gap-2">
         {video.remote && (
@@ -208,14 +209,50 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3 py-3">
           <dt>{video.remote ? "Link sharing" : "Access on upload"}</dt>
-          <dd>{video.remote && !changingAccess ? <button disabled={!!busy || pending} onClick={()=>setChangingAccess(true)}>Change link access</button> :
-            <ChoiceSelect label="Access for this recording" disabled={!!busy || pending}
-              value={video.remote ? "" : video.privacy}
-              options={video.remote ? [{value:"folder",label:"Restricted · existing people only"},{value:"link",label:"Anyone with the link · viewer"}] : [{value:"private",label:"Private · only me"},{value:"folder",label:"Use folder access"},{value:"link",label:"Anyone with the link"}]}
-              onChange={value=>run("Sharing",async()=>{
-                try {await api.setFileAccess(video.id,value);setChangingAccess(false);}
-                finally {checkAgain(n=>n+1);await refresh();}
-              })}/>}
+          <dd>
+            {video.remote && !changingAccess ? (
+              <button
+                disabled={!!busy || pending}
+                onClick={() => setChangingAccess(true)}
+              >
+                Change link access
+              </button>
+            ) : (
+              <ChoiceSelect
+                label="Access for this recording"
+                disabled={!!busy || pending}
+                value={video.remote ? "" : video.privacy}
+                options={
+                  video.remote
+                    ? [
+                        {
+                          value: "folder",
+                          label: "Restricted · existing people only",
+                        },
+                        {
+                          value: "link",
+                          label: "Anyone with the link · viewer",
+                        },
+                      ]
+                    : [
+                        { value: "private", label: "Private · only me" },
+                        { value: "folder", label: "Use folder access" },
+                        { value: "link", label: "Anyone with the link" },
+                      ]
+                }
+                onChange={(value) =>
+                  run("Sharing", async () => {
+                    try {
+                      await api.setFileAccess(video.id, value);
+                      setChangingAccess(false);
+                    } finally {
+                      checkAgain((n) => n + 1);
+                      await refresh();
+                    }
+                  })
+                }
+              />
+            )}
           </dd>
         </div>
         {video.remote && (
@@ -250,14 +287,58 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
         </div>
       )}
       <div className="my-5 border-t border-line pt-4">
-        {deleting ? <div className="grid justify-items-start gap-3">
-          <h3 className="font-semibold">Move this recording to Trash?</h3>
-          <p className="text-muted">Removes the recording from glint and moves the local video to this Mac’s Trash.</p>
-          {video.remote && <label className="flex items-center gap-2"><input type="checkbox" checked={alsoDrive} disabled={!!busy} onChange={e=>setAlsoDrive(e.target.checked)}/>Also move the uploaded video to Drive Trash</label>}
-          <div className="flex gap-2"><button disabled={!!busy || pending} onClick={()=>run("Delete",async()=>{
-            player.current.pause();await api.deleteRecording(video.id,alsoDrive);onBack();await refresh();
-          })}>Move to Trash</button><button disabled={!!busy} onClick={()=>{setDeleting(false);setAlsoDrive(false);}}>Cancel</button></div>
-        </div> : <button className="quiet" disabled={!!busy || pending} onClick={()=>setDeleting(true)}>Delete recording…</button>}
+        {deleting ? (
+          <div className="grid justify-items-start gap-3">
+            <h3 className="font-semibold">Move this recording to Trash?</h3>
+            <p className="text-muted">
+              Removes the recording from glint and moves the local video to this
+              Mac’s Trash.
+            </p>
+            {video.remote && (
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={alsoDrive}
+                  disabled={!!busy}
+                  onChange={(e) => setAlsoDrive(e.target.checked)}
+                />
+                Also move the uploaded video to Drive Trash
+              </label>
+            )}
+            <div className="flex gap-2">
+              <button
+                disabled={!!busy || pending}
+                onClick={() =>
+                  run("Delete", async () => {
+                    player.current.pause();
+                    await api.deleteRecording(video.id, alsoDrive);
+                    onBack();
+                    await refresh();
+                  })
+                }
+              >
+                Move to Trash
+              </button>
+              <button
+                disabled={!!busy}
+                onClick={() => {
+                  setDeleting(false);
+                  setAlsoDrive(false);
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className="quiet"
+            disabled={!!busy || pending}
+            onClick={() => setDeleting(true)}
+          >
+            Delete recording…
+          </button>
+        )}
       </div>
       {(issue || video.captureIssue || video.uploadError || lookupError) && (
         <details open className="destination p-4">

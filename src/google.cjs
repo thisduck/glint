@@ -233,20 +233,60 @@ class Google {
     } while (pageToken);
     return grants;
   }
-  async trashFile(id,account) {
+  async trashFile(id, account) {
     const token = await this.access(account);
-    return json(files+"/"+encodeURIComponent(id)+"?supportsAllDrives=true&fields=trashed",{
-      method:"PATCH",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({trashed:true})
-    });
+    return json(
+      files +
+        "/" +
+        encodeURIComponent(id) +
+        "?supportsAllDrives=true&fields=trashed",
+      {
+        method: "PATCH",
+        headers: {
+          Authorization: "Bearer " + token,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ trashed: true }),
+      },
+    );
   }
   async changeLink(id, headers, enabled) {
-    const grants = (await this.filePermissions(id,headers)).filter(p=>p.type==="anyone" && !p.deleted && !p.view);
-    if (enabled && !grants.length) return this.enableLink(id,headers);
-    const changes = grants.filter(p=>!enabled || p.allowFileDiscovery || p.role !== "reader");
-    if(changes.some(p=>p.permissionDetails?.some(detail=>detail.inherited))) throw Error("This link access comes from the containing folder. Change its sharing in Drive.");
+    const grants = (await this.filePermissions(id, headers)).filter(
+      (p) => p.type === "anyone" && !p.deleted && !p.view,
+    );
+    if (enabled && !grants.length) return this.enableLink(id, headers);
+    const changes = grants.filter(
+      (p) => !enabled || p.allowFileDiscovery || p.role !== "reader",
+    );
+    if (
+      changes.some((p) =>
+        p.permissionDetails?.some((detail) => detail.inherited),
+      )
+    )
+      throw Error(
+        "This link access comes from the containing folder. Change its sharing in Drive.",
+      );
     for (const p of changes) {
-      const url=files+"/"+encodeURIComponent(id)+"/permissions/"+encodeURIComponent(p.id)+"?supportsAllDrives=true";
-      await json(url,enabled ? {method:"PATCH",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({role:"reader",allowFileDiscovery:false})} : {method:"DELETE",headers});
+      const url =
+        files +
+        "/" +
+        encodeURIComponent(id) +
+        "/permissions/" +
+        encodeURIComponent(p.id) +
+        "?supportsAllDrives=true";
+      await json(
+        url,
+        enabled
+          ? {
+              method: "PATCH",
+              headers: { ...headers, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                role: "reader",
+                allowFileDiscovery: false,
+              }),
+            }
+          : { method: "DELETE", headers },
+      );
     }
   }
   async enableLink(id, headers) {
