@@ -195,6 +195,18 @@ class Google {
   async fileInfo(id, headers) {
     return json(files + "/" + encodeURIComponent(id) + "?supportsAllDrives=true&fields=webViewLink,ownedByMe,permissions(type,role,allowFileDiscovery,deleted,view),videoMediaMetadata", {headers});
   }
+  async filePermissions(id, headers) {
+    const grants = [];
+    let pageToken;
+    do {
+      const query = new URLSearchParams({supportsAllDrives:"true",fields:"nextPageToken,permissions(type,role,allowFileDiscovery,deleted,view)",pageSize:"100"});
+      if (pageToken) query.set("pageToken",pageToken);
+      const result = await json(files + "/" + encodeURIComponent(id) + "/permissions?" + query,{headers});
+      grants.push(...(result.permissions || []));
+      pageToken = result.nextPageToken;
+    } while (pageToken);
+    return grants;
+  }
   async enableLink(id, headers) {
     return json(files + "/" + encodeURIComponent(id) + "/permissions?supportsAllDrives=true", {
       method: "POST", headers: {...headers, "Content-Type":"application/json"},

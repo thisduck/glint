@@ -97,6 +97,7 @@ app.whenReady().then(() => {
     if (!video?.remote) throw Error("Upload this recording first.");
     const headers = {Authorization:"Bearer " + await google.access(video.account)};
     const info = await google.fileInfo(video.remote,headers);
+    if (!info.permissions) info.permissions = await google.filePermissions(video.remote,headers);
     return {access:require("./drive-status.cjs").describeAccess(info), metadata:!!info.videoMediaMetadata?.durationMillis, link:info.webViewLink};
   }
   handle("driveDetails",driveDetails);
