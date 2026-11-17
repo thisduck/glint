@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { ChoiceSelect, MicrophoneCheckbox } from "./components/ui/controls";
-import * as Collapsible from "@radix-ui/react-collapsible";
-import { Folder, ChevronDown } from "lucide-react";
+
+import { Folder, HardDrive } from "lucide-react";
 import { SourcePicker, type CaptureSource } from "./source-picker";
 const api = window.desk;
 export function Studio({ profile, refreshProfile, lock, fail }) {
@@ -11,20 +11,20 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   const [phase, setPhase] = useState("idle"),
     [videos, setVideos] = useState([]),
     [preview, play] = useState("");
-  const [configured, setConfigured] = useState(false);
+  const [configured, setConfigured] = useState<boolean | null>(null);
+  const [editingDestination, editDestination] = useState(false);
+  const [destinationMessage, setDestinationMessage] = useState("");
+  const [destinationError, setDestinationError] = useState("");
   const [accounts, setAccounts] = useState([]),
-    [account, setAccount] = useState(profile.account || ""),
     [busy, setBusy] = useState(""),
     [notice, setNotice] = useState("");
   useEffect(() => {
-    api
-      .driveConfigured()
-      .then(setConfigured)
-      .catch((e) => fail(e.message));
-    api
-      .accounts()
-      .then(setAccounts)
-      .catch((e) => fail(e.message));
+    Promise.all([api.driveConfigured(), api.accounts()])
+      .then(([ready, rows]) => {
+        setAccounts(rows);
+        setConfigured(ready);
+      })
+      .catch((e) => setDestinationError(e.message));
   }, []);
   async function action(label, fn) {
     setBusy(label);
@@ -40,6 +40,38 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       lock(false);
     }
   }
+  async function saveDestination(label, fn, confirmation) {
+    setDestinationMessage(label);
+    setDestinationError("");
+    await action(label, async () => {
+      try {
+        await fn();
+        await refreshProfile();
+        setDestinationMessage(confirmation);
+        editDestination(false);
+      } catch (e) {
+        setDestinationMessage("");
+        setDestinationError(e.message);
+      }
+    });
+  }
+  function useAccount(id) {
+    const connect = id === "add-account";
+    return saveDestination(
+      connect ? "Connecting to Google…" : "Saving Drive destination…",
+      async () => {
+        if (connect) {
+          id = await api.connect();
+          setAccounts(await api.accounts());
+        }
+        if (id !== profile.account || !profile.folder)
+          await api.recordingsFolder(profile.id, id);
+      },
+      "Drive destination saved for " + profile.name + ".",
+    );
+  }
+  const driveSaved = Boolean(profile.account && profile.folder);
+  const savedEmail = accounts.find((a) => a.id === profile.account)?.email;
   const recorder = useRef(null);
   async function refresh() {
     setVideos(await api.list(profile.id));
@@ -216,7 +248,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           onChoose={selectSource}
         />
       )}
-      {busy && <p role="status">{busy}</p>}
+      {busy && busy !== destinationMessage && <p role="status">{busy}</p>}
       {notice && <p role="status">{notice}</p>}
       <section className="overflow-hidden rounded-xl border border-line bg-paper">
         <div className="stage">
@@ -321,96 +353,115 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           </button>
         </div>
       </section>
-      <Collapsible.Root className="destination">
-        <Collapsible.Trigger className="destination-trigger">
-          <Folder aria-hidden="true" />
-          <span className="flex min-w-0 flex-1 flex-col gap-0.5 text-left">
-            <span className="text-xs text-muted">Destination</span>
-            <span>
-              {profile.folderName
-                ? (accounts.find((a) => a.id === profile.account)?.email ||
-                    "Google Drive") +
-                  " / " +
-                  profile.folderName
-                : "Local recordings"}
-            </span>
-          </span>
-          <ChevronDown aria-hidden="true" />
-        </Collapsible.Trigger>
-        <Collapsible.Content>
-          <fieldset disabled={!!busy || phase !== "idle"}>
-            <legend>Google Drive</legend>
-            {!configured && (
-              <p>
-                This build uses local storage. Google Drive requires a
-                configured glint build.
+      <section
+        aria-label="Recording destination"
+        className="destination p-4 sm:p-5"
+      >
+        <div className="flex items-start gap-3">
+          {driveSaved ? (
+            <Folder aria-hidden="true" className="mt-1 size-5 text-muted" />
+          ) : (
+            <HardDrive aria-hidden="true" className="mt-1 size-5 text-muted" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-muted">
+              {profile.name} destination
+            </p>
+            <h3 className="mt-1 break-words font-semibold">
+              {driveSaved ? profile.folderName : "On this Mac"}
+            </h3>
+            {driveSaved && (
+              <p className="break-all text-sm text-muted">
+                Google Drive{savedEmail && " · " + savedEmail}
               </p>
             )}
-            {!!accounts.length && (
-              <ChoiceSelect
-                label="Google account"
-                value={account}
-                onChange={setAccount}
-                disabled={!!busy || phase !== "idle"}
-                options={accounts.map((a) => ({ value: a.id, label: a.email }))}
-              />
-            )}
+          </div>
+          {driveSaved && (
             <button
-              disabled={!configured}
-              onClick={() =>
-                action("Connecting…", async () => {
-                  setAccount(await api.connect());
-                  setAccounts(await api.accounts());
-                })
-              }
+              className="quiet"
+              disabled={!!busy || phase !== "idle"}
+              onClick={() => {
+                editDestination(!editingDestination);
+                setDestinationMessage("");
+                setDestinationError("");
+              }}
             >
-              Connect Google account
+              {editingDestination ? "Done" : "Change"}
             </button>
-            {!!account && (
-              <div className="flex w-full flex-wrap items-center gap-2">
-                <button
-                  onClick={() =>
-                    action("Setting destination…", async () => {
-                      await api.recordingsFolder(profile.id, account);
-                      await refreshProfile();
-                    })
-                  }
-                >
-                  Use glint recordings folder
-                </button>
-                <button
-                  disabled={!account}
-                  onClick={() =>
-                    action("Choosing folder…", async () => {
-                      await api.folder(profile.id, account);
-                      await refreshProfile();
-                    })
-                  }
-                >
-                  Browse existing folders…
-                </button>
-              </div>
+          )}
+        </div>
+        {configured === false && (
+          <p className="mt-3 text-sm text-muted">
+            Google Drive is unavailable in this build.
+          </p>
+        )}
+        {configured && (!driveSaved || editingDestination) && (
+          <fieldset
+            disabled={!!busy || phase !== "idle"}
+            className="mt-4 flex flex-wrap items-center gap-3 border-t border-line pt-4"
+          >
+            {!driveSaved && (
+              <p className="w-full text-sm text-muted">
+                Choose an account to save uploads in its{" "}
+                <strong>glint – {profile.name}</strong> folder.
+              </p>
             )}
-            {configured && profile.account && profile.folder && (
-              <label className="flex w-full cursor-pointer items-center gap-2 py-2">
-                <input
-                  type="checkbox"
-                  role="switch"
-                  checked={Boolean(profile.autoUpload)}
-                  onChange={(e) => {
-                    const enabled = e.target.checked;
-                    action("Saving preference…", async () => {
-                      await api.setAutoUpload(profile.id, enabled);
-                      await refreshProfile();
-                    });
-                  }}
-                />{" "}
-                Auto-upload new recordings to Drive
-              </label>
+            {accounts.length ? (
+              <ChoiceSelect
+                label="Choose Google account"
+                value={driveSaved ? profile.account : ""}
+                disabled={!!busy || phase !== "idle"}
+                onChange={useAccount}
+                options={[
+                  ...accounts.map((a) => ({ value: a.id, label: a.email })),
+                  { value: "add-account", label: "Sign in with Google…" },
+                ]}
+              />
+            ) : (
+              <button onClick={() => useAccount("add-account")}>
+                Connect Google Drive
+              </button>
+            )}
+            {driveSaved && (
+              <button
+                onClick={() =>
+                  saveDestination(
+                    "Choosing folder…",
+                    () => api.folder(profile.id, profile.account),
+                    "Drive folder updated.",
+                  )
+                }
+              >
+                Change folder…
+              </button>
             )}
           </fieldset>
-        </Collapsible.Content>
-      </Collapsible.Root>
+        )}
+        {driveSaved && (
+          <label className="mt-4 flex cursor-pointer items-center gap-2 border-t border-line pt-3">
+            <input
+              type="checkbox"
+              role="switch"
+              className="accent-accent"
+              disabled={!configured || !!busy || phase !== "idle"}
+              checked={Boolean(profile.autoUpload)}
+              onChange={(e) => {
+                const enabled = e.target.checked;
+                saveDestination(
+                  "Saving preference…",
+                  () => api.setAutoUpload(profile.id, enabled),
+                  enabled ? "Auto-upload enabled." : "Auto-upload turned off.",
+                );
+              }}
+            />{" "}
+            Auto-upload new recordings
+          </label>
+        )}
+        <div aria-live="polite" className="text-sm text-muted">
+          {destinationMessage && <p className="mt-3">{destinationMessage}</p>}
+        </div>
+        {destinationError && <p role="alert">{destinationError}</p>}
+      </section>
       <section className="library mt-6 border-t border-line pt-6">
         <h2 className="mb-4 font-display text-2xl font-medium tracking-tight">
           Recordings

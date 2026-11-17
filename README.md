@@ -19,7 +19,7 @@ A reported issue showed “The capture source closed” immediately after pressi
 
 ## Connect Google Drive
 
-Click **Connect Google account** to sign in through your browser. Select a connected account and click **Use glint recordings folder** to create or reuse a folder named after the profile in My Drive. This works through the Drive API even when the browser picker returns 403. To select another destination, use **Browse existing folders…**. The app requests per-file Drive access. It encrypts refresh tokens using Electron safeStorage and the macOS Keychain.
+Choose your Google account under the profile’s destination. The first time, click **Connect Google Drive** and sign in. Choosing or connecting an account saves the profile’s destination immediately. glint creates or reuses a folder named after the profile in My Drive, then shows its name and account. Use **Change → Change folder…** to pick an existing folder instead. The app requests per-file Drive access. It encrypts refresh tokens using Electron safeStorage and the macOS Keychain.
 
 Enable **Auto-upload new recordings to Drive** after choosing a folder. This preference belongs to the profile. glint saves each recording locally, then uploads it in the background. Pending uploads resume when glint reopens. If an upload fails, use **Retry Drive upload** in the recording library.
 

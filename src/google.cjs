@@ -5,7 +5,7 @@ const tokenUrl = "https://oauth2.googleapis.com/token";
 const files = "https://www.googleapis.com/drive/v3/files";
 const driveScope = "https://www.googleapis.com/auth/drive.file";
 const reconnectMessage =
-  "Reconnect this account using Connect Google account. On Google's consent screen, select the permission to access the Drive files you use with glint, then continue.";
+  "Reconnect this account using Sign in with Google in the account menu. On Google's consent screen, select the permission to access the Drive files you use with glint, then continue.";
 const random = () => crypto.randomBytes(32).toString("base64url");
 async function json(url, options) {
   const res = await fetch(url, options);
