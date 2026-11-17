@@ -17,7 +17,9 @@ function recordingToolbar(commands) {
     const inset = 16;
     const centerX = capture.x + (capture.width - width) / 2;
     return {
-      x: Math.round(clamp(centerX, workArea.x, workArea.x + workArea.width - width)),
+      x: Math.round(
+        clamp(centerX, workArea.x, workArea.x + workArea.width - width),
+      ),
       y: Math.round(
         clamp(
           capture.y + inset,
@@ -129,8 +131,16 @@ function recordingToolbar(commands) {
         const point = win.getBounds();
         const workArea = screen.getDisplayMatching(next).workArea;
         win.setPosition(
-          clamp(point.x + nextOrigin.x - oldOrigin.x, workArea.x, workArea.x + workArea.width - width),
-          clamp(point.y + nextOrigin.y - oldOrigin.y, workArea.y, workArea.y + workArea.height - height),
+          clamp(
+            point.x + nextOrigin.x - oldOrigin.x,
+            workArea.x,
+            workArea.x + workArea.width - width,
+          ),
+          clamp(
+            point.y + nextOrigin.y - oldOrigin.y,
+            workArea.y,
+            workArea.y + workArea.height - height,
+          ),
         );
       }
       target = next;
@@ -161,7 +171,11 @@ function recordingToolbar(commands) {
           const workArea = screen.getDisplayMatching(target ?? bounds).workArea;
           win.setBounds({
             ...bounds,
-            y: clamp(bounds.y, workArea.y, workArea.y + workArea.height - newHeight),
+            y: clamp(
+              bounds.y,
+              workArea.y,
+              workArea.y + workArea.height - newHeight,
+            ),
             height: newHeight,
           });
           height = newHeight;
@@ -169,7 +183,8 @@ function recordingToolbar(commands) {
       }
       bubble?.update(layout);
       state = next;
-      if (loaded && !win.isDestroyed()) win.webContents.send("toolbarState", next);
+      if (loaded && !win.isDestroyed())
+        win.webContents.send("toolbarState", next);
     },
     close() {
       clearInterval(portraitTimer);

@@ -216,35 +216,45 @@ app.whenReady().then(() => {
       return;
     }
     const video = selected;
-    previewTarget=video;
+    previewTarget = video;
     selected = null;
     cb({ video });
   });
   let preparation;
-  function closeSetup(restore){
-    if(!preparation)return;
-    preparation.close();preparation=null;
-    if(restore && !win.isDestroyed())win.show();
+  function closeSetup(restore) {
+    if (!preparation) return;
+    preparation.close();
+    preparation = null;
+    if (restore && !win.isDestroyed()) win.show();
   }
-  handle("openSetup",async(id,settings)=>{
-    const target=previewTarget;
-    if(!target || target.id!==id || library.open)throw Error("Choose a capture source again.");
+  handle("openSetup", async (id, settings) => {
+    const target = previewTarget;
+    if (!target || target.id !== id || library.open)
+      throw Error("Choose a capture source again.");
     closeSetup(false);
-    const session=require("./preparation.cjs").prepareSource(target,settings,
-      (channel,value)=>win.webContents.send(channel,value),()=>{
-        if(preparation!==session)return;
-        closeSetup(true);win.webContents.send("setupCommand","sourceLost");
-      });
-    preparation=session;
-    try{
+    const session = require("./preparation.cjs").prepareSource(
+      target,
+      settings,
+      (channel, value) => win.webContents.send(channel, value),
+      () => {
+        if (preparation !== session) return;
+        closeSetup(true);
+        win.webContents.send("setupCommand", "sourceLost");
+      },
+    );
+    preparation = session;
+    try {
       await session.ready;
-      if(preparation!==session)return false;
-      if(target.id!==win.getMediaSourceId())win.hide();
+      if (preparation !== session) return false;
+      if (target.id !== win.getMediaSourceId()) win.hide();
       return true;
-    }catch(error){if(preparation===session)closeSetup(true);throw error;}
+    } catch (error) {
+      if (preparation === session) closeSetup(true);
+      throw error;
+    }
   });
-  handle("updateSetup",changes=>preparation?.update(changes));
-  handle("closeSetup",restore=>closeSetup(restore===true));
+  handle("updateSetup", (changes) => preparation?.update(changes));
+  handle("closeSetup", (restore) => closeSetup(restore === true));
   let recordingArea, outline, followTimer;
   function clearOutline() {
     clearTimeout(followTimer);
@@ -255,7 +265,8 @@ app.whenReady().then(() => {
     const { captureBounds, countdownBounds } = require("./capture-bounds.cjs");
     const displays = require("electron").screen.getAllDisplays();
     closeSetup(false);
-    const target = previewTarget?.id===id ? previewTarget : listedSources.get(id);
+    const target =
+      previewTarget?.id === id ? previewTarget : listedSources.get(id);
     recordingArea = await captureBounds(target, displays);
     const card = countdownBounds(recordingArea, displays);
     clearOutline();
@@ -331,8 +342,10 @@ app.whenReady().then(() => {
       typeof frame === "string" &&
       frame.length < 200000 &&
       frame.startsWith("data:image/jpeg;base64,")
-    )
-      {preparation?.portrait(frame);closeRecordingMenu?.portrait(frame); }
+    ) {
+      preparation?.portrait(frame);
+      closeRecordingMenu?.portrait(frame);
+    }
   });
   handle("recordingStatus", (paused, ms) =>
     closeRecordingMenu?.update(paused, ms),

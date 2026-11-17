@@ -43,10 +43,10 @@ contextBridge.exposeInMainWorld("desk", {
     ipcRenderer.on("portraitRequest", listener);
     return () => ipcRenderer.removeListener("portraitRequest", listener);
   },
-  onSetupCommand(callback){
-    const listener=(_,action)=>callback(action);
-    ipcRenderer.on("setupCommand",listener);
-    return ()=>ipcRenderer.removeListener("setupCommand",listener);
+  onSetupCommand(callback) {
+    const listener = (_, action) => callback(action);
+    ipcRenderer.on("setupCommand", listener);
+    return () => ipcRenderer.removeListener("setupCommand", listener);
   },
   onCameraPosition(callback) {
     const listener = (_, point) => callback(point);

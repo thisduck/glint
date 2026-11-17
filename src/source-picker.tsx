@@ -35,11 +35,12 @@ export function SourcePicker({
 
   useEffect(() => {
     const element = dialog.current;
-    const opener=document.activeElement;
+    const opener = document.activeElement;
     element?.showModal();
     return () => {
       element?.close();
-      if(opener instanceof HTMLElement && opener.isConnected)opener.focus({preventScroll:true});
+      if (opener instanceof HTMLElement && opener.isConnected)
+        opener.focus({ preventScroll: true });
     };
   }, []);
 
@@ -94,7 +95,10 @@ export function SourcePicker({
         }}
       >
         <header className="shrink-0 px-5 pb-4 pt-5 sm:px-6">
-          <h2 id="source-heading" className="font-display text-2xl font-semibold">
+          <h2
+            id="source-heading"
+            className="font-display text-2xl font-semibold"
+          >
             Choose what to record
           </h2>
         </header>
@@ -124,7 +128,11 @@ export function SourcePicker({
             ))}
           </Tabs.List>
           {sourceTypes.map(({ id, icon: Icon }) => (
-            <Tabs.Content key={id} value={id} className="min-h-0 overflow-y-auto">
+            <Tabs.Content
+              key={id}
+              value={id}
+              className="min-h-0 overflow-y-auto"
+            >
               <div className="px-5 py-4 sm:px-6">
                 {loading ? (
                   <p role="status" className="m-0 py-6 text-center text-muted">
@@ -132,7 +140,9 @@ export function SourcePicker({
                   </p>
                 ) : error ? (
                   <div className="flex flex-col items-start gap-3 rounded-xl border border-line bg-rail p-4">
-                    <p role="status" className="m-0">{error}</p>
+                    <p role="status" className="m-0">
+                      {error}
+                    </p>
                     <button
                       type="button"
                       onClick={() => {
@@ -146,19 +156,27 @@ export function SourcePicker({
                   </div>
                 ) : !items.length ? (
                   <div className="rounded-xl border border-dashed border-line py-8 text-center">
-                    <Icon aria-hidden="true" className="mx-auto mb-2 size-6 text-muted" />
+                    <Icon
+                      aria-hidden="true"
+                      className="mx-auto mb-2 size-6 text-muted"
+                    />
                     <p role="status" className="m-0 font-medium">
                       No {id}s available
                     </p>
                     <p className="mt-1 text-sm text-muted">
-                      {id === "window" ? "Open the app window you want to record." : "Connect a display to record it here."}
+                      {id === "window"
+                        ? "Open the app window you want to record."
+                        : "Connect a display to record it here."}
                     </p>
                   </div>
                 ) : (
                   <fieldset className="grid grid-cols-2 gap-3">
                     <legend className="sr-only">Available {id}s</legend>
                     {items.map((item) => (
-                      <label key={item.id} className="relative grid min-w-0 cursor-pointer">
+                      <label
+                        key={item.id}
+                        className="relative grid min-w-0 cursor-pointer"
+                      >
                         <input
                           type="radio"
                           name="capture-source"
@@ -169,9 +187,16 @@ export function SourcePicker({
                         <span className="grid gap-2 rounded-xl border border-line bg-paper p-2 hover:border-accent peer-checked:border-accent peer-checked:bg-tint peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-accent">
                           <span className="relative grid aspect-video place-items-center overflow-hidden rounded-lg bg-rail">
                             {item.thumbnail ? (
-                              <img src={item.thumbnail} alt="" className="size-full object-contain" />
+                              <img
+                                src={item.thumbnail}
+                                alt=""
+                                className="size-full object-contain"
+                              />
                             ) : (
-                              <Icon aria-hidden="true" className="size-7 text-muted" />
+                              <Icon
+                                aria-hidden="true"
+                                className="size-7 text-muted"
+                              />
                             )}
                             {selectedId === item.id && (
                               <span className="absolute right-2 top-2 grid size-6 place-items-center rounded-full bg-accent text-white">
@@ -179,7 +204,9 @@ export function SourcePicker({
                               </span>
                             )}
                           </span>
-                          <span className="break-words px-1 font-medium">{item.name}</span>
+                          <span className="break-words px-1 font-medium">
+                            {item.name}
+                          </span>
                         </span>
                       </label>
                     ))}
@@ -190,7 +217,11 @@ export function SourcePicker({
           ))}
         </Tabs.Root>
         <footer className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3 sm:px-6">
-          <button type="button" className="border-transparent bg-transparent" onClick={onCancel}>
+          <button
+            type="button"
+            className="border-transparent bg-transparent"
+            onClick={onCancel}
+          >
             Cancel
           </button>
           <button

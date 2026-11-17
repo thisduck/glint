@@ -51,9 +51,14 @@ window.addEventListener("DOMContentLoaded", () => {
     sizeLabel.textContent = percent;
     scale.setAttribute("aria-valuetext", percent);
 
-    const vertical = point.y < 1 / 3 ? "top" : point.y > 2 / 3 ? "bottom" : "middle";
-    const horizontal = point.x < 1 / 3 ? "left" : point.x > 2 / 3 ? "right" : "center";
-    map.setAttribute("aria-label", "Camera position, " + vertical + " " + horizontal);
+    const vertical =
+      point.y < 1 / 3 ? "top" : point.y > 2 / 3 ? "bottom" : "middle";
+    const horizontal =
+      point.x < 1 / 3 ? "left" : point.x > 2 / 3 ? "right" : "center";
+    map.setAttribute(
+      "aria-label",
+      "Camera position, " + vertical + " " + horizontal,
+    );
   }
 
   const clamp = (value) => Math.min(1, Math.max(0, value));
@@ -67,8 +72,10 @@ window.addEventListener("DOMContentLoaded", () => {
     const bounds = map.getBoundingClientRect();
     const radius = dot.offsetWidth / 2;
     move(
-      (event.clientX - bounds.left - map.clientLeft - radius) / (map.clientWidth - radius * 2),
-      (event.clientY - bounds.top - map.clientTop - radius) / (map.clientHeight - radius * 2),
+      (event.clientX - bounds.left - map.clientLeft - radius) /
+        (map.clientWidth - radius * 2),
+      (event.clientY - bounds.top - map.clientTop - radius) /
+        (map.clientHeight - radius * 2),
     );
   }
 
@@ -109,7 +116,10 @@ window.addEventListener("DOMContentLoaded", () => {
     if (preview) {
       source.textContent = state.sourceName || "";
       source.title = source.textContent;
-      start.disabled = mic.disabled = cameraToggle.disabled = Boolean(state.busy);
+      start.disabled =
+        mic.disabled =
+        cameraToggle.disabled =
+          Boolean(state.busy);
       start.textContent = state.busy ? "Please wait…" : "Start recording";
       toggleLabel(mic, "Microphone", state.micOn);
       toggleLabel(cameraToggle, "Camera", state.cameraOn);
