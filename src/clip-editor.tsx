@@ -180,45 +180,47 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
   const percent = (n) =>
     duration ? Math.min(100, Math.max(0, (n / duration) * 100)) + "%" : "0%";
   return (
-    <section aria-label="Clip editor" className="destination p-4 sm:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <section
+      aria-label="Clip editor"
+      className="mt-4 rounded-xl border border-line bg-paper p-4 sm:p-5"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="flex items-center gap-2 text-base font-semibold">
-          <Scissors size={16} /> Edit clip
+          <Scissors className="size-4 text-accent" aria-hidden="true" /> Edit
+          clip
         </h3>
-        {duration > 0 && (
-          <span className="text-sm tabular-nums text-muted">
-            {time(cutMode ? remaining : out - start)}{" "}
-            {cutMode ? "after cuts" : "selected"}
-          </span>
-        )}
+        <div
+          className="inline-flex gap-0.5 rounded-lg bg-rail p-1"
+          role="group"
+          aria-label="Edit mode"
+        >
+          {["Trim ends", "Cut sections"].map((label, i) => (
+            <button
+              key={label}
+              disabled={!!busy}
+              aria-pressed={Number(cutMode) === i}
+              className="rounded-md border-transparent bg-transparent px-2.5 py-1.5 text-xs font-medium text-muted aria-pressed:border-line aria-pressed:bg-paper aria-pressed:text-ink"
+              onClick={() => {
+                player.current.pause();
+                setCutMode(Boolean(i));
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="mt-3 flex gap-1" aria-label="Edit mode">
-        {["Trim ends", "Cut sections"].map((label, i) => (
-          <button
-            key={label}
-            disabled={!!busy}
-            aria-pressed={Number(cutMode) === i}
-            className="aria-pressed:bg-tint"
-            onClick={() => {
-              player.current.pause();
-              setCutMode(Boolean(i));
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <p className="mt-1 text-sm text-muted">
+      <p className="mt-2 text-sm text-muted">
         {cutMode
-          ? "Drag the edges around a section to remove, then add the cut."
-          : "Drag the edges to set your clip. Click the frames to scrub."}
+          ? "Drag the handles around a section to remove, then select Add cut."
+          : "Drag the handles to set the clip’s start and end. Click a frame to seek."}
       </p>
       {duration > 0 ? (
         <>
-          <div className="mx-2 mt-5">
+          <div className="mx-3 mt-4">
             <div
               ref={rail}
-              className="relative h-14 touch-none select-none rounded bg-deep sm:h-16"
+              className="relative h-14 touch-none select-none rounded bg-deep sm:h-[72px]"
               onPointerDown={(e) => {
                 if (busy || e.button !== 0 || !e.isPrimary) return;
                 const marker =
@@ -266,7 +268,7 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
               <div
                 {...slider("playhead", "Playhead", position, 0, duration)}
                 data-marker="playhead"
-                className="absolute -inset-y-1 w-0.5 cursor-col-resize bg-white shadow"
+                className="absolute -inset-y-1 w-2 -translate-x-1/2 cursor-col-resize before:absolute before:inset-y-0 before:left-1/2 before:w-0.5 before:-translate-x-1/2 before:bg-white before:shadow"
                 style={{ left: percent(position) }}
               />
               {(["start", "end"] as const).map((marker) => {
@@ -276,7 +278,13 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
                     key={marker}
                     {...slider(
                       marker,
-                      marker === "start" ? "Clip start" : "Clip end",
+                      marker === "start"
+                        ? cutMode
+                          ? "Cut start"
+                          : "Clip start"
+                        : cutMode
+                          ? "Cut end"
+                          : "Clip end",
                       value,
                       marker === "start" ? 0 : start + Math.min(0.1, duration),
                       marker === "end"
@@ -284,21 +292,34 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
                         : out - Math.min(0.1, duration),
                     )}
                     data-marker={marker}
-                    className={
-                      "absolute -inset-y-0.5 flex w-4 cursor-ew-resize items-center justify-center rounded bg-accent text-white " +
-                      (marker === "start" ? "-translate-x-full" : "")
-                    }
+                    className="absolute -inset-y-0.5 flex w-5 cursor-ew-resize items-center justify-center rounded bg-accent text-white data-[marker=start]:-translate-x-full"
                     style={{ left: percent(value) }}
                   >
-                    <GripVertical size={13} />
+                    <GripVertical className="size-4" aria-hidden="true" />
                   </div>
                 );
               })}
             </div>
-            <div className="mt-2 flex justify-between font-mono text-xs text-muted">
-              <span>{time(start)} in</span>
-              <span>{time(out)} out</span>
-            </div>
+            <dl className="-mx-3 mt-3 grid grid-cols-3 gap-2 text-xs tabular-nums">
+              <div>
+                <dt className="text-muted">
+                  {cutMode ? "Cut start" : "Start"}
+                </dt>
+                <dd className="mt-0.5 font-semibold">{time(start)}</dd>
+              </div>
+              <div className="text-center">
+                <dt className="text-muted">
+                  {cutMode ? "After cuts" : "Clip length"}
+                </dt>
+                <dd className="mt-0.5 font-semibold">
+                  {time(cutMode ? remaining : out - start)}
+                </dd>
+              </div>
+              <div className="text-right">
+                <dt className="text-muted">{cutMode ? "Cut end" : "End"}</dt>
+                <dd className="mt-0.5 font-semibold">{time(out)}</dd>
+              </div>
+            </dl>
           </div>
           {cutMode && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -325,7 +346,7 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
                     setCuts(cuts.filter((r) => r[0] !== a));
                   }}
                 >
-                  {time(a)}–{time(b)} ×
+                  {time(a)}–{time(b)} <span aria-hidden="true">×</span>
                 </button>
               ))}
             </div>
@@ -355,7 +376,7 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
               Reset
             </button>
             <button
-              className="ml-auto border-0 bg-accent font-semibold text-white hover:bg-deep"
+              className="ml-auto border-transparent bg-accent font-semibold text-white hover:bg-deep disabled:border-line disabled:bg-rail disabled:text-muted disabled:opacity-100"
               disabled={
                 !!busy ||
                 (cutMode ? !cuts.length : start === 0 && out === duration)

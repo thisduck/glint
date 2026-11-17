@@ -1,5 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Check, Copy, HardDrive, Cloud } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Check,
+  Cloud,
+  CloudUpload,
+  FolderOpen,
+  HardDrive,
+  Link2,
+  Pencil,
+  Trash2,
+} from "lucide-react";
 
 import { ChoiceSelect } from "./components/ui/controls";
 import { VideoPlayer } from "./video-player";
@@ -62,7 +73,11 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
   const uploading = busy === "Upload" || pending;
   const failed = video.uploadState === "failed";
   const cloudStatus = video.remote
-    ? "Uploaded"
+    ? pending
+      ? "Applying link access…"
+      : failed
+        ? "Link access setup failed"
+        : "Uploaded"
     : uploading
       ? video.progress != null
         ? "Uploading · " + video.progress + "%"
@@ -71,16 +86,27 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
         ? "Upload failed"
         : "Local copy only";
   return (
-    <section className="mt-6">
-      <button className="quiet inline-flex items-center gap-2" onClick={onBack}>
-        <ArrowLeft size={15} /> Recording studio
+    <section className="mt-6" aria-labelledby="recording-title">
+      <button
+        className="inline-flex items-center gap-2 border-0 bg-transparent px-2 text-sm font-medium text-muted"
+        onClick={onBack}
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" /> Back to recordings
       </button>
-      <header className="my-5">
+      <header className="mb-5 mt-3">
         <p className="text-sm text-muted">
-          {profile.name} · {new Date(video.created).toLocaleString()}
+          {profile.name} ·{" "}
+          <time dateTime={video.created}>
+            {new Date(video.created).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </time>
         </p>
         {editing ? (
           <form
+            id="recording-title"
+            aria-label="Rename recording"
             className="mt-2 flex flex-wrap gap-2"
             onSubmit={(e) => {
               e.preventDefault();
@@ -99,248 +125,317 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
-            <button disabled={!!busy || !title.trim()}>Save title</button>
+            <button
+              className="border-transparent bg-accent font-semibold text-white hover:bg-deep"
+              disabled={!!busy || !title.trim()}
+            >
+              Save title
+            </button>
             <button type="button" onClick={() => setEditing(false)}>
               Cancel
             </button>
           </form>
         ) : (
           <div className="mt-1 flex items-center gap-3">
-            <h2 className="break-words text-3xl font-medium tracking-tight">
+            <h2
+              id="recording-title"
+              className="min-w-0 break-words font-display text-3xl font-semibold tracking-tight"
+            >
               {video.title ||
                 (video.captureIssue
                   ? "Recovered recording"
-                  : "Recording saved")}
+                  : "Screen recording")}
             </h2>
             <button
-              className="quiet"
+              className="inline-flex shrink-0 items-center gap-1.5 border-0 bg-transparent text-xs font-medium text-muted"
               onClick={() => {
                 setTitle(video.title || "");
                 setEditing(true);
               }}
             >
-              {video.title ? "Edit title" : "Add title"}
+              <Pencil className="size-3.5" aria-hidden="true" /> Rename
             </button>
           </div>
         )}
-        {video.durationMs > 0 && (
-          <p className="mt-1 text-sm text-muted">
-            {Math.floor(video.durationMs / 60000)}m{" "}
-            {Math.floor(video.durationMs / 1000) % 60}s
-          </p>
-        )}
       </header>
-      <VideoPlayer video={video} player={player} mediaLength={mediaLength}>
-        <ClipEditor
-          onDuration={setMediaLength}
-          video={video}
-          player={player}
-          busy={busy}
-          onSave={(start, end, cuts) =>
-            run("Trim", async () => {
-              const id = await api.trimRecording(video.id, start, end, cuts);
-              await refresh();
-              onOpen(id);
-            })
-          }
-        />
-      </VideoPlayer>
-      <div className="my-4 flex flex-wrap items-center gap-2">
-        {video.remote && (
-          <button
-            className="inline-flex items-center gap-2 bg-accent px-4 font-semibold text-white"
-            disabled={!!busy}
-            onClick={() =>
-              run("Copy", async () => {
-                await api.share(video.id, true);
-                setCopied(true);
-              })
-            }
-          >
-            {copied ? <Check size={15} /> : <Copy size={15} />}{" "}
-            {copied ? "Copied" : "Copy link"}
-          </button>
-        )}
-        <button onClick={() => run("Finder", () => api.reveal(video.id))}>
-          Show in Finder
-        </button>
-        {video.remote && (
-          <button
-            onClick={() => run("Drive", () => api.share(video.id, false))}
-          >
-            Open in Drive
-          </button>
-        )}
-        {(!video.remote || failed) && (profile.folder || video.folder) && (
-          <button
-            disabled={!!busy || pending}
-            onClick={() =>
-              run("Upload", async () => {
-                try {
-                  await api.upload(video.id);
-                } finally {
-                  await refresh();
-                }
-              })
-            }
-          >
-            {uploading
-              ? "Working…"
-              : video.remote
-                ? "Retry sharing"
-                : failed
-                  ? "Retry upload"
-                  : "Upload to Drive"}
-          </button>
-        )}
-      </div>
-      <dl className="destination divide-y divide-line px-5" aria-live="polite">
-        <div className="flex items-center justify-between gap-4 py-3">
-          <dt className="flex items-center gap-2">
-            <HardDrive size={16} /> Local copy
-          </dt>
-          <dd>Saved on this Mac</dd>
-        </div>
-        <div className="flex items-center justify-between gap-4 py-3">
-          <dt className="flex items-center gap-2">
-            <Cloud size={16} /> Google Drive
-          </dt>
-          <dd>{cloudStatus}</dd>
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-3 py-3">
-          <dt>{video.remote ? "Link sharing" : "Access on upload"}</dt>
-          <dd>
-            {video.remote && !changingAccess ? (
-              <button
-                disabled={!!busy || pending}
-                onClick={() => setChangingAccess(true)}
-              >
-                Change link access
-              </button>
-            ) : (
-              <ChoiceSelect
-                label="Access for this recording"
-                disabled={!!busy || pending}
-                value={video.remote ? "" : video.privacy}
-                options={
-                  video.remote
-                    ? [
-                        {
-                          value: "folder",
-                          label: "Restricted · existing people only",
-                        },
-                        {
-                          value: "link",
-                          label: "Anyone with the link · viewer",
-                        },
-                      ]
-                    : [
-                        { value: "private", label: "Private · only me" },
-                        { value: "folder", label: "Use folder access" },
-                        { value: "link", label: "Anyone with the link" },
-                      ]
-                }
-                onChange={(value) =>
-                  run("Sharing", async () => {
-                    try {
-                      await api.setFileAccess(video.id, value);
-                      setChangingAccess(false);
-                    } finally {
-                      checkAgain((n) => n + 1);
-                      await refresh();
-                    }
-                  })
-                }
-              />
-            )}
-          </dd>
-        </div>
-        {video.remote && (
-          <>
-            <div className="flex justify-between gap-4 py-3">
-              <dt>Link access</dt>
-              <dd>
-                {pending
-                  ? "Applying sharing…"
-                  : lookupError
-                    ? "Access unavailable"
-                    : details?.access || "Checking…"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4 py-3">
-              <dt>Drive playback</dt>
-              <dd>
-                {details?.metadata
-                  ? "Video metadata available"
-                  : "Readiness unconfirmed"}
-              </dd>
-            </div>
-          </>
-        )}
-      </dl>
-      {video.remote && (
-        <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-sm text-muted">
-          <p>Open in Drive to check playback.</p>
-          <button className="quiet" onClick={() => checkAgain((n) => n + 1)}>
-            Refresh status
-          </button>
-        </div>
+      {issue && (
+        <p role="alert" className="mb-4">
+          {issue}
+        </p>
       )}
-      <div className="my-5 border-t border-line pt-4">
-        {deleting ? (
-          <div className="grid justify-items-start gap-3">
-            <h3 className="font-semibold">Move this recording to Trash?</h3>
-            <p className="text-muted">
-              Removes the recording from glint and moves the local video to this
-              Mac’s Trash.
-            </p>
-            {video.remote && (
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={alsoDrive}
-                  disabled={!!busy}
-                  onChange={(e) => setAlsoDrive(e.target.checked)}
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+        <div className="min-w-0">
+          <VideoPlayer video={video} player={player} mediaLength={mediaLength}>
+            <ClipEditor
+              onDuration={setMediaLength}
+              video={video}
+              player={player}
+              busy={busy}
+              onSave={(start, end, cuts) =>
+                run("Trim", async () => {
+                  const id = await api.trimRecording(
+                    video.id,
+                    start,
+                    end,
+                    cuts,
+                  );
+                  await refresh();
+                  onOpen(id);
+                })
+              }
+            />
+          </VideoPlayer>
+        </div>
+        <aside
+          aria-labelledby="storage-heading"
+          className="min-w-0 rounded-xl border border-line bg-paper px-4 py-4"
+        >
+          <h3
+            id="storage-heading"
+            className="mb-4 text-lg font-semibold tracking-tight"
+          >
+            Storage and sharing
+          </h3>
+          <div className="grid gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <HardDrive
+                  className="size-4 shrink-0 text-muted"
+                  aria-hidden="true"
                 />
-                Also move the uploaded video to Drive Trash
-              </label>
-            )}
-            <div className="flex gap-2">
+                <div>
+                  <p className="font-semibold">Local copy</p>
+                  <p className="text-xs text-muted">Saved on this Mac</p>
+                </div>
+              </div>
               <button
-                disabled={!!busy || pending}
-                onClick={() =>
-                  run("Delete", async () => {
-                    player.current.pause();
-                    await api.deleteRecording(video.id, alsoDrive);
-                    onBack();
-                    await refresh();
-                  })
-                }
-              >
-                Move to Trash
-              </button>
-              <button
+                className="inline-flex items-center gap-1.5 text-xs font-medium"
                 disabled={!!busy}
-                onClick={() => {
-                  setDeleting(false);
-                  setAlsoDrive(false);
-                }}
+                onClick={() => run("Finder", () => api.reveal(video.id))}
               >
-                Cancel
+                <FolderOpen className="size-3.5" aria-hidden="true" /> Show in
+                Finder
               </button>
+            </div>
+            <div className="border-t border-line pt-4">
+              <div className="flex items-center gap-2.5">
+                <Cloud
+                  className="size-4 shrink-0 text-muted"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="font-semibold">Google Drive</p>
+                  <p aria-live="polite" className="text-xs text-muted">
+                    {cloudStatus}
+                  </p>
+                </div>
+              </div>
+              {video.remote && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    className="inline-flex items-center gap-1.5 border-transparent bg-accent text-xs font-semibold text-white hover:bg-deep"
+                    disabled={!!busy}
+                    onClick={() =>
+                      run("Copy", async () => {
+                        await api.share(video.id, true);
+                        setCopied(true);
+                      })
+                    }
+                  >
+                    {copied ? (
+                      <Check className="size-3.5" aria-hidden="true" />
+                    ) : (
+                      <Link2 className="size-3.5" aria-hidden="true" />
+                    )}
+                    {copied ? "Link copied" : "Copy link"}
+                  </button>
+                  <button
+                    className="inline-flex items-center gap-1.5 text-xs font-medium"
+                    disabled={!!busy}
+                    onClick={() =>
+                      run("Drive", () => api.share(video.id, false))
+                    }
+                  >
+                    <ArrowUpRight className="size-3.5" aria-hidden="true" />{" "}
+                    Open in Drive
+                  </button>
+                </div>
+              )}
+              {(!video.remote || failed) &&
+                (profile.folder || video.folder) && (
+                  <button
+                    className="mt-3 inline-flex items-center gap-1.5 border-transparent bg-accent text-xs font-semibold text-white hover:bg-deep"
+                    disabled={!!busy || pending}
+                    onClick={() =>
+                      run("Upload", async () => {
+                        try {
+                          await api.upload(video.id);
+                        } finally {
+                          await refresh();
+                        }
+                      })
+                    }
+                  >
+                    <CloudUpload className="size-3.5" aria-hidden="true" />
+                    {uploading
+                      ? "Uploading…"
+                      : video.remote
+                        ? "Retry sharing"
+                        : failed
+                          ? "Retry upload"
+                          : "Upload to Drive"}
+                  </button>
+                )}
             </div>
           </div>
-        ) : (
-          <button
-            className="quiet"
-            disabled={!!busy || pending}
-            onClick={() => setDeleting(true)}
-          >
-            Delete recording…
-          </button>
-        )}
+          {(video.remote || profile.folder || video.folder) && (
+            <dl
+              className="mt-4 divide-y divide-line border-t border-line text-sm"
+              aria-live="polite"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2 py-3">
+                <dt className="font-medium">
+                  {video.remote ? "Link access" : "Access on upload"}
+                </dt>
+                <dd className="min-w-0 text-muted">
+                  {video.remote && !changingAccess ? (
+                    pending ? (
+                      "Applying sharing…"
+                    ) : lookupError ? (
+                      "Access unavailable"
+                    ) : (
+                      details?.access || "Checking…"
+                    )
+                  ) : (
+                    <ChoiceSelect
+                      label="Access for this recording"
+                      disabled={!!busy || pending}
+                      value={video.remote ? "" : video.privacy}
+                      options={
+                        video.remote
+                          ? [
+                              {
+                                value: "folder",
+                                label: "Restricted · existing people only",
+                              },
+                              {
+                                value: "link",
+                                label: "Anyone with the link · viewer",
+                              },
+                            ]
+                          : [
+                              { value: "private", label: "Private · only me" },
+                              { value: "folder", label: "Use folder access" },
+                              { value: "link", label: "Anyone with the link" },
+                            ]
+                      }
+                      onChange={(value) =>
+                        run("Sharing", async () => {
+                          try {
+                            await api.setFileAccess(video.id, value);
+                            setChangingAccess(false);
+                          } finally {
+                            checkAgain((n) => n + 1);
+                            await refresh();
+                          }
+                        })
+                      }
+                    />
+                  )}
+                </dd>
+              </div>
+              {video.remote && (
+                <>
+                  {!changingAccess && (
+                    <div className="py-2">
+                      <dt className="sr-only">Sharing settings</dt>
+                      <dd>
+                        <button
+                          className="quiet"
+                          disabled={!!busy || pending}
+                          onClick={() => setChangingAccess(true)}
+                        >
+                          Change link access
+                        </button>
+                      </dd>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-baseline justify-between gap-2 py-3">
+                    <dt className="font-medium">Drive playback</dt>
+                    <dd className="text-xs text-muted">
+                      {details?.metadata
+                        ? "Video metadata available"
+                        : "Check playback in Drive"}
+                    </dd>
+                  </div>
+                </>
+              )}
+            </dl>
+          )}
+          {video.remote && (
+            <button className="quiet" onClick={() => checkAgain((n) => n + 1)}>
+              Refresh Drive status
+            </button>
+          )}
+          <div className="mt-3 border-t border-line pt-3">
+            {deleting ? (
+              <div className="grid justify-items-start gap-3">
+                <h3 className="font-semibold">Move this recording to Trash?</h3>
+                <p className="text-muted">
+                  Removes the recording from glint and moves the local video to
+                  this Mac’s Trash.
+                </p>
+                {video.remote && (
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={alsoDrive}
+                      disabled={!!busy}
+                      onChange={(e) => setAlsoDrive(e.target.checked)}
+                    />
+                    Also move the uploaded video to Drive Trash
+                  </label>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    className="border-red-700 bg-red-700 font-semibold text-white hover:bg-red-800"
+                    disabled={!!busy || pending}
+                    onClick={() =>
+                      run("Delete", async () => {
+                        player.current?.pause();
+                        await api.deleteRecording(video.id, alsoDrive);
+                        onBack();
+                        await refresh();
+                      })
+                    }
+                  >
+                    {busy === "Delete" ? "Moving to Trash…" : "Move to Trash"}
+                  </button>
+                  <button
+                    disabled={!!busy}
+                    onClick={() => {
+                      setDeleting(false);
+                      setAlsoDrive(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                className="quiet inline-flex items-center gap-1.5"
+                disabled={!!busy || pending}
+                onClick={() => setDeleting(true)}
+              >
+                <Trash2 className="size-3.5" aria-hidden="true" /> Move to
+                Trash…
+              </button>
+            )}
+          </div>
+        </aside>
       </div>
-      {(issue || video.captureIssue || video.uploadError || lookupError) && (
+      {(video.captureIssue || video.uploadError || lookupError) && (
         <details open className="destination p-4">
           <summary className="cursor-pointer font-medium">
             Recording issues
@@ -350,7 +445,6 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
               ["Capture", video.captureIssue],
               [video.remote ? "Sharing" : "Upload", video.uploadError],
               ["Drive status", lookupError],
-              ["Last action", issue],
             ]
               .filter(([, message]) => message)
               .map(([label, message]) => (
