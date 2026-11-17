@@ -194,7 +194,7 @@ app.whenReady().then(() => {
     if (!win.isDestroyed()) win.show();
   }
   handle("showStudio", restoreStudio);
-  handle("recordingMenu", (showToolbar,cameraOn) => {
+  handle("recordingMenu", (showToolbar,cameraOn,position) => {
     if (!library.open || closeRecordingMenu)
       throw Error("Recording unavailable.");
     closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(
@@ -202,6 +202,7 @@ app.whenReady().then(() => {
       () => win.webContents.send("toggleRecording"),
       showToolbar===true,
       cameraOn ? point=>win.webContents.send("cameraPosition",point) : null,
+      position || {x:1,y:1},
     );
   });
   handle("recordingStatus",(paused,ms)=>closeRecordingMenu?.update(paused,ms));

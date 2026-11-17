@@ -1,6 +1,6 @@
 const { Tray, Menu, globalShortcut, nativeImage } = require("electron");
 
-function recordingMenu(onStop,onToggle,showToolbar,moveCamera) {
+function recordingMenu(onStop,onToggle,showToolbar,moveCamera,initialPosition) {
   // A small red recording light, also visible against a dark menu bar.
   const bytes = Buffer.alloc(16 * 16 * 4);
   for (let y = 0; y < 16; y++)
@@ -32,13 +32,15 @@ function recordingMenu(onStop,onToggle,showToolbar,moveCamera) {
     tray.destroy();
   }
   try {
-    toolbar=require("./toolbar.cjs").recordingToolbar({toggle:onToggle,stop:onStop});
+    let position=initialPosition;
+    function place(point){position=point;moveCamera(point);tick();}
+    toolbar=require("./toolbar.cjs").recordingToolbar({toggle:onToggle,stop:onStop,position:moveCamera ? place : null});
     if(showToolbar)toolbar.show();
     registered = globalShortcut.register(shortcut, onStop);
     let paused=false,base=0,started=Date.now();
     function rebuild(){tray.setContextMenu(
       Menu.buildFromTemplate([
-        ...(moveCamera ? [{label:"Camera position",submenu:["Top left","Top right","Bottom left","Bottom right"].map((label,i)=>({label,click:()=>moveCamera({x:i%2,y:Math.floor(i/2)})}))}] : []),
+        ...(moveCamera ? [{label:"Camera position",submenu:["Top left","Top right","Bottom left","Bottom right"].map((label,i)=>({label,click:()=>place({x:i%2,y:Math.floor(i/2)})}))}] : []),
         {label:"Show floating controls",click:()=>toolbar.show()},
         {label:paused?"Resume recording":"Pause recording",click:onToggle},
         {
@@ -54,7 +56,7 @@ function recordingMenu(onStop,onToggle,showToolbar,moveCamera) {
       const clock =
         Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
       if (process.platform === "darwin") tray.setTitle((paused ? "Ⅱ " : "")+clock);
-      toolbar.update({clock,paused});
+      toolbar.update({clock,paused,position:moveCamera ? position : null});
       tray.setToolTip("glint · Recording " + clock);
     }
     tick();

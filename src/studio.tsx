@@ -337,7 +337,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         throw Error(
           "Capture ended before recording started. Choose a capture source again.",
         );
-      await api.recordingMenu(showToolbar,cameraOn);
+      await api.recordingMenu(showToolbar,cameraOn,cameraPosition.current);
       if (failure) throw failure;
       startedAt = performance.now();
       r.start(1000);
