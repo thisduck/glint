@@ -22,6 +22,8 @@ const methods = [
   "recordingsFolder",
   "upload",
   "share",
+  "driveDetails",
+  "reveal",
 ];
 contextBridge.exposeInMainWorld(
   "desk",

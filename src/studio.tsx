@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { ChoiceSelect, MicrophoneCheckbox } from "./components/ui/controls";
 
 import { Folder, HardDrive } from "lucide-react";
+import { RecordingPage } from "./recording-page";
 import { openMicrophone } from "./microphone.mjs";
 import { SourcePicker, type CaptureSource } from "./source-picker";
 const api = window.desk;
@@ -308,8 +309,11 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       reset();
     }
   }
+  const finished = videos.find(v => v.id === preview);
+  if (finished) return <RecordingPage key={finished.id} video={finished} profile={profile} onBack={() => play("")} refresh={refresh} />;
   return (
     <>
+      <h2 className="mb-4 mt-7 font-display text-2xl font-medium tracking-tight">Recording studio</h2>
       {pickerOpen && (
         <SourcePicker
           current={source}
@@ -632,13 +636,6 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         <h2 className="mb-4 font-display text-2xl font-medium tracking-tight">
           Recordings
         </h2>
-        {preview && (
-          <video
-            className="mb-4 max-h-80 w-full rounded-xl bg-deep"
-            controls
-            src={"clip://library/" + preview}
-          />
-        )}
         {!videos.length && (
           <small className="block rounded-xl border border-dashed border-line p-6 text-center text-sm text-muted">
             No recordings in {profile.name} yet.
@@ -647,7 +644,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         {videos.map((v) => (
           <article key={v.id}>
             <time>{new Date(v.created).toLocaleString()}</time>{" "}
-            <button onClick={() => play(v.id)}>Preview</button>
+            <button disabled={!!busy || phase !== "idle"} onClick={() => {releaseCapture(); choose(null); play(v.id);}}>View recording</button>
             {v.remote ? (
               <>
                 <button

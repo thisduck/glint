@@ -170,11 +170,6 @@ function App() {
             </Popover.Portal>
           </Popover.Root>
         </header>
-        <div>
-          <h2 className="mb-4 mt-7 font-display text-2xl font-medium tracking-tight">
-            Recording studio
-          </h2>
-        </div>
         {profile && (
           <Studio
             key={profile.id}

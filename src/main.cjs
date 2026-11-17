@@ -88,14 +88,19 @@ app.whenReady().then(() => {
   );
   handle("folder", (profile, account) => google.folder(profile, account));
   handle("upload", (id) => uploads.send(id));
-  handle("share", (id, copy) => {
-    const remote = store.db
-      .prepare("SELECT remote FROM videos WHERE id=?")
-      .get(id)?.remote;
-    if (!remote) throw Error("Upload this recording first.");
-    const url =
-      "https://drive.google.com/file/d/" + encodeURIComponent(remote) + "/view";
-    return copy ? clipboard.writeText(url) : shell.openExternal(url);
+  async function driveDetails(id) {
+    const video = store.db.prepare("SELECT remote,account FROM videos WHERE id=? AND ready=1").get(id);
+    if (!video?.remote) throw Error("Upload this recording first.");
+    const headers = {Authorization:"Bearer " + await google.access(video.account)};
+    const info = await google.fileInfo(video.remote,headers);
+    return {access:require("./drive-status.cjs").describeAccess(info), metadata:!!info.videoMediaMetadata?.durationMillis, link:info.webViewLink};
+  }
+  handle("driveDetails",driveDetails);
+  handle("reveal",id => shell.showItemInFolder(library.file(id)));
+  handle("share", async (id,copy) => {
+    const {link} = await driveDetails(id);
+    if (!link || new URL(link).origin !== "https://drive.google.com") throw Error("Drive has not returned a viewing link yet.");
+    return copy ? clipboard.writeText(link) : shell.openExternal(link);
   });
   handle("sources", async () => {
     const items = await sources({ width: 400, height: 225 });
