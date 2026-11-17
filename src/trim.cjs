@@ -17,10 +17,7 @@ async function trimRecording(library, id, start, end) {
     (original.durationMs && end > Math.ceil(original.durationMs / 1000))
   )
     throw Error("Choose an end time after the start and within the recording.");
-  const binary =
-    ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg"].find((p) =>
-      fs.existsSync(p),
-    ) || "ffmpeg";
+  const binary = require("./ffmpeg.cjs").ffmpegBinary();
   const copy = randomUUID();
   const output = library.file(copy);
   try {

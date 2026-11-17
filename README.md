@@ -29,7 +29,7 @@ Each profile also has a sharing preference for new recordings. **Private · only
 
 Stop a recording or choose **View recording** in the library. The page plays the local copy immediately, tracks upload progress, and shows the link audience reported by Drive. **Copy link** copies the Drive viewing link in one click. Drive exposes video metadata but does not provide a definitive playback-ready flag. Use **Open in Drive** to check the player.
 
-Use **Add title** to name the recording in glint. Future uploads use the saved title. **Trim recording** accepts start and end times in seconds and saves a separate local copy in the same profile. Trimming uses FFmpeg with VP9 and Opus support from PATH or a standard Homebrew installation. The **Recording issues** section includes saved capture, upload, and sharing errors when available.
+Use **Add title** to name the recording in glint. Future uploads use the saved title. Drag the edges of the filmstrip in **Trim clip**. Click the frames to scrub or select **Preview clip** to play the range. Focus either edge and use the arrow keys for fine adjustments. **Save clip as copy** creates a separate recording in the same profile. Trimming uses FFmpeg with VP9 and Opus support from PATH or a standard Homebrew installation. The **Recording issues** section includes saved capture, upload, and sharing errors when available.
 
 **Save to Drive** streams the local file directly to Google. Recordings keep the destination selected at capture time. For a recording made without a destination, the first upload uses its profile's configured folder. An interrupted upload can be retried. **Copy link** copies the Drive viewing URL. **Open in Drive** opens the file where you can change sharing permissions.
 

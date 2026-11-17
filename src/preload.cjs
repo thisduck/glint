@@ -12,6 +12,7 @@ const methods = [
   "end",
   "renameRecording",
   "trimRecording",
+  "filmstrip",
   "list",
   "setAutoUpload",
   "setPrivacy",

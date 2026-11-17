@@ -182,6 +182,9 @@ app.whenReady().then(() => {
   });
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
+  handle("filmstrip", (id) =>
+    require("./filmstrip.cjs").filmstrip(library, id),
+  );
   handle("trimRecording", (id, start, end) =>
     require("./trim.cjs").trimRecording(library, id, start, end),
   );
@@ -195,7 +198,9 @@ app.whenReady().then(() => {
       .list(id)
       .map((v) => ({ ...v, progress: uploads.progress.get(v.id) })),
   );
-  handle("profiles", () => store.profiles().map(profile => ({...profile, canSetPrivacy: true})));
+  handle("profiles", () =>
+    store.profiles().map((profile) => ({ ...profile, canSetPrivacy: true })),
+  );
   handle("save", (name, id) => store.save(name, id));
   win = new BrowserWindow({
     icon: appIcon,
