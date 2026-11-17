@@ -11,11 +11,11 @@ export function Logo() {
       strokeLinejoin="round"
       strokeLinecap="round"
     >
-      <path
-        d="M6 35V16a11 11 0 0 1 22 0v19a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1Z"
-        fill="var(--tint)"
-      />
-      <path d="m12 21 6-8" />
+      <g transform="rotate(24 17 21)">
+        <path d="M17 28v9" strokeWidth="3.2" />
+        <ellipse cx="17" cy="16" rx="9.6" ry="12.2" fill="var(--tint)" />
+        <path d="m13 16 4-6" />
+      </g>
     </svg>
   );
 }
