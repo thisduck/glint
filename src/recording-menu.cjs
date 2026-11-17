@@ -64,7 +64,7 @@ function recordingMenu(
           ...(moveCamera
             ? [
                 {
-                  label: "Show desktop camera bubble",
+                  label: "Show camera preview",
                   click: () => toolbar.showCamera(),
                 },
                 {
@@ -115,7 +115,7 @@ function recordingMenu(
       if (process.platform === "darwin")
         tray.setTitle((paused ? "Ⅱ " : "") + clock);
       toolbar.update({ clock, paused, position: moveCamera ? position : null });
-      tray.setToolTip("glint · Recording " + clock);
+      tray.setToolTip("glint · " + (paused ? "Paused " : "Recording ") + clock);
     }
     tick();
     timer = setInterval(tick, 1000);

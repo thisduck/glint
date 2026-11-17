@@ -1,97 +1,187 @@
 <!doctype html>
 <html lang="en">
-  <meta charset="utf-8" /><meta
+  <meta charset="utf-8" />
+  <meta
     http-equiv="Content-Security-Policy"
     content="default-src 'none'; img-src data:; style-src 'unsafe-inline'"
-  /><title>glint recording controls</title>
+  />
+  <title>glint recording controls</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
     body {
       margin: 0;
-      background: #1b2236;
-      color: white;
-      height: 60px;
-      display: flex;
-      align-items: center;
-      justify-content: space-evenly;
-      gap: 5px;
-      padding: 8px;
-      font:
-        14px "Helvetica Neue",
-        sans-serif;
+      background: #24222d;
+      color: #fff;
+      padding: 10px 12px;
+      font: 13px -apple-system, BlinkMacSystemFont, sans-serif;
+      user-select: none;
       -webkit-app-region: drag;
     }
-    time {
-      font-variant-numeric: tabular-nums;
+
+    .controls, .camera, .status, button {
+      display: flex;
+      align-items: center;
     }
-    i {
-      background: #ff797b;
+
+    .controls { gap: 8px; height: 36px; }
+    .status { min-width: 99px; gap: 7px; }
+    .status strong, .label { display: block; font-size: 11px; }
+    time { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .light {
+      background: #ff807c;
       border-radius: 50%;
-      width: 9px;
-      height: 9px;
+      width: 8px;
+      height: 8px;
+      flex: 0 0 auto;
     }
-    .paused i {
-      background: #ffca70;
-    }
+
+    .paused .light { background: #f7c263; }
+
     button {
-      font: inherit;
+      justify-content: center;
+      gap: 5px;
+      min-height: 32px;
+      padding: 6px 9px;
+      border: 1px solid #54515f;
+      border-radius: 8px;
+      background: #393641;
       color: inherit;
-      background: #333d58;
-      border: 0;
-      border-radius: 7px;
-      padding: 7px;
+      font: inherit;
+      font-weight: 600;
       cursor: pointer;
-      -webkit-app-region: no-drag;
+      white-space: nowrap;
     }
-    button:hover {
-      background: #485674;
+
+    button, input { -webkit-app-region: no-drag; }
+    button:hover { background: #4e4a59; }
+    button:focus-visible, input:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    button svg { width: 14px; height: 14px; flex: 0 0 auto; }
+    #pause { min-width: 78px; }
+    #pause .play-icon, .paused #pause .pause-icon { display: none; }
+    .paused #pause .play-icon { display: block; }
+    #stop { background: #ffd8d4; border-color: #ffd8d4; color: #5f201f; }
+    #stop:hover { background: #ffbcb6; }
+    #hide { margin-left: auto; }
+    .preview-summary { min-width: 0; flex: 1; cursor: grab; }
+    .preview-summary p { margin: 0 0 2px; color: #ded8e7; font-size: 11px; }
+    .preview-summary strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #start { background: #e9d9f2; border-color: #e9d9f2; color: #362441; }
+    #start:hover { background: #f8ebff; }
+    button:disabled { opacity: .65; cursor: default; }
+    .preview-options {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      min-height: 39px;
+      gap: 7px;
     }
+    .preview-options [aria-pressed="true"] { border-color: #e0ceed; }
+    .preview .camera {
+      margin: 8px 0 0;
+      padding: 8px 0 0;
+      border: 0;
+      border-top: 1px solid #54515f;
+    }
+    .preview .camera-control:last-child { flex: 1; }
+    .preview #scale { width: min(100%, 175px); }
+
+    .camera {
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .camera-control { display: flex; flex-direction: column; gap: 3px; }
     #position {
       position: relative;
-      width: 64px;
-      height: 36px;
+      width: 73px;
+      height: 29px;
+      min-height: 0;
       padding: 0;
       touch-action: none;
-      background: #101626;
-      border: 1px solid #8490b1;
+      cursor: crosshair;
+      background: #171620;
+      border-color: #7c7788;
+      border-radius: 5px;
+      overflow: hidden;
     }
+
     #position b {
       position: absolute;
-      width: 9px;
-      height: 9px;
       border-radius: 50%;
-      background: #b9c7ff;
+      background: #e0ceed center / cover;
+      box-shadow: 0 0 0 1px #171620;
       pointer-events: none;
     }
-    #position b {
-      background-size: cover;
-    }
-    #scale {
-      width: 76px;
-      -webkit-app-region: no-drag;
-    }
+
+    #scale { width: 102px; height: 29px; margin: 0; accent-color: #e0ceed; }
+    output { color: #ded8e7; font-variant-numeric: tabular-nums; }
+    .help { margin: 6px 0 0; color: #ded8e7; font-size: 11px; }
   </style>
   <body>
-    <span aria-hidden="true">⠿</span><i></i><time>0:00</time
-    ><button id="pause" data-command="toggle">Pause</button
-    ><button data-command="stop">Stop</button
-    ><button
-      hidden
-      id="position"
-      title="Drag to position camera"
-      aria-label="Camera position, drag or use arrow keys"
-    >
-      <b></b></button
-    ><input
-      hidden
-      id="scale"
-      type="range"
-      min="10"
-      max="48"
-      title="Camera bubble size"
-      aria-label="Camera bubble size"
-    /><button data-command="hide">Hide</button>
+    <main aria-label="Recording controls">
+    <div id="preview-controls" hidden>
+      <div class="controls">
+        <div class="preview-summary">
+          <p>Ready to record</p>
+          <strong id="source-name"></strong>
+        </div>
+        <button id="back" data-command="cancel" type="button">Back to studio</button>
+        <button id="start" data-command="start" type="button">Start recording</button>
+      </div>
+      <div class="preview-options" aria-label="What to include">
+        <button id="mic" data-command="toggleMic" type="button" aria-label="Microphone" aria-pressed="false">Microphone off</button>
+        <button id="camera-toggle" data-command="toggleCamera" type="button" aria-label="Camera" aria-pressed="false">Camera off</button>
+      </div>
+    </div>
+    <div class="controls" id="recording-controls">
+      <div class="status">
+        <span class="light" aria-hidden="true"></span>
+        <div>
+          <strong id="status" role="status">Recording</strong>
+          <time aria-label="Elapsed recording time">0:00</time>
+        </div>
+      </div>
+      <button id="pause" data-command="toggle" type="button">
+        <svg class="pause-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <rect x="4" y="3" width="3" height="10" rx="1" />
+          <rect x="9" y="3" width="3" height="10" rx="1" />
+        </svg>
+        <svg class="play-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M5 3v10l8-5z" />
+        </svg>
+        <span>Pause</span>
+      </button>
+      <button id="stop" data-command="stop" type="button">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <rect x="3" y="3" width="10" height="10" rx="2" />
+        </svg>
+        Stop recording
+      </button>
+      <button id="hide" data-command="hide" type="button" aria-describedby="restore-help">Hide</button>
+    </div>
+      <section class="camera" aria-label="Camera controls" hidden>
+        <div class="camera-control">
+          <span class="label">Camera position</span>
+          <button
+            id="position"
+            type="button"
+            title="Drag here or use the arrow keys"
+            aria-label="Camera position"
+            aria-describedby="camera-help"
+          >
+            <b></b>
+          </button>
+        </div>
+        <label class="camera-control">
+          <span class="label">Camera size <output aria-hidden="true">23%</output></span>
+          <input id="scale" type="range" min="10" max="48" value="23" aria-label="Camera size" aria-valuetext="23%" />
+        </label>
+      </section>
+    </main>
+    <p class="help" id="restore-help">Drag the bar to move it. Reopen it from the glint menu bar icon.</p>
+    <p class="help" id="camera-help" hidden>Drag the camera or use the position control with the arrow keys.</p>
   </body>
 </html>
