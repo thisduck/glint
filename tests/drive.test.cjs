@@ -145,3 +145,25 @@ test("profile folder setup skips Picker and reuses the reserved ID after a lost 
   assert.equal(store.profiles()[0].folder, folder.id);
   assert.equal(store.profiles()[1].folder, null);
 });
+
+test("an identity-only grant prompts for Drive consent on exchange and refresh", async (t) => {
+  const store = new Store(":memory:");
+  const google = new Google(store, {}, () => {}, {
+    GOOGLE_CLIENT_ID: "test",
+    GOOGLE_CLIENT_SECRET: "test",
+  });
+  let scope = "openid email";
+  t.mock.method(global, "fetch", async () =>
+    Response.json({ scope, access_token: "test-access" }),
+  );
+  for (const grant_type of ["authorization_code", "refresh_token"])
+    await assert.rejects(
+      google.token({ grant_type }),
+      /Reconnect this account/,
+    );
+  scope += " https://www.googleapis.com/auth/drive.file";
+  assert.equal(
+    (await google.token({ grant_type: "refresh_token" })).access_token,
+    "test-access",
+  );
+});

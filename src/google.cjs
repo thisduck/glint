@@ -3,11 +3,23 @@ const http = require("node:http"),
 const fs = require("node:fs");
 const tokenUrl = "https://oauth2.googleapis.com/token";
 const files = "https://www.googleapis.com/drive/v3/files";
+const driveScope = "https://www.googleapis.com/auth/drive.file";
+const reconnectMessage =
+  "Reconnect this account using Connect Google account. On Google's consent screen, select the permission to access the Drive files you use with glint, then continue.";
 const random = () => crypto.randomBytes(32).toString("base64url");
 async function json(url, options) {
   const res = await fetch(url, options);
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
+    if (
+      res.status === 403 &&
+      (data.error?.details?.some(
+        (detail) => detail.reason === "ACCESS_TOKEN_SCOPE_INSUFFICIENT",
+      ) ||
+        /insufficient authentication scopes/i.test(data.error?.message || ""))
+    ) {
+      throw Error(reconnectMessage);
+    }
     throw Error(
       data.error_description ||
         data.error?.message ||
@@ -71,10 +83,18 @@ class Google {
     return { client_id, client_secret };
   }
   async token(params) {
-    return json(tokenUrl, {
+    const tokens = await json(tokenUrl, {
       method: "POST",
       body: new URLSearchParams({ ...this.credentials(), ...params }),
     });
+    // An omitted scope means the grant is unchanged. Drive errors still
+    // identify insufficient permissions on previously stored grants.
+    if (
+      typeof tokens.scope === "string" &&
+      !tokens.scope.split(/\s+/).includes(driveScope)
+    )
+      throw Error(reconnectMessage);
+    return tokens;
   }
   accounts() {
     return this.db
@@ -91,7 +111,7 @@ class Google {
         redirect_uri,
         response_type: "code",
         state,
-        scope: "openid email https://www.googleapis.com/auth/drive.file",
+        scope: "openid email " + driveScope,
         access_type: "offline",
         prompt: "select_account consent",
         code_challenge_method: "S256",
