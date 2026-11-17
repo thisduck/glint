@@ -22,6 +22,7 @@ test(
       "lavfi",
       "-i",
       "color=c=blue:s=96x64:r=10:d=2",
+      "-f","lavfi","-i","sine=frequency=440:duration=2","-c:a","libopus",
       "-c:v",
       "libvpx-vp9",
       "-f",
@@ -37,6 +38,9 @@ test(
     const cut = await trimRecording(lib,id,0,2,[[0.4,0.8],[1.2,1.5]]);
     assert.ok(Math.abs(lib.list(1).find(v=>v.id===cut).durationMs-1300)<=110);
     await assert.rejects(trimRecording(lib,id,0,2,[[0,2]]),/Keep part/);
+    const audio = spawnSync("ffmpeg",["-v","error","-i",lib.file(cut),"-map","0:a:0","-ar","8000","-ac","1","-f","s16le","-"]);
+    assert.equal(audio.status,0);
+    assert.ok(Math.abs(audio.stdout.length/16000-1.3)<0.06);
     const edited = lib.list(1).find((v) => v.id === copy);
     assert.equal(edited.title, "Walkthrough · trim");
     assert.ok(edited.durationMs >= 900 && edited.durationMs <= 1100);
