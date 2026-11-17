@@ -6,6 +6,7 @@ const methods = [
   "source",
   "countdown",
   "showStudio",
+  "recordingMenu",
   "begin",
   "append",
   "end",
@@ -23,7 +24,11 @@ const methods = [
 ];
 contextBridge.exposeInMainWorld(
   "desk",
-  Object.fromEntries(
+  { onStopRecording(callback) {
+    const listener = () => callback();
+    ipcRenderer.on("stopRecording", listener);
+    return () => ipcRenderer.removeListener("stopRecording", listener);
+  }, ...Object.fromEntries(
     methods.map((k) => [k, (...args) => ipcRenderer.invoke(k, ...args)]),
-  ),
+  )},
 );

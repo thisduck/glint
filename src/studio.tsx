@@ -117,6 +117,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   const driveSaved = Boolean(profile.account && profile.folder);
   const savedEmail = accounts.find((a) => a.id === profile.account)?.email;
   const recorder = useRef(null);
+  useEffect(() => api.onStopRecording(() => {
+    if (recorder.current?.state === "recording") recorder.current.stop();
+  }), []);
   async function refresh() {
     setVideos(await api.list(profile.id));
   }
@@ -253,7 +256,6 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         lock(false);
         return;
       }
-      await api.showStudio();
       id = await api.begin(profile.id);
       recorder.current = r;
       r.ondataavailable = (e) => {
@@ -296,6 +298,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         throw Error(
           "Capture ended before recording started. Choose a capture source again.",
         );
+      await api.recordingMenu();
       if (failure) throw failure;
       r.start(1000);
       setPhase("recording");

@@ -129,7 +129,17 @@ app.whenReady().then(() => {
     cb({ video });
   });
   handle("countdown", () => require("./countdown.cjs").countdown(win));
-  handle("showStudio", () => win.show());
+  let closeRecordingMenu;
+  function restoreStudio() {
+    closeRecordingMenu?.();
+    closeRecordingMenu = null;
+    if (!win.isDestroyed()) win.show();
+  }
+  handle("showStudio", restoreStudio);
+  handle("recordingMenu", () => {
+    if (!library.open || closeRecordingMenu) throw Error("Recording unavailable.");
+    closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(() => win.webContents.send("stopRecording"));
+  });
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
   handle("end", (id, complete = true) => {
@@ -147,6 +157,8 @@ app.whenReady().then(() => {
   });
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
+  win.webContents.on("render-process-gone", restoreStudio);
+  win.on("closed", () => closeRecordingMenu?.());
   win.loadFile(path.join(__dirname, "index.html"));
 });
 app.on("window-all-closed", () => app.quit());
