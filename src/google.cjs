@@ -250,8 +250,7 @@ class Google {
             }
             const selected = url.searchParams.get("id");
             if (!selected) throw Error("Folder selection cancelled.");
-            res.end("Saved");
-            ok(selected);
+            res.end("Saved",()=>ok(selected));
             return;
           }
           const args = JSON.stringify({ key, project, token }).replaceAll(
