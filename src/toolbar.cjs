@@ -8,7 +8,7 @@ function recordingToolbar(commands) {
   const win = new BrowserWindow({
     x: area.x + 18,
     y: area.y + area.height - 84,
-    width: commands.position ? 450 : 360,
+    width: commands.position ? 540 : 360,
     height: 60,
     frame: false,
     resizable: false,
@@ -22,6 +22,11 @@ function recordingToolbar(commands) {
       sandbox: true,
     },
   });
+  const portraitOptions=commands.portraitOptions;
+  const bubble=portraitOptions?.desktop ? require("./desktop-camera.cjs").desktopCamera(portraitOptions.area || area,commands.initialPosition,commands.position) : null;
+  const portraitTimer=portraitOptions && setInterval(()=>{
+    if(bubble || (!win.isDestroyed() && win.isVisible()))portraitOptions.request();
+  },125);
   let state = { clock: "0:00", paused: false };
   const receive = (event, action, point) => {
     if (win.isDestroyed() || event.senderFrame !== win.webContents.mainFrame)
@@ -32,6 +37,7 @@ function recordingToolbar(commands) {
       [point?.x, point?.y].every((v) => Number.isFinite(v) && v >= 0 && v <= 1)
     )
       commands.position(point);
+    if(action==="scale" && commands.position && Number.isFinite(point) && point>=0.1 && point<=0.48)commands.position({scale:point});
     if (action === "hide") win.hide();
     else if (action === "stop" || action === "toggle") commands[action]();
   };
@@ -57,11 +63,14 @@ function recordingToolbar(commands) {
       if (!win.isDestroyed() && !win.webContents.isLoading())
         win.showInactive();
     },
+    portrait(frame){bubble?.portrait(frame);if(!win.isDestroyed() && win.isVisible())win.webContents.send("portrait",frame);},
     update(next) {
+      bubble?.update(next.position);
       state = next;
       if (!win.isDestroyed()) win.webContents.send("toolbarState", next);
     },
     close() {
+      clearInterval(portraitTimer);bubble?.close();
       if (!win.isDestroyed()) win.destroy();
     },
   };

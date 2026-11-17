@@ -6,14 +6,19 @@ window.addEventListener("DOMContentLoaded", () => {
   const map = document.querySelector("#position"),
     dot = map.querySelector("b");
   let current = { x: 1, y: 1 };
+  const scale=document.querySelector("#scale");
+  scale.oninput=()=>ipcRenderer.send("toolbarCommand","scale",Number(scale.value)/100);
+  ipcRenderer.on("portrait",(_,frame)=>{dot.style.backgroundImage="url("+frame+")";});
   function paint(point) {
     current = point;
-    dot.style.left = point.x * (map.clientWidth - 9) + "px";
-    dot.style.top = point.y * (map.clientHeight - 9) + "px";
+    const size=map.clientHeight*(point.scale??0.23);
+    dot.style.width=dot.style.height=size+"px";
+    dot.style.left = point.x * (map.clientWidth - size) + "px";
+    dot.style.top = point.y * (map.clientHeight - size) + "px";
   }
   const clamp = (n) => Math.min(1, Math.max(0, n));
   function move(x, y) {
-    const point = { x: clamp(x), y: clamp(y) };
+    const point = { ...current,x: clamp(x), y: clamp(y) };
     paint(point);
     ipcRenderer.send("toolbarCommand", "position", point);
   }
@@ -42,7 +47,8 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   };
   ipcRenderer.on("toolbarState", (_, state) => {
-    map.hidden = !state.position;
+    scale.hidden=map.hidden = !state.position;
+    if(state.position)scale.value=String(Math.round((state.position.scale??0.23)*100));
     if (state.position) paint(state.position);
     document.querySelector("time").textContent = state.clock;
     document.querySelector("#pause").textContent = state.paused

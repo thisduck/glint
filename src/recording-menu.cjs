@@ -6,6 +6,7 @@ function recordingMenu(
   showToolbar,
   moveCamera,
   initialPosition,
+  portraitOptions,
 ) {
   // A small red recording light, also visible against a dark menu bar.
   const bytes = Buffer.alloc(16 * 16 * 4);
@@ -40,14 +41,16 @@ function recordingMenu(
   try {
     let position = initialPosition;
     function place(point) {
-      position = point;
-      moveCamera(point);
+      position = {...position,...point};
+      moveCamera(position);
       tick();
     }
     toolbar = require("./toolbar.cjs").recordingToolbar({
       toggle: onToggle,
       stop: onStop,
       position: moveCamera ? place : null,
+      initialPosition,
+      portraitOptions:moveCamera ? portraitOptions : null,
     });
     if (showToolbar) toolbar.show();
     registered = globalShortcut.register(shortcut, onStop);
@@ -59,6 +62,7 @@ function recordingMenu(
         Menu.buildFromTemplate([
           ...(moveCamera
             ? [
+                {label:"Camera size",submenu:[["Small",0.15],["Medium",0.23],["Large",0.36],["Extra large",0.48]].map(([label,scale])=>({label,click:()=>place({scale})}))},
                 {
                   label: "Camera position",
                   submenu: [
@@ -100,7 +104,7 @@ function recordingMenu(
     tick();
     timer = setInterval(tick, 1000);
     return {
-      close,
+      close,portrait:frame=>toolbar.portrait(frame),
       update(value, ms) {
         paused = value;
         base = ms;

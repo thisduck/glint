@@ -225,7 +225,7 @@ app.whenReady().then(() => {
     if (!win.isDestroyed()) win.show();
   }
   handle("showStudio", restoreStudio);
-  handle("recordingMenu", (showToolbar, cameraOn, position) => {
+  handle("recordingMenu", (showToolbar, cameraOn, position,windowCapture) => {
     if (!library.open || closeRecordingMenu)
       throw Error("Recording unavailable.");
     closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(
@@ -236,7 +236,11 @@ app.whenReady().then(() => {
         ? (point) => win.webContents.send("cameraPosition", point)
         : null,
       position || { x: 1, y: 1 },
+      {desktop:windowCapture===true,request:()=>win.webContents.send("portraitRequest")},
     );
+  });
+  ipcMain.on("cameraPortrait",(event,frame)=>{
+    if(event.senderFrame===win.webContents.mainFrame && typeof frame==="string" && frame.length<200000 && frame.startsWith("data:image/jpeg;base64,"))closeRecordingMenu?.portrait(frame);
   });
   handle("recordingStatus", (paused, ms) =>
     closeRecordingMenu?.update(paused, ms),

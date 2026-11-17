@@ -2,7 +2,7 @@
 <html lang="en">
   <meta charset="utf-8" /><meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'none'; style-src 'unsafe-inline'"
+    content="default-src 'none'; img-src data:; style-src 'unsafe-inline'"
   /><title>glint recording controls</title>
   <style>
     * {
@@ -65,6 +65,7 @@
       background: #b9c7ff;
       pointer-events: none;
     }
+    #position b {background-size:cover} #scale {width:76px; -webkit-app-region:no-drag}
   </style>
   <body>
     <span aria-hidden="true">⠿</span><i></i><time>0:00</time
@@ -77,6 +78,6 @@
       aria-label="Camera position, drag or use arrow keys"
     >
       <b></b></button
-    ><button data-command="hide">Hide</button>
+    ><input hidden id="scale" type="range" min="10" max="48" title="Camera bubble size" aria-label="Camera bubble size"><button data-command="hide">Hide</button>
   </body>
 </html>

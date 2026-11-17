@@ -167,15 +167,25 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   }, [pendingUploads, profile.id]);
   const capture = useRef<MediaStream | null>(null);
   const composition = useRef(null);
-  const cameraPosition = useRef({ x: 1, y: 1 });
+  const cameraPosition = useRef({ x: 1, y: 1, scale:0.23 });
+  const [cameraScale,setCameraScale]=useState(0.23);
   const [cameraOn, setCameraOn] = useState(false);
   useEffect(
     () =>
       api.onCameraPosition?.((point) => {
-        cameraPosition.current = point;
+        cameraPosition.current = {...cameraPosition.current,...point};
+        setCameraScale(cameraPosition.current.scale);
       }),
     [],
   );
+  useEffect(()=>api.onPortraitRequest?.(()=>{
+    const frame=composition.current?.portrait();
+    if(frame)api.sendPortrait(frame);
+  }),[]);
+  function resizeCamera(scale){
+    cameraPosition.current={...cameraPosition.current,scale};
+    setCameraScale(scale);
+  }
   async function toggleCamera(enabled) {
     if (!enabled) {
       composition.current?.close();
@@ -276,8 +286,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   function placeCamera(event) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const clamp = (n) => Math.max(0, Math.min(1, n));
-    const inset = Math.min(bounds.width, bounds.height) * 0.14;
+    const inset = Math.min(bounds.width, bounds.height) * (0.025+cameraPosition.current.scale/2);
     cameraPosition.current = {
+      ...cameraPosition.current,
       x: clamp(
         (event.clientX - bounds.left - inset) / (bounds.width - 2 * inset),
       ),
@@ -396,7 +407,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         throw Error(
           "Capture ended before recording started. Choose a capture source again.",
         );
-      await api.recordingMenu(showToolbar, cameraOn, cameraPosition.current);
+      await api.recordingMenu(showToolbar, cameraOn, cameraPosition.current,source.id.startsWith("window:"));
       if (failure) throw failure;
       startedAt = performance.now();
       r.start(1000);
@@ -544,6 +555,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             {cameraOn && (
               <small>{source ? "Drag on the preview to position your camera." : "Choose a screen or window to preview your camera."}</small>
             )}
+            {cameraOn && <label className="flex items-center gap-2">Bubble size<input aria-label="Bubble size" type="range" min="10" max="48" value={Math.round(cameraScale*100)} onChange={e=>resizeCamera(Number(e.target.value)/100)}/></label>}
             <MicrophoneCheckbox
               checked={mic}
               disabled={!!busy || phase !== "idle"}
