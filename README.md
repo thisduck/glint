@@ -57,7 +57,7 @@ In the destination panel, open **Manage accounts** to reconnect an email or disc
 
 ### Camera and recording controls
 
-After selecting a screen or window, turn on **Camera bubble** and drag on the preview to place it. During recording you can drag the dot in the floating toolbar or choose a corner from the menu bar. The camera is composited into the saved video.
+Turn on **Camera bubble** before or after choosing a screen or window. Drag on the preview to place it. During recording you can drag the dot in the floating toolbar or choose a corner from the menu bar. The camera is composited into the saved video.
 
 Drag the floating toolbar by its grip. Use **Pause**, **Resume**, **Stop**, or **Hide**. The menu bar can restore the toolbar. Floating controls default to visible for a window capture and hidden for a whole display, where macOS can capture floating windows.
 

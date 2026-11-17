@@ -184,18 +184,22 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       return;
     }
     const display = capture.current;
-    if (!display) return;
-    await action("Opening camera…", async () => {
-      const result = await cameraComposition(display, cameraPosition, () =>
-        setNotice("Camera disconnected. Screen recording continues."),
-      );
-      if (capture.current !== display) {
-        result.close();
-        return;
-      }
-      composition.current = result;
+    if (!display) {
       setCameraOn(true);
-    });
+      return;
+    }
+    await action("Opening camera…", () => attachCamera(display));
+  }
+  async function attachCamera(display: MediaStream) {
+    const result = await cameraComposition(display, cameraPosition, () =>
+      setNotice("Camera disconnected. Screen recording continues."),
+    );
+    if (capture.current !== display) {
+      result.close();
+      return;
+    }
+    composition.current = result;
+    setCameraOn(true);
   }
   const previewVideo = useRef<HTMLVideoElement>(null);
   const mounted = useRef(true);
@@ -253,6 +257,13 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           recorder.current.stop();
       };
       choose(item);
+      if (cameraOn) {
+        try {
+          await attachCamera(stream);
+        } catch (error) {
+          fail("Could not open the camera. " + error.message);
+        }
+      }
     } catch (e) {
       fail("Could not preview this source. " + e.message);
     } finally {
@@ -525,13 +536,13 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
               <input
                 type="checkbox"
                 checked={cameraOn}
-                disabled={!source || !!busy || phase !== "idle"}
+                disabled={!!busy || phase !== "idle"}
                 onChange={(e) => toggleCamera(e.target.checked)}
               />
               Camera bubble
             </label>
             {cameraOn && (
-              <small>Drag on the preview to position your camera.</small>
+              <small>{source ? "Drag on the preview to position your camera." : "Choose a screen or window to preview your camera."}</small>
             )}
             <MicrophoneCheckbox
               checked={mic}
