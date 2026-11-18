@@ -8,6 +8,10 @@ glint is a desktop screen recorder. You can record, play, and edit videos locall
 
 glint saves the screen or window you record, along with any camera, microphone, or system audio you enable. Its local library stores recording titles, thumbnails, profile settings, and upload status. The maintainers do not receive a copy of your recordings when you use the app.
 
+## App updates
+
+The installed app contacts GitHub to check for new versions and download updates. GitHub receives ordinary web request information such as your IP address. Update requests do not include recordings or Google account details. You can turn off automatic checks in the glint menu bar panel.
+
 ## What happens when you connect Google Drive
 
 You sign in through Google. glint uses your Google account ID and email address to show the connected account and send each profile’s uploads to the right place. It stores those identifiers on your Mac and uses macOS Keychain-backed encryption to protect the saved refresh token that lets it upload while you are signed in.

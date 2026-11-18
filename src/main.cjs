@@ -448,8 +448,31 @@ app.whenReady().then(() => {
         win.webContents.send("setupCommand", { profileId, key, value });
     },
   );
-  handle("configureStudioMenu", (settings) => menu.configure(settings));
+  let studioLocked = false;
+  handle("configureStudioMenu", (settings) => {
+    studioLocked = settings.locked;
+    menu.configure(settings);
+  });
   let quitting = false;
+  if (process.platform === "darwin" && process.arch === "arm64" && app.isPackaged && !process.defaultApp) {
+    const { autoUpdater } = require("electron");
+    const disabledKey = "DisableAutomaticAppUpdates";
+    const updates = require("./app-updates.cjs").appUpdates({
+      updater: autoUpdater,
+      version: app.getVersion(),
+      preferences: {
+        read: () => !systemPreferences.getUserDefault(disabledKey, "boolean"),
+        write: (enabled) => systemPreferences.setUserDefault(disabledKey, "boolean", !enabled),
+      },
+      busy: () => studioLocked || preparation || outline || library.open || closeRecordingMenu ||
+        editingFiles.size || uploads.busy.size,
+      onChange: () => menu.rebuild(),
+      // quitAndInstall closes windows before Electron emits before-quit.
+      beforeInstall: () => { quitting = true; },
+    });
+    menu.setUpdates(updates);
+    app.once("will-quit", () => updates.close());
+  }
   app.on("before-quit", () => { quitting = true; });
   win.on("close", (event) => {
     if (quitting || process.platform !== "darwin") return;

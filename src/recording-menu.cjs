@@ -4,7 +4,7 @@ function studioMenu(onNew, onOpen, onQuit, onSetting) {
   const icon = nativeImage.createFromPath(require("node:path").join(__dirname, "../build/trayTemplate.png"));
   icon.setTemplateImage(true);
   const tray = new Tray(icon);
-  let settings;
+  let settings, updates;
   let recording = false;
   let mode, rows, activeProfile;
   const panel = require("./tray-panel.cjs").trayPanel(tray, (requestedMode, id, raw, profileId) => {
@@ -52,6 +52,7 @@ function studioMenu(onNew, onOpen, onQuit, onSetting) {
         setting("systemAudio", "System audio"), setting("toolbar", "Floating controls"),
         setting("screenQuality", "Screen quality", levels), setting("cameraQuality", "Camera quality", levels));
     }
+    if (updates) items.push(...updates.rows());
     items.push({ id: "open", label: "Open glint", kind: "button", apply: onOpen, dismiss: true },
       { id: "quit", label: "Quit glint", kind: "button", apply: onQuit, dismiss: true });
     display("setup", items);
@@ -65,7 +66,8 @@ function studioMenu(onNew, onOpen, onQuit, onSetting) {
   }
   idle();
   return {
-    tray, idle, display,
+    tray, idle, display, rebuild,
+    setUpdates(controller) { updates = controller; rebuild(); },
     visible: panel.visible,
     destroy() { panel.destroy(); tray.destroy(); },
     beginRecording() { recording = true; },

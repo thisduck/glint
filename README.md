@@ -32,9 +32,13 @@ glint lives in your menu bar. Pick what to record, hit start, and your video is 
 
 To upload, open a profile's destination, choose **Connect Google Drive** and sign in with your Google account. glint creates a folder named after the profile, or you can pick your own.
 
+## App updates
+
+The installed Mac app checks GitHub for updates automatically. It downloads signed updates in the background and installs them when you quit glint. Open the glint menu bar panel and choose **Update and restart** to use one immediately. Under **Updates**, you can also check manually or switch off automatic checks.
+
 ## Private by default
 
-Recordings are stored on your Mac, and nothing leaves it unless you connect Google Drive. Drive access is limited to the files glint creates or that you choose. Sign-ins are encrypted and kept in your macOS Keychain.
+Recordings stay on your Mac unless you upload them to Google Drive. Drive access is limited to the files glint creates or that you choose. Sign-ins are encrypted and kept in your macOS Keychain.
 
 ## Learn more
 
