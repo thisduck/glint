@@ -27,7 +27,7 @@ import { qualityPresets, saveCaptureQuality, cameraConstraints, readCaptureQuali
 import { openMicrophone } from "./microphone.mjs";
 import { SourcePicker, qualityLabels, type CaptureSource, type CaptureQuality, type QualityKey } from "./source-picker";
 const api = window.desk;
-export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
+export function Studio({ profile, profiles, onProfile, refreshProfile, lock, fail, error = "" }) {
   const [source, choose] = useState<CaptureSource | null>(null);
   const [audioRetry, setAudioRetry] = useState<CaptureSource | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -215,7 +215,7 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
   const setupActive = useRef<symbol | null>(null);
   const [setupVisible, setSetupVisible] = useState(false);
   const startPending = useRef(false);
-  const handleSetup = useRef<(action: string) => void>();
+  const handleSetup = useRef<(action: string | { profileId: number; key: string; value: any }) => void>();
   useEffect(
     () => api.onSetupCommand?.((action) => handleSetup.current?.(action)),
     [],
@@ -603,7 +603,49 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
       startPending.current = false;
     }
   }
+  useEffect(() => {
+    if (!api.configureStudioMenu) return;
+    const inputs = [["default", "System default"], ...devices.map((d, i) =>
+      [d.deviceId, d.label || "Microphone " + (i + 1)])];
+    if (!inputs.some(([id]) => id === profile.microphoneId))
+      inputs.push([profile.microphoneId, "Unavailable · using system default"]);
+    api.configureStudioMenu({
+      profileId: profile.id, profileName: profile.name,
+      profiles: profiles.map((p) => [p.id, p.name]),
+      inputs, microphoneId: profile.microphoneId, mic, camera: cameraOn, cameraScale,
+      systemAudio, toolbar: showToolbar, screenQuality: quality.screen, cameraQuality: quality.camera,
+      locked: !!busy || phase !== "idle", previewing: setupVisible,
+    }).catch((e) => fail(e.message));
+  }, [profile, profiles, devices, mic, cameraOn, cameraScale, systemAudio, showToolbar, quality, busy, phase, setupVisible]);
+
   handleSetup.current = async (command) => {
+    if (typeof command === "object") {
+      if (command.profileId !== profile.id || busy || phase !== "idle") return;
+      const { key, value } = command;
+      switch (key) {
+        case "profileId":
+          if (value !== profile.id) { await leaveSetup(); onProfile(value); }
+          break;
+        case "camera": await toggleCamera(value); break;
+        case "mic": await saveMic(profile.microphoneId, value); break;
+        case "microphoneId": await saveMic(value, mic); break;
+        case "toolbar": await setToolbar(value); break;
+        case "cameraScale":
+          resizeCamera(value);
+          break;
+        case "screenQuality":
+        case "cameraQuality":
+        case "systemAudio":
+          if (key === "systemAudio") setSystemAudio(value);
+          else updateQuality(key === "screenQuality" ? "screen" : "camera", value);
+          if (source && !pickerOpen) {
+            await leaveSetup();
+            setPickerOpen(true);
+          }
+          break;
+      }
+      return;
+    }
     if (command === "newRecording") {
       if (busy || phase !== "idle") return;
       play("");

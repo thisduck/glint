@@ -10,6 +10,7 @@ const methods = [
   "countdown",
   "showStudio",
   "recordingMenu",
+  "configureStudioMenu",
   "recordingStatus",
   "begin",
   "append",

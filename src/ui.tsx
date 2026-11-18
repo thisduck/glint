@@ -293,6 +293,8 @@ function App() {
             key={profile.id}
             error={error}
             profile={profile}
+            profiles={profiles}
+            onProfile={choose}
             refreshProfile={refresh}
             lock={lock}
             fail={fail}

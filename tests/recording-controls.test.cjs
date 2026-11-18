@@ -65,7 +65,20 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
   const toolbarBounds = { x: -850, y: 100, width: 360, height: 52 };
   const { studioMenu, recordingMenu } = require("../src/recording-menu.cjs");
   let starts = 0;
-  const studio = studioMenu(() => starts++, () => {}, () => {});
+  const changed = [];
+  const studio = studioMenu(() => starts++, () => {}, () => {}, (...args) => changed.push(args));
+  const prefs = {
+    profileId: 1, profileName: "Work", profiles: [[1, "Work"]],
+    inputs: [["default", "System default"]], microphoneId: "default",
+    camera: true, mic: true, toolbar: true, systemAudio: false, cameraScale: 0.23,
+    screenQuality: "high", cameraQuality: "compact", locked: false,
+  };
+  studio.configure(prefs);
+  const camera = menu.find((item) => item.label === "Camera bubble");
+  assert.ok(camera.checked);
+  camera.click({ checked: false });
+  assert.deepEqual(changed, [[1, "camera", false]]);
+
   menu.find((item) => item.label === "New recording…").click();
   const controls = recordingMenu(
     studio,
@@ -79,6 +92,8 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
   t.after(() => {
     if (!closed) controls.close();
   });
+  studio.configure({ ...prefs, camera: false });
+  assert.ok(!menu.some((item) => item.label === "New recording…"));
   assert.deepEqual(toolbarCommands.initialBounds, toolbarBounds);
   menu.find((item) => item.label === "Pause recording").click();
   controls.update(true, 4500);
@@ -105,6 +120,7 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
   assert.equal(toggles, 2);
   controls.close();
   assert.ok(!destroyed && closed && !shortcut);
+  assert.equal(menu.find((item) => item.label === "Camera bubble").checked, false);
   menu.find((item) => item.label === "New recording…").click();
   assert.equal(starts, 2);
   studio.tray.destroy();

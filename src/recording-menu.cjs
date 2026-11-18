@@ -1,23 +1,65 @@
 const { Tray, Menu, globalShortcut, nativeImage } = require("electron");
 
-function studioMenu(onNew, onOpen, onQuit) {
+function studioMenu(onNew, onOpen, onQuit, onSetting) {
   const icon = nativeImage.createFromPath(require("node:path").join(__dirname, "../build/trayTemplate.png"));
   icon.setTemplateImage(true);
   const tray = new Tray(icon);
-  const idleMenu = Menu.buildFromTemplate([
-    { label: "New recording…", click: onNew },
-    { label: "Open glint", click: onOpen },
-    { type: "separator" },
-    { label: "Quit glint", click: onQuit },
-  ]);
+  let settings;
+  let recording = false;
+  function rebuild() {
+    if (recording) return;
+    const items = [
+      { label: settings?.previewing ? "Start recording" : "New recording…", enabled: !settings?.locked, click: onNew },
+    ];
+    if (settings) {
+      const { profileId } = settings;
+      const change = (key, value) => onSetting(profileId, key, value);
+      const toggle = (key, label) => ({
+        label, type: "checkbox", enabled: !settings.locked, checked: settings[key],
+        click: (item) => change(key, item.checked),
+      });
+      const choices = (key, label, options) => ({
+        label, enabled: !settings.locked,
+        submenu: options.map(([value, name]) => ({
+          label: name, type: "radio", checked: settings[key] === value,
+          click: () => change(key, value),
+        })),
+      });
+      const levels = [["high", "High"], ["balanced", "Balanced"], ["compact", "Compact"]];
+      const sizes = [[0.15, "Small"], [0.23, "Medium"], [0.36, "Large"]];
+      if (!sizes.some(([scale]) => scale === settings.cameraScale))
+        sizes.push([settings.cameraScale, "Custom · " + Math.round(settings.cameraScale * 100) + "%"]);
+      items.push(
+        { type: "separator" },
+        choices("profileId", "Profile · " + settings.profileName, settings.profiles),
+        toggle("camera", "Camera bubble"),
+        toggle("mic", "Microphone"),
+        choices("microphoneId", "Microphone input", settings.inputs),
+        toggle("systemAudio", "System audio"),
+        toggle("toolbar", "Floating controls"),
+        { type: "separator" },
+        choices("cameraScale", "Camera size", sizes),
+        choices("screenQuality", "Screen quality", levels),
+        choices("cameraQuality", "Camera quality", levels),
+      );
+    }
+    items.push({ type: "separator" }, { label: "Open glint", click: onOpen },
+      { label: "Quit glint", click: onQuit });
+    tray.setContextMenu(Menu.buildFromTemplate(items));
+  }
   function idle() {
+    recording = false;
     tray.setImage(icon);
     if (process.platform === "darwin") tray.setTitle("");
     tray.setToolTip("glint");
-    tray.setContextMenu(idleMenu);
+    rebuild();
   }
   idle();
-  return { tray, idle };
+  return {
+    tray, idle,
+    beginRecording() { recording = true; },
+    configure(next) { settings = next; rebuild(); },
+  };
 }
 
 function recordingMenu(
@@ -47,6 +89,7 @@ function recordingMenu(
       );
     }
   const { tray } = studio;
+  studio.beginRecording();
   tray.setImage(nativeImage.createFromBitmap(bytes, { width: 16, height: 16 }));
   const shortcut = "CommandOrControl+Shift+9";
   let registered = false,

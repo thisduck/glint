@@ -429,7 +429,12 @@ app.whenReady().then(() => {
       foregroundStudio();
     },
     () => app.quit(),
+    (profileId, key, value) => {
+      if (!library.open && !outline)
+        win.webContents.send("setupCommand", { profileId, key, value });
+    },
   );
+  handle("configureStudioMenu", (settings) => menu.configure(settings));
   let quitting = false;
   app.on("before-quit", () => { quitting = true; });
   win.on("close", (event) => {
