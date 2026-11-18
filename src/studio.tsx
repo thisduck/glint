@@ -458,6 +458,12 @@ export function Studio({ profile, profiles, onProfile, refreshProfile, lock, fai
   }
   async function start() {
     if (startPending.current || recorder.current || phase !== "idle") return;
+    if (quality.screen !== captureQuality.current.screen || quality.camera !== captureQuality.current.camera ||
+        systemAudio !== Boolean(capture.current?.getAudioTracks().length)) {
+      await leaveSetup();
+      setPickerOpen(true);
+      return;
+    }
     startPending.current = true;
     const fromSetup = setupActive.current;
     let activeMs = 0,
@@ -624,7 +630,7 @@ export function Studio({ profile, profiles, onProfile, refreshProfile, lock, fai
       const { key, value } = command;
       switch (key) {
         case "profileId":
-          if (value !== profile.id) { await leaveSetup(); onProfile(value); }
+          if (value !== profile.id) { await leaveSetup(false); onProfile(value); }
           break;
         case "camera": await toggleCamera(value); break;
         case "mic": await saveMic(profile.microphoneId, value); break;
@@ -638,10 +644,6 @@ export function Studio({ profile, profiles, onProfile, refreshProfile, lock, fai
         case "systemAudio":
           if (key === "systemAudio") setSystemAudio(value);
           else updateQuality(key === "screenQuality" ? "screen" : "camera", value);
-          if (source && !pickerOpen) {
-            await leaveSetup();
-            setPickerOpen(true);
-          }
           break;
       }
       return;
