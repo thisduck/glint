@@ -61,7 +61,7 @@ app.whenReady().then(() => {
   const { Google } = require("./google.cjs");
   const { Uploads } = require("./uploads.cjs");
   const { loadConfig, missing } = require("./google-config.cjs");
-  const config = loadConfig(app.getAppPath(), process.env, !app.isPackaged);
+  const config = loadConfig(app.getAppPath(), process.env, Boolean(process.defaultApp) || !app.isPackaged);
   const google = new Google(
     store,
     safeStorage,
