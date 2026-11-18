@@ -86,28 +86,22 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
         ? "Upload failed"
         : "Local copy only";
   return (
-    <section className="mt-6" aria-labelledby="recording-title">
-      <button
-        className="inline-flex items-center gap-2 border-0 bg-transparent px-2 text-sm font-medium text-muted"
-        onClick={onBack}
-      >
-        <ArrowLeft className="size-4" aria-hidden="true" /> Back to recordings
-      </button>
-      <header className="mb-5 mt-3">
-        <p className="text-sm text-muted">
-          {profile.name} ·{" "}
-          <time dateTime={video.created}>
-            {new Date(video.created).toLocaleString(undefined, {
-              dateStyle: "medium",
-              timeStyle: "short",
-            })}
-          </time>
-        </p>
+    <section className="mt-4" aria-labelledby="recording-title">
+      <header className="mb-4 flex items-start gap-2">
+        <button
+          aria-label="Back to recordings"
+          title="Back to recordings"
+          className="-ml-2 mt-0.5 grid size-8 shrink-0 place-items-center border-0 bg-transparent p-0 text-muted"
+          onClick={onBack}
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+        </button>
+        <div className="min-w-0 flex-1">
         {editing ? (
           <form
             id="recording-title"
             aria-label="Rename recording"
-            className="mt-2 flex flex-wrap gap-2"
+            className="flex flex-wrap gap-2"
             onSubmit={(e) => {
               e.preventDefault();
               run("Rename", async () => {
@@ -136,10 +130,10 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
             </button>
           </form>
         ) : (
-          <div className="mt-1 flex items-center gap-3">
+          <div className="flex items-center gap-3">
             <h2
               id="recording-title"
-              className="min-w-0 break-words font-display text-3xl font-semibold tracking-tight"
+              className="min-w-0 break-words font-display text-2xl font-semibold leading-tight tracking-tight"
             >
               {video.title ||
                 (video.captureIssue
@@ -160,23 +154,42 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
         <p
           role="status"
           className={
-            "mt-3 inline-flex flex-wrap items-center gap-2 rounded-lg border px-3 py-1.5 text-sm " +
-            (video.captureIssue || failed
-              ? "border-amber-400 bg-amber-50 text-amber-900"
-              : "border-line bg-paper")
+            "mt-1 flex flex-wrap items-center gap-x-1.5 text-sm " +
+            (video.captureIssue || failed ? "text-amber-800" : "text-muted")
           }
         >
-          <Check className="size-4 text-accent" aria-hidden="true" />
-          <span className="font-semibold">Saved</span>
+          <span>{profile.name}</span>
+          <span aria-hidden="true">·</span>
+          <time dateTime={video.created}>
+            {new Date(video.created).toLocaleString(undefined, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            })}
+          </time>
           {mediaLength > 0 && (
-            <span className="tabular-nums">
-              · {Math.floor(mediaLength / 60)}:
-              {String(Math.floor(mediaLength) % 60).padStart(2, "0")}
-            </span>
+            <>
+              <span aria-hidden="true">·</span>
+              <span className="tabular-nums">
+                {Math.floor(mediaLength / 60)}:
+                {String(Math.floor(mediaLength) % 60).padStart(2, "0")}
+              </span>
+            </>
           )}
-          <span>· {cloudStatus}</span>
-          {video.captureIssue && <span>· {video.captureIssue}</span>}
+          <span aria-hidden="true">·</span>
+          <span className="inline-flex items-center gap-1">
+            <Check className="size-3.5 text-accent" aria-hidden="true" />
+            Saved
+          </span>
+          <span aria-hidden="true">·</span>
+          <span>{cloudStatus}</span>
+          {video.captureIssue && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>{video.captureIssue}</span>
+            </>
+          )}
         </p>
+        </div>
       </header>
       {issue && (
         <p role="alert" className="mb-4">

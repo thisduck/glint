@@ -56,7 +56,7 @@ export function VideoPlayer({ video, player, children, mediaLength }) {
             preload="metadata"
             aria-label="Local recording"
             src={"clip://library/" + video.id}
-            className="block w-full cursor-pointer bg-black object-contain"
+            className="block w-full cursor-pointer bg-deep object-contain"
             onClick={toggle}
             onDoubleClick={expand}
             onPlay={() => setPlaying(true)}

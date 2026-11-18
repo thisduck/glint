@@ -698,7 +698,7 @@ export function Studio({ profile, profiles, onProfile, refreshProfile, lock, fai
   );
   return (
     <>
-      <h2 className="mb-4 mt-7 font-display text-2xl font-medium tracking-tight">
+      <h2 className="sr-only">
         Recording studio
       </h2>
       {pickerOpen && (

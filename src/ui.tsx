@@ -85,7 +85,7 @@ function App() {
       data-theme={theme}
       className="min-h-screen bg-rail font-sans text-ink"
     >
-      <div className="mx-auto w-full max-w-[840px] px-5 py-6 sm:px-8 sm:py-8">
+      <div className="mx-auto w-full max-w-[840px] px-5 py-4 sm:px-8 sm:py-5">
         <header className="flex items-center justify-between gap-4">
           <h1 className="flex shrink-0 items-center gap-2 font-display text-2xl leading-none tracking-tight">
             <Logo />

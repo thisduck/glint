@@ -207,7 +207,7 @@ main > div:has(.video-workspace) {
   max-width: 1440px;
 }
 .video-workspace video {
-  max-height: 65vh;
+  max-height: min(65vh, calc(100vh - 13rem));
   aspect-ratio: 16 / 9;
 }
 .video-workspace:fullscreen {
@@ -224,7 +224,7 @@ main > div:has(.video-workspace) {
 
 @layer components {
   .studio-setup {
-    @apply grid overflow-hidden rounded-2xl border border-line bg-paper;
+    @apply mt-5 grid overflow-hidden rounded-2xl border border-line bg-paper;
   }
   @media (min-width: 700px) {
     .studio-setup {
