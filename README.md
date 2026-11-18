@@ -1,99 +1,42 @@
 # glint
 
-A local macOS screen recorder with named profiles and optional Google Drive upload. Work and Personal are created on first launch. Each profile can use its own Google account and folder, or share a connected account with other profiles.
+**Screen recording for your Mac, one click away.**
 
-## Run locally
+glint lives in your menu bar. Pick what to record, hit start, and your video is saved on your Mac and sent to the right Google Drive folder, ready to share.
 
-Use Node 24 and pnpm 10. From this directory run:
+[Download for Mac](https://github.com/thisduck/glint/releases/latest) · Apple Silicon
 
-```sh
-pnpm install --frozen-lockfile
-pnpm start
-```
+## Why glint
 
-Choose a profile, click **Choose screen or window**, select the capture source, and start recording. Allow macOS Screen Recording access for Electron when prompted and relaunch if macOS requests it. In the source picker, turn on **System audio** to include sound playing across apps. glint remembers this choice per profile. Enable the microphone as well to record your commentary alongside playback. Stop the recording to open its video page. Local WebM files and the SQLite library are stored under Electron's user-data directory (normally `~/Library/Application Support/glint` on macOS). Existing installations continue using their original library location.
+**Ready when you are.** Open the menu bar panel to pick a profile and turn your camera, microphone and system audio on or off. Then choose **New recording…**. No window to dig out first.
 
-### Capture preview and recording
+**Record exactly what you mean to.** Capture your entire screen or a single app window, picked from live thumbnails. glint outlines what you chose and puts the setup controls right on it, so you can frame the shot before you start.
 
-From the glint menu bar icon, choose a profile, set your camera, microphone, system audio, floating controls and quality, then choose **New recording…**. The menu bar panel stays open as you change options. Click outside it or press Escape to dismiss it. The source picker also includes the capture switches. Changes are saved for the active profile.
+**Bring your face along.** Turn on the camera bubble, drag it where you want it and size it while you watch the real shot. It's built into the finished video.
 
-In the source picker, expand **Recording quality** to set screen and camera quality independently for the current profile. High targets up to 3840 pixels on the screen’s longest edge and requests a 1080p camera. Smaller sources and cameras use their available resolution.
+**Stay in control while you record.** A three-second countdown, then you're live. Pause, resume or stop from the small floating toolbar or the menu bar, or press **⌘⇧9** to stop.
 
-Choose **Entire screen** or **An app window**, select a live thumbnail, and confirm the source. glint outlines that source and places the setup panel on it. The microphone and camera can be switched on there. Drag the camera preview to place it or adjust its size while looking at the actual source. **Back to studio** keeps the selection, and **On-screen setup** reopens the panel.
+**Keep work and personal apart.** Profiles start as Work and Personal, and you can add more. Each one remembers its own Google account, Drive folder, sharing preference and recording settings.
 
-Click **Start recording** on the panel for a three-second countdown over the source. Esc cancels the countdown and returns to setup. Recording begins after the countdown. The menu bar shows elapsed recording time and includes Pause, Resume and Stop. Press **⌘⇧9** to stop when the shortcut is available.
+**Upload without waiting.** Every recording is saved on your Mac first, then uploads to Google Drive in the background. If an upload is interrupted, it picks up again when glint reopens, or you can retry with one click.
 
-### Future editable recordings
+**Share on your terms.** Keep recordings private to you, follow the Drive folder's access, or let anyone with the link watch. **Copy link** puts the Drive link on your clipboard.
 
-glint currently exports a single WebM with the camera composited into the screen and the audio mixed. The screen and camera enter the compositor as separate streams. A future editable recording can retain those sources alongside the shareable WebM. Cursor movement, camera framing, and input toggles would need timestamped events on the same recording timeline, accounting for pauses. Existing WebMs contain only the rendered result.
+**Tidy it up before you send it.** Trim the start and end on the filmstrip, cut out the stumbles in the middle, and save a clean copy. Your original stays untouched.
 
-## Connect Google Drive
+## Getting started
 
-Choose your Google account under the profile’s destination. The first time, click **Connect Google Drive** and sign in. Choosing or connecting an account saves the profile’s destination immediately. glint creates or reuses a folder named after the profile in My Drive, then shows its name and account. Open destination **Settings** and choose **Change folder…** to pick an existing folder instead. The app requests per-file Drive access. It encrypts refresh tokens using Electron safeStorage and the macOS Keychain.
+1. Download glint, open the disk image and drag glint to Applications.
+2. Launch it and allow Screen Recording when macOS asks. Some changes need glint to relaunch.
+3. Click the glint icon in the menu bar, choose **New recording…**, and pick a screen or window.
 
-Enable **Auto-upload new recordings** after choosing a folder. This preference belongs to the profile. glint saves each recording locally, then uploads it in the background. Pending uploads resume when glint reopens. If an upload fails, use **Retry Drive upload** in the recording library.
+To upload, open a profile's destination, choose **Connect Google Drive** and sign in with your Google account. glint creates a folder named after the profile, or you can pick your own.
 
-Each profile also has a sharing preference for new recordings. **Private · only me** requires a folder owned by you with owner-only access. If glint cannot verify that, the recording stays local and its video page explains why. **Use folder access** allows the recording to inherit access from the destination. **Anyone with the link** requests view access without search discovery. Drive administrators can restrict sharing.
+## Private by default
 
-### Recording page
+Recordings are stored on your Mac, and nothing leaves it unless you connect Google Drive. Drive access is limited to the files glint creates or that you choose. Sign-ins are encrypted and kept in your macOS Keychain.
 
-Stop a recording or choose **View recording** in the library. The page plays the local copy immediately, tracks upload progress, and shows the link audience reported by Drive. **Copy link** copies the Drive viewing link in one click. Drive exposes video metadata but does not provide a definitive playback-ready flag. Use **Open in Drive** to check the player.
+## Learn more
 
-Use **Add title** to name the recording in glint. Future uploads use the saved title. Drag the edges of the filmstrip in **Trim clip**. Click the frames to scrub or select **Preview clip** to play the range. Focus either edge and use the arrow keys for fine adjustments. **Save clip as copy** creates a separate recording in the same profile. Trimming uses FFmpeg with VP9 and Opus support from PATH or a standard Homebrew installation. The **Recording issues** section includes saved capture, upload, and sharing errors when available.
-
-**Save to Drive** streams the local file directly to Google. Recordings keep the destination selected at capture time. For a recording made without a destination, the first upload uses its profile's configured folder. An interrupted upload can be retried. **Copy link** copies the Drive viewing URL. **Open in Drive** opens the file where you can change sharing permissions.
-
-## Publisher and source-build setup
-
-Official downloads carry glint’s desktop OAuth configuration. Users sign in to their own Google accounts in their browsers. Developers running from source and maintainers of independent distributions can supply their own project settings.
-
-In a Google Cloud project, enable Google Drive API and Google Picker API. Configure the OAuth consent screen. For an external app in testing, add each Google account as a test user. Create a **Desktop app** OAuth client and an API key restricted to the Google Picker API. Copy the numeric project number from the same project.
-
-For local development, copy `.env.example` to `.env` in the project root and fill in the four Google settings. Restart `pnpm start` after editing the file. Shell variables take precedence. The local file is ignored by Git.
-
-For a public release, use a production Desktop OAuth client, configure the consent screen for external users, and complete Google’s applicable publishing requirements. Supply all four settings from release secrets and run `pnpm package:mac` on a Mac. This builds a ZIP and a drag-to-Applications DMG for the current architecture in `release/`. The package command requires all four settings and includes only those settings in the app. Runtime environment overrides must belong to one project. Local recording works without Google configuration.
-
-Desktop clients are inspectable. Keep production configuration out of Git and restrict the Picker key to the Picker API. User refresh tokens are issued separately per account. Public macOS distribution also requires your normal Developer ID signing and notarization process; the packaging command alone does not notarize the app.
-
-## Build and release on GitHub
-
-[Build glint for macOS](https://github.com/thisduck/glint/actions/workflows/build-macos.yml) runs the tests and builds the app on pushes to main and on pull requests. To download an Apple Silicon DMG, select **Run workflow**, choose **main**, and pick a build type.
-
-| Build type | Result |
-| --- | --- |
-| Preview | An ad-hoc signed DMG under the run’s **Artifacts**. macOS may require approval to open a downloaded preview. |
-| Signed test | A Developer ID signed, notarized DMG under **Artifacts**. |
-| Release | The same signed and notarized DMG on the public Releases page, tagged with the version in `package.json`. Set a fresh version on main before each release. |
-
-Set the four Google values from `.env.example` in the repo’s [Actions secrets](https://github.com/thisduck/glint/settings/secrets/actions). Signed builds also use the following secrets, with the same names and formats as unsound.
-
-| Secret | Value |
-| --- | --- |
-| `APPLE_CERTIFICATE` | Base64 of a Developer ID Application .p12 export containing the certificate and private key |
-| `APPLE_CERTIFICATE_PASSWORD` | Password used to protect that export |
-| `APPLE_SIGNING_IDENTITY` | Full Developer ID Application identity from Keychain Access |
-| `APPLE_API_KEY` | App Store Connect API key ID |
-| `APPLE_API_ISSUER` | App Store Connect issuer ID |
-| `APPLE_API_KEY_CONTENT` | Original multiline .p8 private key for that key ID |
-
-## Check the slices
-
-Run `pnpm test` and `pnpm build`. Automated tests exercise profile persistence, recording storage and recovery, destination isolation, and upload retry with a simulated Drive service.
-
-For a desktop smoke test, add a profile, rename it, restart, and confirm its name. Record a screen with microphone enabled, stop, and play back the result. Connect two Google accounts, choose a different destination in each profile, and upload a short recording from each. Verify each file's folder and sharing settings in Drive.
-
-Each profile remembers its recording microphone and whether microphone capture is on. Choose **System default** to follow the computer’s input setting. If a preferred input is unavailable, glint tries the system default and remembers the preferred input for later recordings.
-
-In the destination panel, open **Manage accounts** to reconnect an email or disconnect it from glint. Disconnecting clears the saved Drive destination and turns off auto-upload for every profile using that account.
-
-### Camera and recording controls
-
-Turn on **Camera bubble** before or after choosing a screen or window. Drag on the preview to place it. Set **Bubble size** in the preview. During window recording, drag the live desktop camera to move it or drag its corner grip to resize. The floating toolbar and the menu bar also have placement and size controls. For full-display capture the desktop camera stays hidden initially, and **Show camera preview** opens it. The camera is composited into the saved video.
-
-Drag the floating toolbar by its grip. Use **Pause**, **Resume**, **Stop**, or **Hide**. The menu bar can restore the toolbar. Microphone, camera bubble, and floating toolbar start enabled for each new profile. glint remembers changes to these switches per profile. Turn off the floating toolbar when capturing a whole display if you want to keep it out of the recording.
-
-### Editing and managing a recording
-
-Choose **Full-screen editor** above the video for a larger view with the timeline. Choose **Cut sections**, mark a range, then **Add cut**. Add more ranges or click a range’s × to undo it. **Preview clip** skips marked sections. **Save clip as copy** exports the edit with its audio.
-
-Use **Change link access** on an uploaded recording to grant anyone-with-link viewing or remove that file’s public link grant. Folder permissions and organization policies still apply. **Delete recording** moves the local video to the Mac’s Trash. Select the separate Drive option to also move its upload to Drive Trash.
+- [Using glint](docs/GUIDE.md): a full walkthrough of recording, the camera, Drive, sharing and editing.
+- [Developing glint](docs/DEVELOPMENT.md): running from source, Google setup, testing, and building releases.
