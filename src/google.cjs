@@ -193,6 +193,13 @@ class Google {
       );
     return user.sub;
   }
+  // Decrypt one saved sign-in so macOS asks for keychain access up front.
+  unlock() {
+    const row = this.db.prepare("SELECT token FROM accounts LIMIT 1").get();
+    if (!row) return false;
+    this.secure.decryptString(Buffer.from(row.token));
+    return true;
+  }
   async access(account) {
     const row = this.db
       .prepare("SELECT token FROM accounts WHERE id=?")

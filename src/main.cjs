@@ -470,6 +470,14 @@ app.whenReady().then(() => {
     clearOutline();
     closeRecordingMenu?.close();
   });
+  win.webContents.once("did-finish-load", () =>
+    require("./permissions.cjs").requestUpfront({
+      platform: process.platform,
+      systemPreferences,
+      desktopCapturer,
+      google,
+    }),
+  );
   win.loadFile(path.join(__dirname, "index.html"));
 });
 app.on("window-all-closed", () => app.quit());
