@@ -117,11 +117,35 @@ jobs:
           xcrun stapler validate "${image[0]}"
           spctl --assess --type open --context context:primary-signature "${image[0]}"
 
+      - name: Prepare signed update for installed apps
+        if: steps.version.outputs.mode == 'release'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          archive="glint-$VERSION-mac-arm64.zip"
+          update_dir="$RUNNER_TEMP/update"
+          mkdir "$update_dir"
+          ditto -x -k "release/$archive" "$update_dir"
+          app="$update_dir/glint.app"
+          xcrun stapler staple "$app"
+          xcrun stapler validate "$app"
+          codesign --verify --deep --strict "$app"
+          spctl --assess --type execute "$app"
+          test "$(plutil -extract CFBundleShortVersionString raw "$app/Contents/Info.plist")" = "$VERSION"
+          ditto -c -k --keepParent "$app" "$update_dir/$archive"
+          mv "$update_dir/$archive" "release/$archive"
+          url="https://github.com/$GITHUB_REPOSITORY/releases/download/v$VERSION/$archive"
+          jq -n --arg v "$VERSION" --arg url "$url" \
+            '{currentRelease:$v, releases:[{version:$v, updateTo:{version:$v,name:$v,url:$url}}]}' > release/updates-arm64.json
+
       - uses: actions/upload-artifact@v4
         if: steps.version.outputs.mode != ''
         with:
           name: glint-macos-arm64-${{ steps.version.outputs.mode }}
-          path: release/*.dmg
+          path: |
+            release/*.dmg
+            ${{ steps.version.outputs.mode == 'release' && 'release/*.zip' || 'release/updates-none' }}
+            release/updates-arm64.json
           if-no-files-found: error
 
   publish:
@@ -138,4 +162,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.build.outputs.version }}
-        run: gh release create "v$VERSION" ./*.dmg --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "glint $VERSION" --generate-notes
+        run: gh release create "v$VERSION" ./*.dmg ./*.zip ./updates-arm64.json --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "glint $VERSION" --generate-notes
