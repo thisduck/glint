@@ -275,7 +275,7 @@ export function SourcePicker({
             {window.desk.isMac && (
               <p className="mt-1 text-muted">
                 In System Settings › Privacy &amp; Security › Screen &amp; System Audio Recording,
-                enable glint (Electron when running from source). Reopen glint if macOS asks.
+                enable glint. Reopen glint if macOS asks.
               </p>
             )}
             <div className="mt-2 flex flex-wrap gap-2">

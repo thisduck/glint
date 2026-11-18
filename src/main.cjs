@@ -15,6 +15,7 @@ const path = require("node:path");
 const { Store } = require("./store.cjs");
 const { Library } = require("./library.cjs");
 const { pathToFileURL } = require("node:url");
+app.setName(require("../package.json").productName);
 protocol.registerSchemesAsPrivileged([
   {
     scheme: "clip",
@@ -410,6 +411,7 @@ app.whenReady().then(() => {
   );
   handle("save", (name, id) => store.save(name, id));
   win = new BrowserWindow({
+    title: app.name,
     icon: appIcon,
     width: 950,
     height: 720,
