@@ -8,8 +8,8 @@ on:
       mode:
         description: Build type
         type: choice
-        options: [preview, signed-test, release]
-        default: preview
+        options: [release, preview, signed-test]
+        default: release
         required: true
 
 permissions:
@@ -21,10 +21,12 @@ jobs:
     timeout-minutes: 60
     outputs:
       version: ${{ steps.version.outputs.version }}
+      mode: ${{ steps.version.outputs.mode }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 10.32.1
@@ -37,15 +39,25 @@ jobs:
       - run: pnpm test
       - run: pnpm build
       - name: Check build target
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name != 'pull_request'
         id: version
+        env:
+          MODE: ${{ inputs.mode }}
+          BEFORE: ${{ github.event.before }}
         run: |
           test "$GITHUB_REF" = refs/heads/main
           test "$(uname -m)" = arm64
-          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          version=$(node -p "require('./package.json').version")
+          if [[ "$GITHUB_EVENT_NAME" == push ]]; then
+            previous=$(git show "${BEFORE}:package.json" | node -p "JSON.parse(require('fs').readFileSync(0)).version")
+            [[ "$version" != "$previous" ]] || exit 0
+            MODE=release
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "mode=$MODE" >> "$GITHUB_OUTPUT"
 
       - name: Prepare Apple signing credentials
-        if: github.event_name == 'workflow_dispatch' && inputs.mode != 'preview'
+        if: steps.version.outputs.mode == 'release' || steps.version.outputs.mode == 'signed-test'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -73,7 +85,7 @@ jobs:
           echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY" >> "$GITHUB_ENV"
 
       - name: Package disk image
-        if: github.event_name == 'workflow_dispatch'
+        if: steps.version.outputs.mode != ''
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
@@ -92,7 +104,7 @@ jobs:
           codesign --verify --strict "$helper"
 
       - name: Sign and notarize disk image
-        if: github.event_name == 'workflow_dispatch' && inputs.mode != 'preview'
+        if: steps.version.outputs.mode == 'release' || steps.version.outputs.mode == 'signed-test'
         env:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
@@ -106,14 +118,14 @@ jobs:
           spctl --assess --type open --context context:primary-signature "${image[0]}"
 
       - uses: actions/upload-artifact@v4
-        if: github.event_name == 'workflow_dispatch'
+        if: steps.version.outputs.mode != ''
         with:
-          name: glint-macos-arm64-${{ inputs.mode }}
+          name: glint-macos-arm64-${{ steps.version.outputs.mode }}
           path: release/*.dmg
           if-no-files-found: error
 
   publish:
-    if: inputs.mode == 'release' && github.ref == 'refs/heads/main'
+    if: needs.build.outputs.mode == 'release' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:

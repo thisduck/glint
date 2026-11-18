@@ -57,7 +57,7 @@ Desktop clients are inspectable. Keep production configuration out of Git and re
 
 ## Build and release on GitHub
 
-[Build glint for macOS](https://github.com/thisduck/glint/actions/workflows/build-macos.yml) runs the tests and builds the app on pushes to main and on pull requests. To download an Apple Silicon DMG, select **Run workflow**, choose **main**, and pick a build type.
+[Build glint for macOS](https://github.com/thisduck/glint/actions/workflows/build-macos.yml) runs the tests and builds the app on pushes to main and on pull requests. Changing the version in `package.json` on main automatically builds, signs, notarizes, and publishes the Apple Silicon DMG to [GitHub Releases](https://github.com/thisduck/glint/releases/latest). For a manual build, select **Run workflow** on **main** and pick a build type. The default is **Release**.
 
 | Build type | Result |
 | --- | --- |
