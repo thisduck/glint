@@ -179,6 +179,18 @@ app.whenReady().then(() => {
       throw Error("Drive has not returned a viewing link yet.");
     return copy ? clipboard.writeText(link) : shell.openExternal(link);
   });
+  const permissions = require("./permissions.cjs");
+  const permissionDeps = { platform: process.platform, systemPreferences, desktopCapturer };
+  handle("permissions", () => permissions.status(permissionDeps));
+  handle("requestPermission", (kind) => permissions.request(kind, permissionDeps));
+  handle("openPrivacySettings", (kind) => {
+    if (process.platform !== "darwin") throw Error("Open your system privacy settings.");
+    return shell.openExternal(permissions.settingsUrl(kind));
+  });
+  handle("relaunch", () => {
+    app.relaunch();
+    app.exit(0);
+  });
   handle("openCaptureSettings", () => {
     if (process.platform !== "darwin") throw Error("Open your system capture permissions.");
     return shell.openExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture");
@@ -471,12 +483,7 @@ app.whenReady().then(() => {
     closeRecordingMenu?.close();
   });
   win.webContents.once("did-finish-load", () =>
-    require("./permissions.cjs").requestUpfront({
-      platform: process.platform,
-      systemPreferences,
-      desktopCapturer,
-      google,
-    }),
+    permissions.unlockKeychain(google),
   );
   win.loadFile(path.join(__dirname, "index.html"));
 });

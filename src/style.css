@@ -343,3 +343,91 @@ main > div:has(.video-workspace) {
   color: #5f201f;
 }
 .capture-video[tabindex="0"] { cursor: move; }
+
+@layer components {
+  .onboarding {
+    @apply mx-auto mt-6 max-w-[600px];
+  }
+  .onboarding-steps {
+    @apply m-0 mb-4 flex list-none items-center justify-center gap-6 p-0 text-xs font-medium text-muted;
+  }
+  .onboarding-steps li {
+    @apply flex items-center gap-2;
+  }
+  .onboarding-steps li > span {
+    @apply grid size-5 place-items-center rounded-full border border-line bg-paper text-[11px];
+  }
+  .onboarding-steps li[aria-current="step"] {
+    @apply text-ink;
+  }
+  .onboarding-steps li[aria-current="step"] > span,
+  .onboarding-steps li[data-done] > span {
+    @apply border-accent bg-accent text-white;
+  }
+  .onboarding-card {
+    @apply rounded-2xl border border-line bg-paper p-7 shadow-sm;
+  }
+  .onboarding-welcome {
+    @apply py-4 text-center;
+  }
+  .onboarding-hero {
+    @apply mx-auto mb-5 grid size-20 place-items-center rounded-3xl text-white;
+    background:
+      radial-gradient(ellipse at 90% -30%, color-mix(in srgb, var(--accent), var(--deep) 26%), transparent 72%),
+      var(--deep);
+  }
+  .onboarding-hero svg {
+    @apply size-11 text-white;
+  }
+  .onboarding-title {
+    @apply m-0 font-display text-2xl font-medium tracking-tight;
+  }
+  .onboarding-lede {
+    @apply mb-0 mt-2 max-w-[460px] text-sm leading-relaxed text-muted;
+  }
+  .onboarding-welcome .onboarding-lede {
+    @apply mx-auto text-base;
+  }
+  .onboarding-list {
+    @apply m-0 mt-5 list-none divide-y divide-line rounded-xl border border-line bg-rail p-0;
+  }
+  .onboarding-row {
+    @apply flex items-center gap-3 px-4 py-3;
+  }
+  .onboarding-row p {
+    @apply m-0;
+  }
+  .onboarding-icon {
+    @apply grid size-10 shrink-0 place-items-center rounded-xl bg-tint text-accent;
+  }
+  .onboarding-tag {
+    @apply ml-2 rounded-full bg-tint px-2 py-0.5 align-middle text-[11px] font-medium text-accent;
+  }
+  .onboarding-tag.muted {
+    @apply bg-rail text-muted;
+  }
+  .onboarding-action {
+    @apply inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 text-sm font-medium;
+  }
+  .onboarding-action.primary {
+    @apply border-accent bg-accent text-white hover:bg-deep;
+  }
+  .onboarding-granted {
+    @apply inline-flex shrink-0 items-center gap-1.5 px-1 text-sm font-medium text-accent;
+  }
+  .onboarding-note {
+    @apply mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-line bg-tint px-4 py-3 text-sm;
+  }
+  .onboarding-note p {
+    @apply m-0 flex-1;
+  }
+  .onboarding-actions {
+    @apply mt-6 flex items-center gap-2;
+  }
+  .onboarding-back {
+    @apply border-transparent bg-transparent text-sm font-medium text-muted;
+  }
+  .onboarding-skip {
+    @apply mt-4 border-0 bg-transparent text-xs text-muted underline-offset-4 hover:bg-transparent hover:underline;
+  }
+}

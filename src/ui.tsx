@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import { loadProfiles } from "./capture-preferences.mjs";
 import { Studio } from "./studio";
+import { Onboarding, onboardedKey } from "./onboarding";
 import { Logo } from "./logo";
 import * as Popover from "@radix-ui/react-popover";
 import * as Tabs from "@radix-ui/react-tabs";
@@ -32,6 +33,7 @@ function App() {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
   const [locked, lock] = useState(false);
+  const [onboarded, setOnboarded] = useState(() => localStorage.getItem(onboardedKey) === "1");
   async function refresh() {
     setProfiles(await loadProfiles(api, localStorage));
   }
@@ -288,7 +290,14 @@ function App() {
           </Popover.Root>
         </header>
         {!profile && error && <p role="alert">{error}</p>}
-        {profile && (
+        {profile && !onboarded && (
+          <Onboarding
+            profile={profile}
+            refreshProfile={refresh}
+            onDone={() => setOnboarded(true)}
+          />
+        )}
+        {profile && onboarded && (
           <Studio
             key={profile.id}
             error={error}

@@ -36,6 +36,10 @@ const methods = [
   "driveDetails",
   "reveal",
   "openCaptureSettings",
+  "permissions",
+  "requestPermission",
+  "openPrivacySettings",
+  "relaunch",
 ];
 contextBridge.exposeInMainWorld("desk", {
   isMac: process.platform === "darwin",
