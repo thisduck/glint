@@ -157,6 +157,26 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
             </button>
           </div>
         )}
+        <p
+          role="status"
+          className={
+            "mt-3 inline-flex flex-wrap items-center gap-2 rounded-lg border px-3 py-1.5 text-sm " +
+            (video.captureIssue || failed
+              ? "border-amber-400 bg-amber-50 text-amber-900"
+              : "border-line bg-paper")
+          }
+        >
+          <Check className="size-4 text-accent" aria-hidden="true" />
+          <span className="font-semibold">Saved</span>
+          {mediaLength > 0 && (
+            <span className="tabular-nums">
+              · {Math.floor(mediaLength / 60)}:
+              {String(Math.floor(mediaLength) % 60).padStart(2, "0")}
+            </span>
+          )}
+          <span>· {cloudStatus}</span>
+          {video.captureIssue && <span>· {video.captureIssue}</span>}
+        </p>
       </header>
       {issue && (
         <p role="alert" className="mb-4">
@@ -196,6 +216,29 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
           >
             Storage and sharing
           </h3>
+          {(video.remote || uploading) && (
+            <button
+              className="mb-4 inline-flex w-full items-center justify-center gap-2 border-transparent bg-accent font-semibold text-white hover:bg-deep disabled:opacity-70"
+              disabled={!!busy || pending || !video.remote}
+              onClick={() =>
+                run("Copy", async () => {
+                  await api.share(video.id, true);
+                  setCopied(true);
+                })
+              }
+            >
+              {copied ? <Check className="size-4" aria-hidden="true" /> : <Link2 className="size-4" aria-hidden="true" />}
+              <span aria-live="polite">
+                {copied
+                  ? "Link copied"
+                  : pending || !video.remote
+                    ? video.progress != null
+                      ? `Copy link · uploading ${video.progress}%`
+                      : "Copy link · preparing…"
+                    : "Copy link"}
+              </span>
+            </button>
+          )}
           <div className="grid gap-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2.5">
@@ -232,23 +275,6 @@ export function RecordingPage({ video, profile, onOpen, onBack, refresh }) {
               </div>
               {video.remote && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    className="inline-flex items-center gap-1.5 border-transparent bg-accent text-xs font-semibold text-white hover:bg-deep"
-                    disabled={!!busy}
-                    onClick={() =>
-                      run("Copy", async () => {
-                        await api.share(video.id, true);
-                        setCopied(true);
-                      })
-                    }
-                  >
-                    {copied ? (
-                      <Check className="size-3.5" aria-hidden="true" />
-                    ) : (
-                      <Link2 className="size-3.5" aria-hidden="true" />
-                    )}
-                    {copied ? "Link copied" : "Copy link"}
-                  </button>
                   <button
                     className="inline-flex items-center gap-1.5 text-xs font-medium"
                     disabled={!!busy}

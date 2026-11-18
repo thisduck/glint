@@ -27,6 +27,19 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
   const [cutMode, setCutMode] = useState(false);
   const [cuts, setCuts] = useState<[number, number][]>([]);
   const skip = useRef<[number, number][]>([]);
+  // Each mode keeps its own handle range; switching never resets handles.
+  const ranges = useRef<{ trim: [number, number | null]; cut: [number, number | null] }>({
+    trim: [0, null],
+    cut: [0, null],
+  });
+  function switchMode(next: boolean) {
+    if (next === cutMode) return;
+    ranges.current[cutMode ? "cut" : "trim"] = [start, end];
+    const [s, e] = ranges.current[next ? "cut" : "trim"];
+    setStart(s);
+    setEnd(e);
+    setCutMode(next);
+  }
   const out = end ?? duration;
 
   const remaining = duration - cuts.reduce((sum, [a, b]) => sum + b - a, 0);
@@ -202,7 +215,7 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
               className="rounded-md border-transparent bg-transparent px-2.5 py-1.5 text-xs font-medium text-muted aria-pressed:border-line aria-pressed:bg-paper aria-pressed:text-ink"
               onClick={() => {
                 player.current.pause();
-                setCutMode(Boolean(i));
+                switchMode(Boolean(i));
               }}
             >
               {label}
@@ -212,7 +225,7 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
       </div>
       <p className="mt-2 text-sm text-muted">
         {cutMode
-          ? "Drag the handles around a section to remove, then select Add cut."
+          ? "Mark the part to remove in red, then choose Add cut."
           : "Drag the handles to set the clip’s start and end. Click a frame to seek."}
       </p>
       {duration > 0 ? (
@@ -246,15 +259,17 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
                 />
               )}
               <div
+                hidden={cutMode}
                 className="absolute inset-y-0 left-0 bg-black/65"
                 style={{ width: percent(start) }}
               />
               <div
+                hidden={cutMode}
                 className="absolute inset-y-0 right-0 bg-black/65"
                 style={{ width: percent(duration - out) }}
               />
               <div
-                className="pointer-events-none absolute inset-y-0 border-y-[3px] border-accent"
+                className={"pointer-events-none absolute inset-y-0 border-y-[3px] " + (cutMode ? "border-red-400 bg-red-900/40" : "border-accent")}
                 style={{ left: percent(start), right: percent(duration - out) }}
               />
               {cutMode &&
@@ -292,7 +307,7 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
                         : out - Math.min(0.1, duration),
                     )}
                     data-marker={marker}
-                    className="absolute -inset-y-0.5 flex w-5 cursor-ew-resize items-center justify-center rounded bg-accent text-white data-[marker=start]:-translate-x-full"
+                    className={"absolute -inset-y-0.5 flex w-5 cursor-ew-resize items-center justify-center rounded text-white data-[marker=start]:-translate-x-full " + (cutMode ? "bg-red-800" : "bg-accent")}
                     style={{ left: percent(value) }}
                   >
                     <GripVertical className="size-4" aria-hidden="true" />
@@ -387,7 +402,11 @@ export function ClipEditor({ video, player, busy, onSave, onDuration }) {
                 else onSave(start, out);
               }}
             >
-              {busy === "Trim" ? "Saving clip…" : "Save clip as copy"}
+              {busy === "Trim"
+                ? "Saving clip…"
+                : cutMode
+                  ? `Save copy · ${cuts.length} cut${cuts.length === 1 ? "" : "s"}`
+                  : "Save trimmed copy"}
             </button>
           </div>
         </>

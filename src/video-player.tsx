@@ -145,6 +145,11 @@ export function VideoPlayer({ video, player, children, mediaLength }) {
           </button>
         </div>
       </div>
+      {full && (
+        <p className="mt-2 text-xs text-muted" aria-live="polite">
+          Full-screen editor · press Esc or the minimize button to exit
+        </p>
+      )}
       {children}
       {error && <p role="alert">{error}</p>}
     </section>

@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   ArrowUpRight,
+  Check,
   ChevronRight,
   Cloud,
   CloudUpload,
@@ -19,6 +20,21 @@ export function RecordingLibrary({
   onViewDrive,
   onUpload,
 }) {
+  const [copy, setCopy] = useState<{ id: string; state: "busy" | "done" | "error" } | null>(null);
+  useEffect(() => {
+    if (!copy || copy.state === "busy") return;
+    const t = setTimeout(() => setCopy(null), 2500);
+    return () => clearTimeout(t);
+  }, [copy]);
+  async function copyLink(id) {
+    setCopy({ id, state: "busy" });
+    try {
+      await onCopy(id);
+      setCopy({ id, state: "done" });
+    } catch {
+      setCopy({ id, state: "error" });
+    }
+  }
   return (
     <section className="mt-8" aria-labelledby="recordings-heading">
       <h2
@@ -99,12 +115,24 @@ export function RecordingLibrary({
                     <>
                       <button
                         className="inline-flex items-center gap-1.5 text-xs font-medium"
-                        disabled={disabled}
+                        disabled={disabled || copy?.id === video.id}
                         aria-label={`Copy link for ${title}, ${date}`}
-                        onClick={() => onCopy(video.id)}
+                        onClick={() => copyLink(video.id)}
                       >
-                        <Link2 className="size-3.5" aria-hidden="true" />
-                        Copy link
+                        {copy?.id === video.id && copy.state === "done" ? (
+                          <Check className="size-3.5 text-accent" aria-hidden="true" />
+                        ) : (
+                          <Link2 className="size-3.5" aria-hidden="true" />
+                        )}
+                        <span aria-live="polite">
+                          {copy?.id !== video.id
+                            ? "Copy link"
+                            : copy.state === "busy"
+                              ? "Copying…"
+                              : copy.state === "done"
+                                ? "Copied"
+                                : "Copy failed"}
+                        </span>
                       </button>
                       <button
                         className="grid size-9 place-items-center p-0"
