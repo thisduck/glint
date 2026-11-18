@@ -336,6 +336,7 @@ app.whenReady().then(() => {
     if (!library.open || closeRecordingMenu)
       throw Error("Recording unavailable.");
     closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(
+      menu,
       () => win.webContents.send("stopRecording"),
       () => win.webContents.send("toggleRecording"),
       showToolbar === true,
@@ -410,6 +411,35 @@ app.whenReady().then(() => {
   const reopenStudio = () => {
     if (!preparation && !library.open && !outline) foregroundStudio();
   };
+  const menu = require("./recording-menu.cjs").studioMenu(
+    () => {
+      if (library.open || outline) return;
+      if (preparation) {
+        win.webContents.send("setupCommand", "start");
+      } else {
+        foregroundStudio();
+        win.webContents.send("setupCommand", "newRecording");
+      }
+    },
+    () => {
+      if (preparation) {
+        closeSetup(true);
+        win.webContents.send("setupCommand", "cancel");
+      }
+      foregroundStudio();
+    },
+    () => app.quit(),
+  );
+  let quitting = false;
+  app.on("before-quit", () => { quitting = true; });
+  win.on("close", (event) => {
+    if (quitting || process.platform !== "darwin") return;
+    event.preventDefault();
+    win.hide();
+    if (!library.open && !outline && !preparation)
+      win.webContents.send("setupCommand", "studioHidden");
+  });
+  app.once("will-quit", () => menu.tray.destroy());
   app.on("activate", reopenStudio);
   app.on("second-instance", reopenStudio);
   let lastRendererRecovery = 0;

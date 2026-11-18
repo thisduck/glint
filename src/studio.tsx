@@ -598,6 +598,19 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
     }
   }
   handleSetup.current = async (command) => {
+    if (command === "newRecording") {
+      if (busy || phase !== "idle") return;
+      play("");
+      setAudioRetry(null);
+      setPickerOpen(true);
+      return;
+    }
+    if (command === "studioHidden" && phase === "idle" && !setupActive.current) {
+      releaseCapture();
+      choose(null);
+      setPickerOpen(false);
+      return;
+    }
     if (command === "sourceLost") {
       releaseCapture();
       choose(null);

@@ -20,6 +20,7 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
         setContextMenu(items) {
           menu = items;
         }
+        setImage() {}
         setTitle() {}
         setToolTip() {}
         destroy() {
@@ -36,7 +37,7 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
           shortcut = null;
         },
       },
-      nativeImage: { createFromBitmap() {} },
+      nativeImage: { createFromBitmap() {}, createFromPath: () => ({ setTemplateImage() {} }) },
     },
   };
   require.cache[toolbar] = {
@@ -62,7 +63,12 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
     }
   });
   const toolbarBounds = { x: -850, y: 100, width: 360, height: 52 };
-  const controls = require("../src/recording-menu.cjs").recordingMenu(
+  const { studioMenu, recordingMenu } = require("../src/recording-menu.cjs");
+  let starts = 0;
+  const studio = studioMenu(() => starts++, () => {}, () => {});
+  menu.find((item) => item.label === "New recording…").click();
+  const controls = recordingMenu(
+    studio,
     () => stops++,
     () => toggles++,
     true,
@@ -98,5 +104,8 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
   assert.equal(stops, 2);
   assert.equal(toggles, 2);
   controls.close();
-  assert.ok(destroyed && closed && !shortcut);
+  assert.ok(!destroyed && closed && !shortcut);
+  menu.find((item) => item.label === "New recording…").click();
+  assert.equal(starts, 2);
+  studio.tray.destroy();
 });

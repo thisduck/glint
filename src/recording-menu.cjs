@@ -1,6 +1,27 @@
 const { Tray, Menu, globalShortcut, nativeImage } = require("electron");
 
+function studioMenu(onNew, onOpen, onQuit) {
+  const icon = nativeImage.createFromPath(require("node:path").join(__dirname, "../build/trayTemplate.png"));
+  icon.setTemplateImage(true);
+  const tray = new Tray(icon);
+  const idleMenu = Menu.buildFromTemplate([
+    { label: "New recording…", click: onNew },
+    { label: "Open glint", click: onOpen },
+    { type: "separator" },
+    { label: "Quit glint", click: onQuit },
+  ]);
+  function idle() {
+    tray.setImage(icon);
+    if (process.platform === "darwin") tray.setTitle("");
+    tray.setToolTip("glint");
+    tray.setContextMenu(idleMenu);
+  }
+  idle();
+  return { tray, idle };
+}
+
 function recordingMenu(
+  studio,
   onStop,
   onToggle,
   showToolbar,
@@ -25,9 +46,8 @@ function recordingMenu(
         offset,
       );
     }
-  const tray = new Tray(
-    nativeImage.createFromBitmap(bytes, { width: 16, height: 16 }),
-  );
+  const { tray } = studio;
+  tray.setImage(nativeImage.createFromBitmap(bytes, { width: 16, height: 16 }));
   const shortcut = "CommandOrControl+Shift+9";
   let registered = false,
     timer;
@@ -36,7 +56,7 @@ function recordingMenu(
     toolbar?.close();
     clearInterval(timer);
     if (registered) globalShortcut.unregister(shortcut);
-    tray.destroy();
+    studio.idle();
   }
   try {
     let position = initialPosition;
@@ -138,4 +158,4 @@ function recordingMenu(
     throw error;
   }
 }
-module.exports = { recordingMenu };
+module.exports = { studioMenu, recordingMenu };
