@@ -23,14 +23,20 @@ import {
   saveCameraFrame,
 } from "./capture-preferences.mjs";
 import { bubbleBounds, cameraComposition } from "./camera.mjs";
-import { cameraConstraints, readCaptureQuality, recorderOptions, screenConstraints } from "./capture-quality.mjs";
+import { qualityPresets, saveCaptureQuality, cameraConstraints, readCaptureQuality, recorderOptions, screenConstraints } from "./capture-quality.mjs";
 import { openMicrophone } from "./microphone.mjs";
-import { SourcePicker, type CaptureSource, type CaptureQuality } from "./source-picker";
+import { SourcePicker, qualityLabels, type CaptureSource, type CaptureQuality, type QualityKey } from "./source-picker";
 const api = window.desk;
 export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
   const [source, choose] = useState<CaptureSource | null>(null);
   const [audioRetry, setAudioRetry] = useState<CaptureSource | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [quality, setQuality] = useState<CaptureQuality>(() => readCaptureQuality(localStorage, profile.id));
+  function updateQuality(kind: "screen" | "camera", value: QualityKey) {
+    const next = { ...quality, [kind]: value };
+    setQuality(next);
+    saveCaptureQuality(localStorage, profile.id, next);
+  }
   const showToolbar = Boolean(profile.toolbarEnabled);
   const cameraEnabled = Boolean(profile.cameraEnabled);
   const mic = Boolean(profile.micEnabled);
@@ -636,6 +642,8 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
         <SourcePicker
           current={audioRetry || source}
           profileId={profile.id}
+          quality={quality}
+          updateQuality={updateQuality}
           audioIssue={
             audioRetry
               ? "Couldn’t preview with system audio."
@@ -867,6 +875,32 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
                 Your camera is off.
               </p>
             )}
+          </section>
+          <section className="setup-option" aria-label="Recording quality">
+            <div className="option-title">
+              <SlidersHorizontal size={17} />
+              <h3>Recording quality</h3>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {(["screen", "camera"] as const).map((kind) => (
+                <div key={kind} className="min-w-0">
+                  <span className="text-xs text-muted">{kind === "screen" ? "Screen" : "Camera"}</span>
+                  <ChoiceSelect label={kind === "screen" ? "Screen quality" : "Camera quality"}
+                    value={quality[kind]} disabled={setupLocked}
+                    options={(Object.keys(qualityLabels) as QualityKey[]).map((key) => ({
+                      value: key,
+                      label: qualityLabels[key],
+                    }))}
+                    onChange={(value) => updateQuality(kind, value as QualityKey)}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="option-note">
+              {source && (quality.screen !== captureQuality.current.screen || quality.camera !== captureQuality.current.camera)
+                ? "Choose your source again to apply these settings."
+                : `Up to ${qualityPresets[quality.screen].longEdge} px screen · ${qualityPresets[quality.camera].cameraHeight}p camera`}
+            </p>
           </section>
           <details
             className="setup-option setup-more"

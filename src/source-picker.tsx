@@ -3,7 +3,7 @@ import * as Tabs from "@radix-ui/react-tabs";
 import { AppWindow, ArrowRight, Check, Monitor } from "lucide-react";
 
 import { SetupSwitch } from "./components/ui/setup-switch";
-import { qualityPresets, readCaptureQuality, saveCaptureQuality } from "./capture-quality.mjs";
+import { qualityPresets } from "./capture-quality.mjs";
 
 export type QualityKey = "high" | "balanced" | "compact";
 export type CaptureQuality = {
@@ -12,7 +12,7 @@ export type CaptureQuality = {
 };
 
 const levels = ["high", "balanced", "compact"] as const;
-const labels = { high: "High", balanced: "Balanced", compact: "Compact" };
+export const qualityLabels = { high: "High", balanced: "Balanced", compact: "Compact" };
 
 export type CaptureSource = {
   id: string;
@@ -28,11 +28,15 @@ const sourceTypes = [
 export function SourcePicker({
   current,
   profileId,
+  quality,
+  updateQuality,
   onChoose,
   onCancel,
   audioIssue = "",
 }: {
   audioIssue?: string;
+  quality: CaptureQuality;
+  updateQuality: (kind: "screen" | "camera", value: QualityKey) => void;
   current: CaptureSource | null;
   profileId: number;
   onChoose: (source: CaptureSource, systemAudio: boolean, quality: CaptureQuality) => void;
@@ -54,15 +58,6 @@ export function SourcePicker({
   const [refresh, setRefresh] = useState(0);
   const [settingsError, setSettingsError] = useState("");
   const selected = items.find((item) => item.id === selectedId);
-  const [quality, setQuality] = useState<CaptureQuality>(() =>
-    readCaptureQuality(localStorage, profileId),
-  );
-  const updateQuality = (kind: "screen" | "camera", value: QualityKey) => {
-    const next = { ...quality, [kind]: value };
-    setQuality(next);
-    saveCaptureQuality(localStorage, profileId, next);
-  };
-
   useEffect(() => {
     const element = dialog.current;
     const opener = document.activeElement;
@@ -308,7 +303,7 @@ export function SourcePicker({
         </div>
         <details className="border-t border-line px-5 py-3 sm:px-6">
           <summary className="cursor-pointer font-medium">
-            Recording quality <span className="ml-2 text-sm font-normal text-muted">Screen {labels[quality.screen]} · Camera {labels[quality.camera]}</span>
+            Recording quality <span className="ml-2 text-sm font-normal text-muted">Screen {qualityLabels[quality.screen]} · Camera {qualityLabels[quality.camera]}</span>
           </summary>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {(["screen", "camera"] as const).map((kind) => (
@@ -327,7 +322,7 @@ export function SourcePicker({
                         onChange={() => updateQuality(kind, key)}
                       />
                       <span className="rounded-lg border border-transparent px-1 py-1.5 text-center text-sm text-muted peer-checked:border-line peer-checked:bg-paper peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
-                        <span className="block font-medium">{labels[key]}</span>
+                        <span className="block font-medium">{qualityLabels[key]}</span>
                         <span className="block text-xs">{kind === "screen" ? qualityPresets[key].longEdge + " px" : qualityPresets[key].cameraHeight + "p"}</span>
                       </span>
                     </label>
