@@ -1,0 +1,121 @@
+name: Build glint for macOS
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Build type
+        type: choice
+        options: [preview, signed-test, release]
+        default: preview
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 60
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: command -v ffmpeg || brew install ffmpeg
+      - run: pnpm test
+      - run: pnpm build
+      - name: Check build target
+        if: github.event_name == 'workflow_dispatch'
+        id: version
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(uname -m)" = arm64
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare Apple signing credentials
+        if: github.event_name == 'workflow_dispatch' && inputs.mode != 'preview'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          set -eu
+          umask 077
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_API_KEY_CONTENT APPLE_API_ISSUER APPLE_API_KEY; do
+            [[ -n "${!name}" ]] || { echo "::error::Missing $name"; exit 1; }
+          done
+          keychain="$RUNNER_TEMP/glint.keychain-db"
+          password="$(openssl rand -hex 32)"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 3600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 -D > "$RUNNER_TEMP/glint.p12"
+          security import "$RUNNER_TEMP/glint.p12" -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$password" "$keychain" >/dev/null
+          security list-keychains -d user -s "$keychain" "$HOME/Library/Keychains/login.keychain-db"
+          printf '%s' "$APPLE_API_KEY_CONTENT" > "$RUNNER_TEMP/glint.p8"
+          echo "GLINT_SIGNING_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
+          echo "APPLE_SIGNING_IDENTITY=$APPLE_SIGNING_IDENTITY" >> "$GITHUB_ENV"
+
+      - name: Package disk image
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_PICKER_KEY: ${{ secrets.GOOGLE_PICKER_KEY }}
+          GOOGLE_PROJECT_NUMBER: ${{ secrets.GOOGLE_PROJECT_NUMBER }}
+        run: |
+          node scripts/package-mac.mjs
+          hdiutil verify release/*.dmg
+
+      - name: Sign and notarize disk image
+        if: github.event_name == 'workflow_dispatch' && inputs.mode != 'preview'
+        env:
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: |
+          image=(release/*.dmg)
+          codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "${image[0]}"
+          xcrun notarytool submit "${image[0]}" --key "$RUNNER_TEMP/glint.p8" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" --wait --output-format json > "$RUNNER_TEMP/notary.json"
+          jq -e '.status == "Accepted"' "$RUNNER_TEMP/notary.json"
+          xcrun stapler staple "${image[0]}"
+          xcrun stapler validate "${image[0]}"
+          spctl --assess --type open --context context:primary-signature "${image[0]}"
+
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          name: glint-macos-arm64-${{ inputs.mode }}
+          path: release/*.dmg
+          if-no-files-found: error
+
+  publish:
+    if: inputs.mode == 'release' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: glint-macos-arm64-release
+      - name: Publish verified image
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: gh release create "v$VERSION" ./*.dmg --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "glint $VERSION" --generate-notes
