@@ -27,25 +27,37 @@ const sourceTypes = [
 
 export function SourcePicker({
   current,
-  profileId,
   quality,
   updateQuality,
   onChoose,
   onCancel,
   audioIssue = "",
+  systemAudio,
+  setSystemAudio,
+  mic,
+  cameraOn,
+  showToolbar,
+  busy,
+  onMic,
+  onCamera,
+  onToolbar,
 }: {
   audioIssue?: string;
   quality: CaptureQuality;
   updateQuality: (kind: "screen" | "camera", value: QualityKey) => void;
   current: CaptureSource | null;
-  profileId: number;
   onChoose: (source: CaptureSource, systemAudio: boolean, quality: CaptureQuality) => void;
   onCancel: () => void;
+  systemAudio: boolean;
+  setSystemAudio: (v: boolean) => void;
+  mic: boolean;
+  cameraOn: boolean;
+  showToolbar: boolean;
+  busy: boolean;
+  onMic: (v: boolean) => void;
+  onCamera: (v: boolean) => void;
+  onToolbar: (v: boolean) => void;
 }) {
-  const audioKey = "glint.profile." + profileId + ".systemAudio";
-  const [systemAudio, setSystemAudio] = useState(
-    () => localStorage.getItem(audioKey) === "true",
-  );
   const dialog = useRef<HTMLDialogElement>(null);
   const cache = useRef(new Map<string, CaptureSource[]>());
   const [items, setItems] = useState<CaptureSource[]>([]);
@@ -125,7 +137,7 @@ export function SourcePicker({
         className="flex h-[min(32rem,calc(100dvh-2rem))] flex-col"
         onSubmit={(event) => {
           event.preventDefault();
-          if (selected) onChoose(selected, systemAudio, quality);
+          if (selected && !busy) onChoose(selected, systemAudio, quality);
         }}
       >
         <header className="shrink-0 px-5 pb-4 pt-5 sm:px-6">
@@ -211,7 +223,9 @@ export function SourcePicker({
                       <label
                         key={item.id}
                         className="relative grid min-w-0 cursor-pointer"
-                        onDoubleClick={() => onChoose(item, systemAudio, quality)}
+                        onDoubleClick={() => {
+                          if (!busy) onChoose(item, systemAudio, quality);
+                        }}
                       >
                         <input
                           type="radio"
@@ -277,9 +291,8 @@ export function SourcePicker({
                   Open System Settings
                 </button>
               )}
-              <button type="button" disabled={!selected} onClick={() => {
-                if (!selected) return;
-                localStorage.setItem(audioKey, "false");
+              <button type="button" disabled={!selected || busy} onClick={() => {
+                if (!selected || busy) return;
                 setSystemAudio(false);
                 onChoose(selected, false, quality);
               }}>
@@ -289,18 +302,27 @@ export function SourcePicker({
             {settingsError && <p className="mt-1">{settingsError}</p>}
           </div>
         )}
-        <div className="flex shrink-0 items-center justify-between gap-4 border-t border-line px-5 py-3 sm:px-6">
-          <div>
-            <p className="m-0 font-medium">System audio</p>
-            <p className="m-0 text-sm text-muted">Include sound playing on your computer, across apps.</p>
-          </div>
-          <SetupSwitch label="Record system audio" checked={systemAudio} disabled={false}
-            onChange={(enabled) => {
-              localStorage.setItem(audioKey, String(enabled));
-              setSystemAudio(enabled);
-            }}
-          />
-        </div>
+        <fieldset
+          disabled={busy}
+          aria-busy={busy}
+          className="m-0 grid min-w-0 grid-cols-1 gap-x-6 gap-y-3 border-0 border-t border-line px-5 py-3 sm:grid-cols-2 sm:px-6"
+        >
+          <legend className="sr-only">Recording options</legend>
+          {([
+            ["Camera", "Show your camera in the recording.", "Record camera", cameraOn, onCamera],
+            ["Microphone", "Record your voice.", "Record microphone", mic, onMic],
+            ["System audio", "Include sound playing on your computer, across apps.", "Record system audio", systemAudio, setSystemAudio],
+            ["Floating controls", "Show the recording toolbar on screen.", "Show floating controls", showToolbar, onToolbar],
+          ] as const).map(([title, hint, label, checked, change]) => (
+            <div key={label} className="flex min-w-0 items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="m-0 font-medium">{title}</p>
+                <p className="m-0 text-xs text-muted">{hint}</p>
+              </div>
+              <SetupSwitch label={label} checked={checked} disabled={busy} onChange={change} />
+            </div>
+          ))}
+        </fieldset>
         <details className="border-t border-line px-5 py-3 sm:px-6">
           <summary className="cursor-pointer font-medium">
             Recording quality <span className="ml-2 text-sm font-normal text-muted">Screen {qualityLabels[quality.screen]} · Camera {qualityLabels[quality.camera]}</span>
@@ -319,6 +341,7 @@ export function SourcePicker({
                         name={`quality-${kind}`}
                         className="peer sr-only"
                         checked={quality[kind] === key}
+                        disabled={busy}
                         onChange={() => updateQuality(kind, key)}
                       />
                       <span className="rounded-lg border border-transparent px-1 py-1.5 text-center text-sm text-muted peer-checked:border-line peer-checked:bg-paper peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
@@ -344,7 +367,8 @@ export function SourcePicker({
           </button>
           <button
             type="submit"
-            disabled={!selected}
+            disabled={!selected || busy}
+            aria-busy={busy}
             className="inline-flex items-center gap-2 border-accent bg-accent font-semibold text-white hover:bg-deep disabled:hover:bg-accent"
           >
             {audioIssue && systemAudio ? "Retry preview" : tab === "screen" ? "Use this screen" : "Use this window"}

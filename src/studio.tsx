@@ -31,6 +31,12 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
   const [source, choose] = useState<CaptureSource | null>(null);
   const [audioRetry, setAudioRetry] = useState<CaptureSource | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const audioKey = "glint.profile." + profile.id + ".systemAudio";
+  const [systemAudio, setAudio] = useState(() => localStorage.getItem(audioKey) === "true");
+  function setSystemAudio(enabled: boolean) {
+    localStorage.setItem(audioKey, String(enabled));
+    setAudio(enabled);
+  }
   const [quality, setQuality] = useState<CaptureQuality>(() => readCaptureQuality(localStorage, profile.id));
   function updateQuality(kind: "screen" | "camera", value: QualityKey) {
     const next = { ...quality, [kind]: value };
@@ -654,7 +660,11 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
       {pickerOpen && (
         <SourcePicker
           current={audioRetry || source}
-          profileId={profile.id}
+          systemAudio={systemAudio}
+          setSystemAudio={setSystemAudio}
+          mic={mic} cameraOn={cameraOn} showToolbar={showToolbar} busy={!!busy}
+          onMic={(value) => saveMic(profile.microphoneId, value)}
+          onCamera={toggleCamera} onToolbar={setToolbar}
           quality={quality}
           updateQuality={updateQuality}
           audioIssue={
