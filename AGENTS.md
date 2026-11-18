@@ -41,3 +41,9 @@ ElevenLabs voice, and time each scene to the per-scene timings in its `receipt.j
 ## Checks
 
 `pnpm test` and `pnpm build`. See `README.md` for running, packaging and release.
+
+## Cut a release
+
+1. Bump the version in `package.json` and land the change on `main`.
+2. Wait for [Build glint for macOS](https://github.com/thisduck/glint/actions/workflows/build-macos.yml) to pass. It tests the app, signs and notarizes the DMG, and publishes the release.
+3. Check that the new version and its DMG appear on [GitHub Releases](https://github.com/thisduck/glint/releases).
