@@ -1,0 +1,14 @@
+* { box-sizing: border-box }
+body { margin: auto; max-width: 50rem; padding: 0 clamp(1.25rem,5vw,3rem); font: 1.0625rem/1.65 "Helvetica Neue",Helvetica,Arial,sans-serif; color: #17284c; background: #f5f8ff }
+header { padding: 2rem 0; border-bottom: 1px solid #cbd8ee }
+.brand { display: inline-flex; align-items: center; gap: .4rem; color: inherit; font-size: 1.6rem; letter-spacing: -.05em; text-decoration: none }
+main { padding: 2rem 0 }
+h1,h2 { line-height: 1.12; letter-spacing: -.04em; font-weight: 550 }
+h1 { font-size: clamp(2.2rem,5vw,3.75rem); margin: 0 0 1.25rem }
+h2 { font-size: 1.55rem; margin: 2rem 0 .75rem }
+p { margin: .8rem 0 }
+a { color: #234db6; text-underline-offset: .18em }
+.intro { padding: clamp(1.5rem,6vw,3.25rem); color: #f5f8ff; background: radial-gradient(at top right,#234db6,#152c60 80%); border-radius: 1rem }
+.intro p { color: #deecff; max-width: 33rem }
+.download { display: inline-block; margin-top: 1rem; padding: .6rem 1rem; border-radius: .5rem; background: #f5f8ff; color: #152c60; font-weight: 600; text-decoration: none }
+footer { display: flex; flex-wrap: wrap; gap: 1.25rem; border-top: 1px solid #cbd8ee; padding: 1.5rem 0 3rem; font-size: .9375rem }
