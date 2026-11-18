@@ -1,0 +1,51 @@
+# Using glint
+
+A walkthrough of glint's features. Back to the [README](../README.md).
+
+## Your first recording
+
+Choose a profile, click **Choose screen or window**, select the capture source, and start recording. Allow macOS Screen Recording access for Electron when prompted and relaunch if macOS requests it. In the source picker, turn on **System audio** to include sound playing across apps. glint remembers this choice per profile. Enable the microphone as well to record your commentary alongside playback. Stop the recording to open its video page.
+
+## Capture preview and recording
+
+From the glint menu bar icon, choose a profile, set your camera, microphone, system audio, floating controls and quality, then choose **New recording…**. The menu bar panel stays open as you change options. Click outside it or press Escape to dismiss it. The source picker also includes the capture switches. Changes are saved for the active profile.
+
+In the source picker, expand **Recording quality** to set screen and camera quality independently for the current profile. High targets up to 3840 pixels on the screen’s longest edge and requests a 1080p camera. Smaller sources and cameras use their available resolution.
+
+Choose **Entire screen** or **An app window**, select a live thumbnail, and confirm the source. glint outlines that source and places the setup panel on it. The microphone and camera can be switched on there. Drag the camera preview to place it or adjust its size while looking at the actual source. **Back to studio** keeps the selection, and **On-screen setup** reopens the panel.
+
+Click **Start recording** on the panel for a three-second countdown over the source. Esc cancels the countdown and returns to setup. Recording begins after the countdown. The menu bar shows elapsed recording time and includes Pause, Resume and Stop. Press **⌘⇧9** to stop when the shortcut is available.
+
+## Camera and recording controls
+
+Turn on **Camera bubble** before or after choosing a screen or window. Drag on the preview to place it. Set **Bubble size** in the preview. During window recording, drag the live desktop camera to move it or drag its corner grip to resize. The floating toolbar and the menu bar also have placement and size controls. For full-display capture the desktop camera stays hidden initially, and **Show camera preview** opens it. The camera is composited into the saved video.
+
+Drag the floating toolbar by its grip. Use **Pause**, **Resume**, **Stop**, or **Hide**. The menu bar can restore the toolbar. Microphone, camera bubble, and floating toolbar start enabled for each new profile. glint remembers changes to these switches per profile. Turn off the floating toolbar when capturing a whole display if you want to keep it out of the recording.
+
+## Connect Google Drive
+
+Choose your Google account under the profile’s destination. The first time, click **Connect Google Drive** and sign in. Choosing or connecting an account saves the profile’s destination immediately. glint creates or reuses a folder named after the profile in My Drive, then shows its name and account. Open destination **Settings** and choose **Change folder…** to pick an existing folder instead. The app requests per-file Drive access. It encrypts refresh tokens using Electron safeStorage and the macOS Keychain.
+
+Enable **Auto-upload new recordings** after choosing a folder. This preference belongs to the profile. glint saves each recording locally, then uploads it in the background. Pending uploads resume when glint reopens. If an upload fails, use **Retry Drive upload** in the recording library.
+
+Each profile also has a sharing preference for new recordings. **Private · only me** requires a folder owned by you with owner-only access. If glint cannot verify that, the recording stays local and its video page explains why. **Use folder access** allows the recording to inherit access from the destination. **Anyone with the link** requests view access without search discovery. Drive administrators can restrict sharing.
+
+## Microphone and accounts
+
+Each profile remembers its recording microphone and whether microphone capture is on. Choose **System default** to follow the computer’s input setting. If a preferred input is unavailable, glint tries the system default and remembers the preferred input for later recordings.
+
+In the destination panel, open **Manage accounts** to reconnect an email or disconnect it from glint. Disconnecting clears the saved Drive destination and turns off auto-upload for every profile using that account.
+
+## Recording page
+
+Stop a recording or choose **View recording** in the library. The page plays the local copy immediately, tracks upload progress, and shows the link audience reported by Drive. **Copy link** copies the Drive viewing link in one click. Drive exposes video metadata but does not provide a definitive playback-ready flag. Use **Open in Drive** to check the player.
+
+Use **Add title** to name the recording in glint. Future uploads use the saved title. Drag the edges of the filmstrip in **Trim clip**. Click the frames to scrub or select **Preview clip** to play the range. Focus either edge and use the arrow keys for fine adjustments. **Save clip as copy** creates a separate recording in the same profile. The **Recording issues** section includes saved capture, upload, and sharing errors when available.
+
+**Save to Drive** streams the local file directly to Google. Recordings keep the destination selected at capture time. For a recording made without a destination, the first upload uses its profile's configured folder. An interrupted upload can be retried. **Copy link** copies the Drive viewing URL. **Open in Drive** opens the file where you can change sharing permissions.
+
+## Editing and managing a recording
+
+Choose **Full-screen editor** above the video for a larger view with the timeline. Choose **Cut sections**, mark a range, then **Add cut**. Add more ranges or click a range’s × to undo it. **Preview clip** skips marked sections. **Save clip as copy** exports the edit with its audio.
+
+Use **Change link access** on an uploaded recording to grant anyone-with-link viewing or remove that file’s public link grant. Folder permissions and organization policies still apply. **Delete recording** moves the local video to the Mac’s Trash. Select the separate Drive option to also move its upload to Drive Trash.
