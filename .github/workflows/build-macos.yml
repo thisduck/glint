@@ -82,6 +82,14 @@ jobs:
         run: |
           node scripts/package-mac.mjs
           hdiutil verify release/*.dmg
+          mount_dir="$(mktemp -d)"
+          hdiutil attach release/*.dmg -readonly -nobrowse -mountpoint "$mount_dir"
+          trap 'hdiutil detach "$mount_dir"' EXIT
+          app="$mount_dir/glint.app"
+          codesign --verify --deep --strict "$app"
+          helper="$app/Contents/Resources/app.asar.unpacked/dist/window-bounds"
+          test -x "$helper"
+          codesign --verify --strict "$helper"
 
       - name: Sign and notarize disk image
         if: github.event_name == 'workflow_dispatch' && inputs.mode != 'preview'

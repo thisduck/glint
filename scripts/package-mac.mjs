@@ -45,6 +45,8 @@ try {
     electronZipDir: process.env.ELECTRON_ZIP_DIR,
     platform: "darwin",
     arch: process.arch,
+    // Keep the native window lookup helper executable and visible to codesign.
+    asar: { unpack: "**/window-bounds" },
     prune: false,
     osxSign: {
       identity: process.env.APPLE_SIGNING_IDENTITY || "-",
