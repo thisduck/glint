@@ -16,7 +16,7 @@
 
     body {
       margin: 0;
-      background: #24222d;
+      background: #20243a;
       color: #fff;
       padding: 10px 12px;
       font:
@@ -37,7 +37,7 @@
 
     .controls {
       gap: 8px;
-      height: 36px;
+      min-height: 36px;
     }
     .status {
       min-width: 99px;
@@ -136,12 +136,12 @@
       white-space: nowrap;
     }
     #start {
-      background: #e9d9f2;
-      border-color: #e9d9f2;
-      color: #362441;
+      background: #dbe1ff;
+      border-color: #dbe1ff;
+      color: #202957;
     }
     #start:hover {
-      background: #f8ebff;
+      background: #eff2ff;
     }
     button:disabled {
       opacity: 0.65;
@@ -155,7 +155,16 @@
       gap: 7px;
     }
     .preview-options [aria-pressed="true"] {
-      border-color: #e0ceed;
+      border-color: #9fe0b4;
+      background: #24452f;
+      color: #e6ffee;
+    }
+    .preview-options [aria-pressed="false"] {
+      border-style: dashed;
+      color: #ded8e7;
+    }
+    .preview-options [aria-pressed="false"]:hover {
+      background: #4e4a59;
     }
     .preview .camera {
       margin: 8px 0 0;
@@ -197,7 +206,7 @@
     #position b {
       position: absolute;
       border-radius: 50%;
-      background: #e0ceed center / cover;
+      background: #c2cbff center / cover;
       box-shadow: 0 0 0 1px #171620;
       pointer-events: none;
     }
@@ -206,7 +215,7 @@
       width: 102px;
       height: 29px;
       margin: 0;
-      accent-color: #e0ceed;
+      accent-color: #c2cbff;
     }
     output {
       color: #ded8e7;
@@ -223,7 +232,7 @@
       <div id="preview-controls" hidden>
         <div class="controls">
           <div class="preview-summary">
-            <p>Ready to record</p>
+            <p>Recording preview</p>
             <strong id="source-name"></strong>
           </div>
           <button id="back" data-command="cancel" type="button">
@@ -238,7 +247,6 @@
             id="mic"
             data-command="toggleMic"
             type="button"
-            aria-label="Microphone"
             aria-pressed="false"
           >
             Microphone off
@@ -247,11 +255,11 @@
             id="camera-toggle"
             data-command="toggleCamera"
             type="button"
-            aria-label="Camera"
             aria-pressed="false"
           >
             Camera off
           </button>
+          <span id="system-audio" class="help"></span>
         </div>
       </div>
       <div class="controls" id="recording-controls">
@@ -320,14 +328,20 @@
             min="10"
             max="48"
             value="23"
+            list="size-stops"
             aria-label="Camera size"
-            aria-valuetext="23%"
+            aria-valuetext="Medium, 23%"
           />
+          <datalist id="size-stops">
+            <option value="15" label="S"></option>
+            <option value="23" label="M"></option>
+            <option value="36" label="L"></option>
+          </datalist>
         </label>
       </section>
     </main>
     <p class="help" id="restore-help">
-      Drag the bar to move it. Reopen it from the glint menu bar icon.
+      Drag to move · Reopen from the glint menu bar icon.
     </p>
     <p class="help" id="camera-help" hidden>
       Drag the camera or use the position control with the arrow keys.

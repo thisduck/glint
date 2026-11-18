@@ -114,7 +114,7 @@ function recordingMenu(
         Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
       if (process.platform === "darwin")
         tray.setTitle((paused ? "Ⅱ " : "") + clock);
-      toolbar.update({ clock, paused, position: moveCamera ? position : null });
+      toolbar.update({ clock, paused, frameSize: portraitOptions?.frameSize, position: moveCamera ? position : null });
       tray.setToolTip("glint · " + (paused ? "Paused " : "Recording ") + clock);
     }
     tick();

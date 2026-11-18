@@ -50,13 +50,17 @@
     #move:active { cursor: grabbing; }
 
     #resize {
-      bottom: max(2px, 7%);
-      left: 50%;
-      width: 24px;
-      transform: translateX(-50%);
+      bottom: max(2px, 10%);
+      right: max(2px, 10%);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
       cursor: nwse-resize;
       opacity: 0;
+      animation: hint 3s step-end;
+      transition: opacity 0.15s;
     }
+    @keyframes hint { 0% { opacity: 0.5; } 100% { opacity: 0; } }
 
     .grip {
       position: absolute;
@@ -72,7 +76,8 @@
     }
 
     .bubble:hover .grip, .bubble:focus-within .grip,
-    .bubble:hover #resize, .bubble:focus-within #resize { opacity: 1; }
+    .bubble:hover #resize, .bubble:focus-within #resize { opacity: 1; animation: none; }
+    @media (prefers-reduced-motion: reduce) { #resize { transition: none; } }
     button:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
   </style>
   <main class="bubble" aria-label="Camera preview">

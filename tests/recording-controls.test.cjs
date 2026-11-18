@@ -67,6 +67,7 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
     true,
     () => {},
     { x: 0, y: 0 },
+    { frameSize: { width: 1920, height: 1080 } },
   );
   t.after(() => {
     if (!closed) controls.close();
@@ -77,6 +78,7 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
   toolbarCommands.position({ x: 1, y: 1 });
   assert.deepEqual(toolbarState, {
     clock: "0:04",
+    frameSize: { width: 1920, height: 1080 },
     paused: true,
     position: { x: 1, y: 1 },
   });

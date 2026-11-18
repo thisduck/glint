@@ -325,7 +325,7 @@ app.whenReady().then(() => {
     foregroundStudio();
   }
   handle("showStudio", restoreStudio);
-  handle("recordingMenu", (showToolbar, cameraOn, position, windowCapture) => {
+  handle("recordingMenu", (showToolbar, cameraOn, position, windowCapture, frameSize) => {
     if (!library.open || closeRecordingMenu)
       throw Error("Recording unavailable.");
     closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(
@@ -337,6 +337,7 @@ app.whenReady().then(() => {
         : null,
       position || { x: 1, y: 1 },
       {
+        frameSize,
         desktop: windowCapture === true,
         area: recordingArea,
         request: () => win.webContents.send("portraitRequest"),

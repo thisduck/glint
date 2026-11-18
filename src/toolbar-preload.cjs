@@ -30,8 +30,12 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   let current = { x: 1, y: 1 };
+  let frameSize;
+  // Continuous input: datalist ticks (15/23/36) are passive hints only, so
+  // arrow keys step freely and never get trapped at a stop.
   scale.oninput = () => {
-    paint({ ...current, scale: Number(scale.value) / 100 });
+    const value = Number(scale.value);
+    paint({ ...current, scale: value / 100 });
     ipcRenderer.send("toolbarCommand", "scale", current.scale);
   };
 
@@ -42,14 +46,17 @@ window.addEventListener("DOMContentLoaded", () => {
   function paint(point) {
     current = point;
     const ratio = point.scale ?? 0.23;
-    const size = Math.max(5, map.clientHeight * ratio);
+    const size = Math.min(map.clientWidth, map.clientHeight) * ratio;
     dot.style.width = dot.style.height = size + "px";
     dot.style.left = point.x * (map.clientWidth - size) + "px";
     dot.style.top = point.y * (map.clientHeight - size) + "px";
     scale.value = String(Math.round(ratio * 100));
-    const percent = scale.value + "%";
-    sizeLabel.textContent = percent;
-    scale.setAttribute("aria-valuetext", percent);
+    const value = Number(scale.value);
+    const name = value <= 19 ? "Small" : value <= 29 ? "Medium" : "Large";
+    const pixels = Math.round(Math.min(frameSize?.width, frameSize?.height) * ratio);
+    const inVideo = pixels ? "≈ " + pixels + " px in video" : value + "%";
+    sizeLabel.textContent = name[0] + " · " + inVideo;
+    scale.setAttribute("aria-valuetext", name + ", " + inVideo);
 
     const vertical =
       point.y < 1 / 3 ? "top" : point.y > 2 / 3 ? "bottom" : "middle";
@@ -103,8 +110,21 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const icons = {
+    Microphone:
+      '<path d="M8 2a2 2 0 0 0-2 2v4a2 2 0 0 0 4 0V4a2 2 0 0 0-2-2zM4 7.5a4 4 0 0 0 8 0M8 11.5V14"/>',
+    Camera:
+      '<rect x="2" y="4.5" width="8.5" height="7" rx="1.5"/><path d="M10.5 7l3.5-2v6l-3.5-2"/>',
+  };
   function toggleLabel(button, name, enabled) {
-    button.textContent = name + (enabled ? " on" : " off");
+    button.innerHTML =
+      '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">' +
+      icons[name] +
+      (enabled ? "" : '<path d="M2 2l12 12"/>') +
+      "</svg><span>" +
+      name +
+      (enabled ? " on" : " off") +
+      "</span>";
     button.setAttribute("aria-pressed", String(Boolean(enabled)));
   }
 
@@ -113,14 +133,21 @@ window.addEventListener("DOMContentLoaded", () => {
     setup.hidden = !preview;
     transport.hidden = restoreHelp.hidden = preview;
     document.body.classList.toggle("preview", preview);
+    frameSize = state.frameSize;
+    if (frameSize?.width && frameSize?.height) {
+      const ratio = frameSize.width / frameSize.height;
+      map.style.width = Math.min(98, 32 * ratio) + "px";
+      map.style.height = Math.min(32, 98 / ratio) + "px";
+    }
     if (preview) {
+      document.querySelector("#system-audio").textContent = state.systemAudio ? "System audio on" : "System audio off";
       source.textContent = state.sourceName || "";
       source.title = source.textContent;
       start.disabled =
         mic.disabled =
         cameraToggle.disabled =
           Boolean(state.busy);
-      start.textContent = state.busy ? "Please wait…" : "Start recording";
+      start.textContent = state.busy ? "Preparing…" : "Start recording";
       toggleLabel(mic, "Microphone", state.micOn);
       toggleLabel(cameraToggle, "Camera", state.cameraOn);
     }
@@ -131,7 +158,7 @@ window.addEventListener("DOMContentLoaded", () => {
     if (state.position) paint(state.position);
     if (preview) return;
     clock.textContent = state.clock;
-    const label = state.paused ? "Paused" : "Recording";
+    const label = state.notice || (state.paused ? "Paused" : "Recording");
     if (status.textContent !== label) status.textContent = label;
     pause.textContent = state.paused ? "Resume" : "Pause";
     document.body.classList.toggle("paused", state.paused);
