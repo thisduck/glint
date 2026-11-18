@@ -335,3 +335,11 @@ main > div:has(.video-workspace) {
     @apply grid size-9 shrink-0 place-items-center rounded-lg bg-tint text-accent;
   }
 }
+
+.studio-setup[data-phase="recording"] .capture-view { box-shadow: inset 0 0 0 2px #e45860; }
+.studio-setup[data-phase="paused"] .capture-view { box-shadow: inset 0 0 0 2px #e9ae50; }
+.studio-setup:is([data-phase="recording"], [data-phase="paused"]) .setup-footer .studio-primary {
+  background: #ffd8d4;
+  color: #5f201f;
+}
+.capture-video[tabindex="0"] { cursor: move; }

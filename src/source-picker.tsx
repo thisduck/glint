@@ -20,7 +20,9 @@ export function SourcePicker({
   profileId,
   onChoose,
   onCancel,
+  audioIssue = "",
 }: {
+  audioIssue?: string;
   current: CaptureSource | null;
   profileId: number;
   onChoose: (source: CaptureSource, systemAudio: boolean) => void;
@@ -31,6 +33,7 @@ export function SourcePicker({
     () => localStorage.getItem(audioKey) === "true",
   );
   const dialog = useRef<HTMLDialogElement>(null);
+  const cache = useRef(new Map<string, CaptureSource[]>());
   const [items, setItems] = useState<CaptureSource[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,11 +60,20 @@ export function SourcePicker({
     let timer: ReturnType<typeof setTimeout>;
 
     async function update() {
-      let delay = 900;
+      let delay = 3000;
       try {
         const sources = await window.desk.sources(tab);
         if (!active) return;
-        setItems(sources);
+        const incoming = new Map<string, CaptureSource>(sources.map((s) => [s.id, s]));
+        const ordered = [];
+        for (const previous of cache.current.get(tab) || []) {
+          const next = incoming.get(previous.id);
+          if (next) ordered.push(next);
+          incoming.delete(previous.id);
+        }
+        ordered.push(...incoming.values());
+        cache.current.set(tab, ordered);
+        setItems(ordered);
         setError("");
       } catch (error) {
         if (!active) return;
@@ -113,9 +125,9 @@ export function SourcePicker({
         <Tabs.Root
           value={tab}
           onValueChange={(value) => {
-            setItems([]);
+            setItems(cache.current.get(value) || []);
             setError("");
-            setLoading(true);
+            setLoading(!cache.current.has(value));
             setTab(value);
           }}
           className="flex min-h-0 flex-1 flex-col"
@@ -184,6 +196,7 @@ export function SourcePicker({
                       <label
                         key={item.id}
                         className="relative grid min-w-0 cursor-pointer"
+                        onDoubleClick={() => onChoose(item, systemAudio)}
                       >
                         <input
                           type="radio"
@@ -224,6 +237,25 @@ export function SourcePicker({
             </Tabs.Content>
           ))}
         </Tabs.Root>
+        {!loading && !error && selectedId?.startsWith(tab + ":") && !selected && (
+          <p role="status" className="px-5 pb-2 text-sm text-muted">That source is no longer available. Choose another.</p>
+        )}
+        {audioIssue && (
+          <div role="alert" className="flex flex-wrap items-center gap-3 border-t border-line px-5 py-3 text-sm sm:px-6">
+            <p className="m-0 flex-1">{audioIssue}</p>
+            <button
+              type="button"
+              disabled={!(selected || current)}
+              onClick={() => {
+                localStorage.setItem(audioKey, "false");
+                setSystemAudio(false);
+                onChoose((selected || current)!, false);
+              }}
+            >
+              Continue without system audio
+            </button>
+          </div>
+        )}
         <div className="flex shrink-0 items-center justify-between gap-4 border-t border-line px-5 py-3 sm:px-6">
           <div>
             <p className="m-0 font-medium">System audio</p>
@@ -249,7 +281,7 @@ export function SourcePicker({
             disabled={!selected}
             className="inline-flex items-center gap-2 border-accent bg-accent font-semibold text-white hover:bg-deep disabled:hover:bg-accent"
           >
-            Preview selection
+            {tab === "screen" ? "Use this screen" : "Use this window"}
             <ArrowRight aria-hidden="true" className="size-4" />
           </button>
         </footer>

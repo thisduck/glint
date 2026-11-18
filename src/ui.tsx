@@ -287,16 +287,17 @@ function App() {
             </Popover.Portal>
           </Popover.Root>
         </header>
+        {!profile && error && <p role="alert">{error}</p>}
         {profile && (
           <Studio
             key={profile.id}
+            error={error}
             profile={profile}
             refreshProfile={refresh}
             lock={lock}
             fail={fail}
           />
         )}
-        {error && <p role="alert">{error}</p>}
       </div>
     </main>
   );

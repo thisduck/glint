@@ -22,12 +22,13 @@ import {
   loadCameraFrame,
   saveCameraFrame,
 } from "./capture-preferences.mjs";
-import { cameraComposition } from "./camera.mjs";
+import { bubbleBounds, cameraComposition } from "./camera.mjs";
 import { openMicrophone } from "./microphone.mjs";
 import { SourcePicker, type CaptureSource } from "./source-picker";
 const api = window.desk;
-export function Studio({ profile, refreshProfile, lock, fail }) {
+export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
   const [source, choose] = useState<CaptureSource | null>(null);
+  const [audioRetry, setAudioRetry] = useState<CaptureSource | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const showToolbar = Boolean(profile.toolbarEnabled);
   const cameraEnabled = Boolean(profile.cameraEnabled);
@@ -146,6 +147,15 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   const driveSaved = Boolean(profile.account && profile.folder);
   const savedEmail = accounts.find((a) => a.id === profile.account)?.email;
   const recorder = useRef(null);
+  const elapsedTime = useRef(() => 0);
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    if (phase !== "recording" && phase !== "paused") return;
+    const update = () => setSeconds(Math.floor(elapsedTime.current() / 1000));
+    update();
+    const timer = setInterval(update, 250);
+    return () => clearInterval(timer);
+  }, [phase]);
   useEffect(
     () =>
       api.onStopRecording(() => {
@@ -190,6 +200,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     };
   }, [pendingUploads, profile.id]);
   const setupActive = useRef<symbol | null>(null);
+  const [setupVisible, setSetupVisible] = useState(false);
   const startPending = useRef(false);
   const handleSetup = useRef<(action: string) => void>();
   useEffect(
@@ -199,6 +210,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   async function leaveSetup(restore = true) {
     if (!setupActive.current) return;
     setupActive.current = null;
+    setSetupVisible(false);
     await api.closeSetup(restore);
   }
   async function showSetup(item: CaptureSource) {
@@ -208,15 +220,20 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     try {
       const opened = await api.openSetup(item.id, {
         cameraOn: !!composition.current,
+        systemAudio: !!capture.current?.getAudioTracks().length,
+        frameSize: capture.current?.getVideoTracks()[0]?.getSettings(),
         micOn: mic,
         position: cameraPosition.current,
         busy: false,
       });
-      if (!opened && setupActive.current === session)
-        setupActive.current = null;
+      if (setupActive.current === session) {
+        setSetupVisible(Boolean(opened));
+        if (!opened) setupActive.current = null;
+      }
     } catch (error) {
       if (setupActive.current !== session) return;
       setupActive.current = null;
+      setSetupVisible(false);
       fail(
         "On-screen setup could not open. You can still start here. " +
           error.message,
@@ -351,10 +368,15 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
     fail("");
     try {
       await api.source(item.id);
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: true,
-        audio: systemAudio,
-      });
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: systemAudio });
+      } catch (error) {
+        if (!systemAudio) throw error;
+        setAudioRetry(item);
+        setPickerOpen(true);
+        return;
+      }
       const track = stream.getVideoTracks()[0];
       if (!mounted.current || !track || track.readyState === "ended") {
         stream.getTracks().forEach((t) => t.stop());
@@ -366,8 +388,11 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       }
       if (systemAudio && stream.getAudioTracks()[0]?.readyState !== "live") {
         stream.getTracks().forEach((t) => t.stop());
-        throw Error("System audio was unavailable. Check system audio recording permission and reopen glint, or turn off System audio in the picker.");
+        setAudioRetry(item);
+        setPickerOpen(true);
+        return;
       }
+      setAudioRetry(null);
       releaseCapture();
       capture.current = stream;
       track.onended = () => {
@@ -507,6 +532,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           activeMs + (startedAt == null ? 0 : performance.now() - startedAt),
         );
       }
+      elapsedTime.current = elapsed;
       r.onpause = () => {
         activeMs = elapsed();
         startedAt = null;
@@ -543,6 +569,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
         cameraOn,
         cameraPosition.current,
         source.id.startsWith("window:"),
+        display.getVideoTracks()[0].getSettings(),
       );
       if (failure) throw failure;
       startedAt = performance.now();
@@ -588,6 +615,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
   const setupLocked = !!busy || phase !== "idle";
   const capturing = phase === "recording" || phase === "paused";
   const settings = capture.current?.getVideoTracks()[0]?.getSettings?.();
+  const sample = bubbleBounds(160, 90, cameraPosition.current);
   const bubblePixels = Math.round(
     Math.min(settings?.width || 0, settings?.height || 0) * cameraScale,
   );
@@ -598,15 +626,31 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       </h2>
       {pickerOpen && (
         <SourcePicker
-          current={source}
+          current={audioRetry || source}
           profileId={profile.id}
-          onCancel={() => setPickerOpen(false)}
+          audioIssue={
+            audioRetry
+              ? "Couldn’t preview with system audio. Check screen and audio recording permissions, or try this source without system audio."
+              : ""
+          }
+          onCancel={() => {
+            setAudioRetry(null);
+            setPickerOpen(false);
+          }}
           onChoose={selectSource}
         />
       )}
       {busy && busy !== destinationMessage && <p role="status">{busy}</p>}
       {notice && <p role="status">{notice}</p>}
-      <section className="studio-setup" aria-label="Set up a recording">
+      {error && (
+        <div role="alert" className="mb-3 flex items-start gap-3 rounded-xl border border-line bg-paper p-3 text-sm">
+          <p className="m-0 flex-1">{error}</p>
+          <button type="button" className="quiet" aria-label="Dismiss error" onClick={() => fail("")}>
+            Dismiss
+          </button>
+        </div>
+      )}
+      <section className="studio-setup" data-phase={phase} aria-label="Set up a recording">
         <div className="capture-panel">
           {source ? (
             <>
@@ -620,6 +664,15 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                   poster={source.thumbnail ?? undefined}
                   className="capture-video"
                   title={cameraOn ? "Drag to position your camera" : undefined}
+                  tabIndex={cameraOn && !setupLocked ? 0 : undefined}
+                  onKeyDown={(e) => {
+                    if (!cameraOn || setupLocked) return;
+                    const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
+                    if (!step) return;
+                    e.preventDefault();
+                    const { x, y } = cameraPosition.current;
+                    updateCameraFrame({ x: Math.max(0, Math.min(1, x + step[0] * 0.05)), y: Math.max(0, Math.min(1, y + step[1] * 0.05)) });
+                  }}
                   onPointerDown={(e) => {
                     if (cameraOn && !setupLocked) {
                       e.currentTarget.setPointerCapture(e.pointerId);
@@ -643,6 +696,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                         ? "Paused"
                         : "Recording"
                       : "Live preview"}
+                    {capturing && <span className="ml-2 tabular-nums">{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}</span>}
                   </p>
                   <p className="truncate font-medium" title={source.name}>
                     {source.name}
@@ -663,7 +717,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                     choose(null);
                   }}
                 >
-                  Clear
+                  Stop preview
                 </button>
               </div>
             </>
@@ -673,7 +727,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                 <Monitor size={34} strokeWidth={1.45} />
                 <AppWindow size={22} />
               </div>
-              <h3>What would you like to record?</h3>
+              <div>
+                <h3>Choose your recording area</h3>
+                <p className="mt-1.5 text-sm text-white/80">Preview your framing before you start.</p>
+              </div>
               <button
                 className="studio-primary"
                 disabled={setupLocked}
@@ -740,8 +797,16 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                 onChange={toggleCamera}
               />
             </div>
-            {cameraOn && source ? (
+            {cameraOn ? (
               <>
+                {!source && (
+                  <svg viewBox="0 0 160 90" aria-label="Example camera framing" role="img"
+                    className="mt-2 h-14 rounded-md border border-line bg-rail text-accent">
+                    <path d="M0 12h160" stroke="currentColor" opacity=".15" />
+                    <circle cx={sample.x + sample.size / 2} cy={sample.y + sample.size / 2}
+                      r={sample.size / 2} fill="currentColor" />
+                  </svg>
+                )}
                 <label
                   className="mt-2 flex items-center justify-between gap-2 text-xs"
                   htmlFor="bubble-size"
@@ -752,7 +817,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                     className="font-medium tabular-nums"
                   >
                     {Math.round(cameraScale * 100)}%
-                    {bubblePixels > 0 && " · " + bubblePixels + " px"}
+                    {bubblePixels > 0 && (
+                      <span className="ml-1 text-muted">· {bubblePixels}px</span>
+                    )}
                   </output>
                 </label>
                 <input
@@ -768,15 +835,28 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                   }
                   onChange={(e) => resizeCamera(Number(e.target.value) / 100)}
                 />
+                <div className="mt-1 grid grid-cols-3 gap-1" role="group" aria-label="Bubble size presets">
+                  {([["Small", 0.15], ["Medium", 0.23], ["Large", 0.36]] as const).map(([label, value]) => (
+                    <button
+                      key={label}
+                      title={Math.round(value * 100) + "% of the shorter side"}
+                      type="button"
+                      className="rounded-md border-transparent bg-transparent px-2 py-1 text-xs aria-pressed:border-line aria-pressed:bg-tint"
+                      disabled={setupLocked}
+                      aria-pressed={Math.abs(cameraScale - value) < 0.005}
+                      onClick={() => resizeCamera(value)}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <p className="option-note">
-                  Drag on the preview to move your camera.
+                  {source ? "Drag on the preview or use the arrow keys to move your camera." : "Example framing. Choose a source to see your live camera."}
                 </p>
               </>
             ) : (
               <p className="option-note">
-                {cameraOn
-                  ? "Your camera appears when you choose a screen or window."
-                  : "Record just your screen"}
+                Your camera is off.
               </p>
             )}
           </section>
@@ -791,7 +871,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           >
             <summary>
               <SlidersHorizontal size={15} />
-              Recording controls
+              Floating controls
               <ChevronDown size={14} />
             </summary>
             <div className="option-title mt-3">
@@ -817,7 +897,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           <div className="setup-footer">
             <span className="text-sm text-muted">
               {phase === "idle"
-                ? "Recording starts after a 3-second countdown."
+                ? setupVisible ? "Start from the controls on your selected source." : "Recording starts after a 3-second countdown."
                 : phase === "paused"
                   ? "Recording paused"
                   : phase === "recording"
@@ -826,9 +906,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                       ? "Saving recording…"
                       : "Preparing recording…"}
             </span>
-            {phase === "idle" && (
+            {phase === "idle" && !setupVisible && (
               <button disabled={!!busy} onClick={() => showSetup(source)}>
-                On-screen setup
+                Show setup on screen
               </button>
             )}
             {capturing && (
@@ -882,9 +962,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                   ? "Google Drive · " +
                     ({
                       private: "Only me",
-                      folder: "Folder access",
+                      folder: "Same as Drive folder",
                       link: "Anyone with the link",
-                    }[profile.privacy] || "Folder access")
+                    }[profile.privacy] || "Same as Drive folder")
                   : "Manual upload to " + profile.folderName
                 : "Google Drive is optional"}
             </span>
@@ -899,7 +979,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           <div className="border-t border-line px-4 pb-4 pt-3">
             {driveSaved && (
               <p className="text-sm text-muted">
-                {profile.name} · {savedEmail || "Google Drive"}
+                Profile <strong>{profile.name}</strong> saves to{" "}
+                <strong>{profile.folderName}</strong> in{" "}
+                {savedEmail || "Google Drive"}. Recordings always stay on this
+                Mac too.
               </p>
             )}
             {configured === false && (
@@ -1049,7 +1132,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
                   }
                   options={[
                     { value: "private", label: "Private · only me" },
-                    { value: "folder", label: "Use folder access" },
+                    { value: "folder", label: "Same as Drive folder" },
                     { value: "link", label: "Anyone with the link" },
                   ]}
                   onChange={(value) =>
@@ -1085,12 +1168,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           choose(null);
           play(id);
         }}
-        onCopy={(id) =>
-          api
-            .share(id, true)
-            .then(() => setNotice("Link copied"))
-            .catch((e) => fail(e.message))
-        }
+        onCopy={(id) => api.share(id, true)}
         onViewDrive={(id) => api.share(id, false).catch((e) => fail(e.message))}
         onUpload={(id) =>
           action("Uploading…", async () => {
