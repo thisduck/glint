@@ -46,6 +46,13 @@ try {
     platform: "darwin",
     arch: process.arch,
     prune: false,
+    osxSign: {
+      identity: process.env.APPLE_SIGNING_IDENTITY || "-",
+      identityValidation: Boolean(process.env.APPLE_SIGNING_IDENTITY),
+      preAutoEntitlements: false,
+      continueOnError: false,
+      keychain: process.env.GLINT_SIGNING_KEYCHAIN,
+    },
     icon: path.join(root, "build/icon.icns"),
     extendInfo: {
       NSCameraUsageDescription:"Include your camera when you turn on the camera bubble.",
@@ -57,6 +64,8 @@ try {
         "Record the screen or window you select.",
     },
   });
+  const bundlePath = path.join(bundle, "glint.app");
+  execFileSync("codesign", ["--verify", "--deep", "--strict", bundlePath]);
   const archive = `glint-${pkg.version}-mac-${process.arch}.zip`;
   execFileSync("/usr/bin/ditto", [
     "-c",
@@ -67,7 +76,15 @@ try {
   ]);
   await fs.mkdir(out, { recursive: true });
   await fs.copyFile(path.join(tmp, archive), path.join(out, archive));
-  console.log("Created " + path.join(out, archive));
+  const imageDir = path.join(tmp, "image");
+  await fs.mkdir(imageDir);
+  await fs.rename(bundlePath, path.join(imageDir, "glint.app"));
+  await fs.symlink("/Applications", path.join(imageDir, "Applications"));
+  const image = archive.replace(/\.zip$/, ".dmg");
+  execFileSync("hdiutil", ["create", "-volname", "glint", "-srcfolder",
+    imageDir, "-format", "UDZO", path.join(tmp, image)], { stdio: "inherit" });
+  await fs.copyFile(path.join(tmp, image), path.join(out, image));
+  console.log("Created " + path.join(out, image));
 } finally {
   await fs.rm(tmp, { recursive: true, force: true });
 }
