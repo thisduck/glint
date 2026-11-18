@@ -60,7 +60,7 @@ function studioMenu(onNew, onOpen, onQuit, onSetting) {
     recording = false;
     tray.setImage(icon);
     if (process.platform === "darwin") tray.setTitle("");
-    tray.setToolTip("glint");
+    tray.setToolTip(process.platform === "darwin" ? "" : "glint");
     rebuild();
   }
   idle();

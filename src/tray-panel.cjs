@@ -3,6 +3,37 @@ const path = require("node:path");
 
 function trayPanel(tray, onAction) {
   let win, loaded = false, state, height = 460, recentlyBlurred = 0;
+  let label, hoverTimer, hovering = false;
+  function hideLabel() {
+    hovering = false;
+    clearTimeout(hoverTimer);
+    label?.hide();
+  }
+  function hover() {
+    if (process.platform !== "darwin" || state?.mode !== "setup" || win?.isVisible()) return;
+    hovering = true;
+    hoverTimer = setTimeout(async () => {
+      if (!label) {
+        label = new BrowserWindow({
+          width: 61, height: 25, frame: false, transparent: true, resizable: false,
+          show: false, focusable: false, skipTaskbar: true, type: "panel",
+          webPreferences: { sandbox: true },
+        });
+        label.setIgnoreMouseEvents(true);
+        label.setAlwaysOnTop(true, "pop-up-menu");
+        label.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+        label.setContentProtection(true);
+        try { await label.loadFile(path.join(__dirname, "tray-label.html")); }
+        catch { return; }
+      }
+      if (!hovering || !label || label.isDestroyed()) return;
+      const anchor = tray.getBounds();
+      const area = screen.getDisplayMatching(anchor).workArea;
+      const x = Math.max(area.x, Math.min(anchor.x + (anchor.width - 61) / 2, area.x + area.width - 61));
+      label.setPosition(Math.round(x), Math.max(area.y, anchor.y + anchor.height) + 3);
+      label.showInactive();
+    }, 550);
+  }
   function place() {
     const anchor = tray.getBounds();
     const area = screen.getDisplayMatching(anchor).workArea;
@@ -19,6 +50,7 @@ function trayPanel(tray, onAction) {
   }
   function hide() { win?.hide(); }
   function toggle() {
+    hideLabel();
     if (win?.isVisible()) { hide(); return; }
     // Clicking the tray icon can blur the panel just before the tray click arrives.
     if (Date.now() - recentlyBlurred < 180) return;
@@ -60,15 +92,23 @@ function trayPanel(tray, onAction) {
   }
   ipcMain.on("trayAction", action);
   ipcMain.on("trayHeight", resize);
+  tray.on("mouse-enter", hover);
+  tray.on("mouse-leave", hideLabel);
   tray.on("click", toggle);
   tray.on("right-click", toggle);
   return {
-    update(next) { state = next; send(); },
+    update(next) {
+      if (next.mode !== state?.mode) hideLabel();
+      state = next;
+      send();
+    },
     hide,
     visible: () => !!win?.isVisible(),
     destroy() {
       ipcMain.removeListener("trayAction", action);
       ipcMain.removeListener("trayHeight", resize);
+      hideLabel();
+      label?.destroy();
       win?.destroy();
     },
   };

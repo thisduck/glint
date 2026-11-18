@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:">
 <meta name="color-scheme" content="light dark">
 <title>glint recording controls</title>
 <style>
@@ -14,7 +14,9 @@ html,body{max-height:100vh}
 body{overflow-y:auto;-webkit-user-select:none;user-select:none}
 #main{padding:8px}
 header{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 8px}
-header h1{margin:0;font-size:13px;font-weight:600}
+header img{width:16px;height:16px;margin-right:5px}
+@media (prefers-color-scheme:dark){header img{filter:invert(1)}}
+header h1{margin:0 auto 0 0;font-size:13px;font-weight:600}
 #clock{font-variant-numeric:tabular-nums;color:var(--accent);font-weight:600}
 .group{border-top:1px solid var(--line);padding-top:4px;margin-top:4px}
 .group-title{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:4px 6px}
@@ -38,7 +40,7 @@ button:disabled{opacity:.5;cursor:default}
 </head>
 <body>
 <div id="main" role="region" aria-label="glint recording controls">
-<header><h1 id="title">glint</h1><span id="clock" aria-live="off"></span></header>
+<header><img src="../build/trayTemplate@2x.png" alt=""><h1 id="title">glint</h1><span id="clock" aria-live="off"></span></header>
 <div id="rows"></div>
 </div>
 </body>
