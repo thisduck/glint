@@ -3,6 +3,16 @@ import * as Tabs from "@radix-ui/react-tabs";
 import { AppWindow, ArrowRight, Check, Monitor } from "lucide-react";
 
 import { SetupSwitch } from "./components/ui/setup-switch";
+import { qualityPresets, readCaptureQuality, saveCaptureQuality } from "./capture-quality.mjs";
+
+export type QualityKey = "high" | "balanced" | "compact";
+export type CaptureQuality = {
+  screen: QualityKey;
+  camera: QualityKey;
+};
+
+const levels = ["high", "balanced", "compact"] as const;
+const labels = { high: "High", balanced: "Balanced", compact: "Compact" };
 
 export type CaptureSource = {
   id: string;
@@ -25,7 +35,7 @@ export function SourcePicker({
   audioIssue?: string;
   current: CaptureSource | null;
   profileId: number;
-  onChoose: (source: CaptureSource, systemAudio: boolean) => void;
+  onChoose: (source: CaptureSource, systemAudio: boolean, quality: CaptureQuality) => void;
   onCancel: () => void;
 }) {
   const audioKey = "glint.profile." + profileId + ".systemAudio";
@@ -44,6 +54,14 @@ export function SourcePicker({
   const [refresh, setRefresh] = useState(0);
   const [settingsError, setSettingsError] = useState("");
   const selected = items.find((item) => item.id === selectedId);
+  const [quality, setQuality] = useState<CaptureQuality>(() =>
+    readCaptureQuality(localStorage, profileId),
+  );
+  const updateQuality = (kind: "screen" | "camera", value: QualityKey) => {
+    const next = { ...quality, [kind]: value };
+    setQuality(next);
+    saveCaptureQuality(localStorage, profileId, next);
+  };
 
   useEffect(() => {
     const element = dialog.current;
@@ -112,7 +130,7 @@ export function SourcePicker({
         className="flex h-[min(32rem,calc(100dvh-2rem))] flex-col"
         onSubmit={(event) => {
           event.preventDefault();
-          if (selected) onChoose(selected, systemAudio);
+          if (selected) onChoose(selected, systemAudio, quality);
         }}
       >
         <header className="shrink-0 px-5 pb-4 pt-5 sm:px-6">
@@ -123,6 +141,7 @@ export function SourcePicker({
             Choose what to record
           </h2>
         </header>
+        <div className="min-h-0 flex-1 overflow-y-auto">
         <Tabs.Root
           value={tab}
           onValueChange={(value) => {
@@ -131,7 +150,7 @@ export function SourcePicker({
             setLoading(!cache.current.has(value));
             setTab(value);
           }}
-          className="flex min-h-0 flex-1 flex-col"
+          className="flex flex-col"
         >
           <Tabs.List
             aria-label="What to record"
@@ -152,7 +171,7 @@ export function SourcePicker({
             <Tabs.Content
               key={id}
               value={id}
-              className="min-h-0 flex-1 overflow-y-auto"
+              className="min-h-0"
             >
               <div className="px-5 py-4 sm:px-6">
                 {loading ? (
@@ -197,7 +216,7 @@ export function SourcePicker({
                       <label
                         key={item.id}
                         className="relative grid min-w-0 cursor-pointer"
-                        onDoubleClick={() => onChoose(item, systemAudio)}
+                        onDoubleClick={() => onChoose(item, systemAudio, quality)}
                       >
                         <input
                           type="radio"
@@ -267,7 +286,7 @@ export function SourcePicker({
                 if (!selected) return;
                 localStorage.setItem(audioKey, "false");
                 setSystemAudio(false);
-                onChoose(selected, false);
+                onChoose(selected, false, quality);
               }}>
                 Continue without system audio
               </button>
@@ -286,6 +305,39 @@ export function SourcePicker({
               setSystemAudio(enabled);
             }}
           />
+        </div>
+        <details className="border-t border-line px-5 py-3 sm:px-6">
+          <summary className="cursor-pointer font-medium">
+            Recording quality <span className="ml-2 text-sm font-normal text-muted">Screen {labels[quality.screen]} · Camera {labels[quality.camera]}</span>
+          </summary>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {(["screen", "camera"] as const).map((kind) => (
+              <fieldset key={kind} className="m-0 min-w-0 border-0 p-0">
+                <legend className="mb-1 text-sm font-medium">
+                  {kind === "screen" ? "Screen quality" : "Camera quality"}
+                </legend>
+                <div className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-rail p-1">
+                  {levels.map((key) => (
+                    <label key={key} className="relative grid cursor-pointer">
+                      <input
+                        type="radio"
+                        name={`quality-${kind}`}
+                        className="peer sr-only"
+                        checked={quality[kind] === key}
+                        onChange={() => updateQuality(kind, key)}
+                      />
+                      <span className="rounded-lg border border-transparent px-1 py-1.5 text-center text-sm text-muted peer-checked:border-line peer-checked:bg-paper peer-checked:text-ink peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-accent">
+                        <span className="block font-medium">{labels[key]}</span>
+                        <span className="block text-xs">{kind === "screen" ? qualityPresets[key].longEdge + " px" : qualityPresets[key].cameraHeight + "p"}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+            ))}
+          </div>
+          <p className="mb-0 mt-2 text-xs text-muted">Screen sizes use the longest edge. Capture runs at up to 30 fps, depending on the source.</p>
+        </details>
         </div>
         <footer className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3 sm:px-6">
           <button

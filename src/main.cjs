@@ -364,7 +364,7 @@ app.whenReady().then(() => {
     if (
       event.senderFrame === win.webContents.mainFrame &&
       typeof frame === "string" &&
-      frame.length < 200000 &&
+      frame.length < 1000000 &&
       frame.startsWith("data:image/jpeg;base64,")
     ) {
       preparation?.portrait(frame);

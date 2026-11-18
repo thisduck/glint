@@ -23,8 +23,9 @@ import {
   saveCameraFrame,
 } from "./capture-preferences.mjs";
 import { bubbleBounds, cameraComposition } from "./camera.mjs";
+import { cameraConstraints, readCaptureQuality, recorderOptions, screenConstraints } from "./capture-quality.mjs";
 import { openMicrophone } from "./microphone.mjs";
-import { SourcePicker, type CaptureSource } from "./source-picker";
+import { SourcePicker, type CaptureSource, type CaptureQuality } from "./source-picker";
 const api = window.desk;
 export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
   const [source, choose] = useState<CaptureSource | null>(null);
@@ -242,6 +243,7 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
   }
   const capture = useRef<MediaStream | null>(null);
   const composition = useRef(null);
+  const captureQuality = useRef(readCaptureQuality(localStorage, profile.id));
   const [initialFrame] = useState(() =>
     loadCameraFrame(localStorage, profile.id),
   );
@@ -324,8 +326,13 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
     });
   }
   async function attachCamera(display: MediaStream) {
-    const result = await cameraComposition(display, cameraPosition, () =>
-      setNotice("Camera disconnected. Screen recording continues."),
+    const webcam = await navigator.mediaDevices.getUserMedia({
+      video: cameraConstraints(captureQuality.current.camera),
+      audio: false,
+    });
+    const result = await cameraComposition(
+      display, webcam, cameraPosition,
+      () => setNotice("Camera disconnected. Screen recording continues."),
     );
     if (capture.current !== display) {
       result.close();
@@ -360,7 +367,7 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
       previewVideo.current.srcObject =
         composition.current?.stream || capture.current;
   }, [source, phase, cameraOn]);
-  async function selectSource(item: CaptureSource, systemAudio: boolean) {
+  async function selectSource(item: CaptureSource, systemAudio: boolean, quality: CaptureQuality) {
     setPickerOpen(false);
     setPhase("previewing");
     lock(true);
@@ -370,7 +377,7 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
       await api.source(item.id);
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: systemAudio });
+        stream = await navigator.mediaDevices.getDisplayMedia({ video: screenConstraints(quality.screen), audio: systemAudio });
       } catch (error) {
         if (!systemAudio) throw error;
         setAudioRetry(item);
@@ -394,6 +401,7 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
       }
       setAudioRetry(null);
       releaseCapture();
+      captureQuality.current = quality;
       capture.current = stream;
       track.onended = () => {
         releaseCapture();
@@ -495,7 +503,7 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
         return;
       }
       const stream = new MediaStream(tracks);
-      const r = new MediaRecorder(stream, { mimeType: "video/webm" });
+      const r = new MediaRecorder(stream, recorderOptions(captureQuality.current.screen, stream.getVideoTracks()[0].getSettings()));
       await leaveSetup(false);
       if (!(await api.countdown(source.id))) {
         microphone?.close();

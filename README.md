@@ -15,9 +15,15 @@ Choose a profile, click **Choose screen or window**, select the capture source, 
 
 ### Capture preview and recording
 
-Choose **Entire screen** or **An app window**, select a live thumbnail, and click **Preview selection**. glint outlines that source and places the setup panel on it. The microphone and camera can be switched on there. Drag the camera preview to place it or adjust its size while looking at the actual source. **Back to studio** keeps the selection, and **On-screen setup** reopens the panel.
+In the source picker, expand **Recording quality** to set screen and camera quality independently for the current profile. High targets up to 3840 pixels on the screen’s longest edge and requests a 1080p camera. Smaller sources and cameras use their available resolution.
+
+Choose **Entire screen** or **An app window**, select a live thumbnail, and confirm the source. glint outlines that source and places the setup panel on it. The microphone and camera can be switched on there. Drag the camera preview to place it or adjust its size while looking at the actual source. **Back to studio** keeps the selection, and **On-screen setup** reopens the panel.
 
 Click **Start recording** on the panel for a three-second countdown over the source. Esc cancels the countdown and returns to setup. Recording begins after the countdown. The menu bar shows elapsed recording time and includes Pause, Resume and Stop. Press **⌘⇧9** to stop when the shortcut is available.
+
+### Future editable recordings
+
+glint currently exports a single WebM with the camera composited into the screen and the audio mixed. The screen and camera enter the compositor as separate streams. A future editable recording can retain those sources alongside the shareable WebM. Cursor movement, camera framing, and input toggles would need timestamped events on the same recording timeline, accounting for pauses. Existing WebMs contain only the rendered result.
 
 ## Connect Google Drive
 

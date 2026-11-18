@@ -11,11 +11,8 @@ export function bubbleBounds(width, height, position) {
   };
 }
 
-export async function cameraComposition(display, position, onEnded) {
-  const webcam = await navigator.mediaDevices.getUserMedia({
-    video: { width: { ideal: 640 }, height: { ideal: 480 } },
-    audio: false,
-  });
+// The compositor owns the webcam for this preview. The caller owns the screen stream.
+export async function cameraComposition(display, webcam, position, onEnded) {
   const screen = document.createElement("video"),
     camera = document.createElement("video"),
     canvas = document.createElement("canvas");
@@ -80,11 +77,15 @@ export async function cameraComposition(display, position, onEnded) {
     output = canvas.captureStream(30);
     timer = setInterval(draw, 1000 / 30);
     const preview = document.createElement("canvas");
-    preview.width = preview.height = 224;
+    // The desktop overlay has its own preview budget. The recording uses the original camera frames.
     const previewContext = preview.getContext("2d");
     function portrait() {
       if (!available || camera.readyState < 2) return null;
       const crop = Math.min(camera.videoWidth, camera.videoHeight);
+      const diameter = Math.round(Math.min(canvas.width, canvas.height) * (position.current.scale ?? 0.23));
+      const size = Math.max(1, Math.min(640, crop, diameter));
+      if (preview.width !== size || preview.height !== size)
+        preview.width = preview.height = size;
       previewContext.drawImage(
         camera,
         (camera.videoWidth - crop) / 2,
@@ -93,10 +94,10 @@ export async function cameraComposition(display, position, onEnded) {
         crop,
         0,
         0,
-        224,
-        224,
+        size,
+        size,
       );
-      return preview.toDataURL("image/jpeg", 0.75);
+      return preview.toDataURL("image/jpeg", 0.86);
     }
     return { stream: output, close, portrait };
   } catch (error) {
