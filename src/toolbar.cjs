@@ -10,8 +10,18 @@ function recordingToolbar(commands) {
     ? screen.getDisplayMatching(target)
     : screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
   const area = display.workArea;
-  const width = Math.min(area.width, preview ? 508 : 420);
-  let height = preview ? 112 : commands.position ? 168 : 83;
+  const width = Math.min(area.width, preview ? 360 : 240);
+  let height = 52;
+  let cameraTools = false;
+  function clampBounds(b, h) {
+    const wa = screen.getDisplayMatching({ ...b, width, height: h }).workArea;
+    return {
+      x: Math.round(clamp(b.x, wa.x, wa.x + wa.width - width)),
+      y: Math.round(clamp(b.y, wa.y, wa.y + wa.height - h)),
+      width,
+      height: h,
+    };
+  }
   function origin(capture) {
     const workArea = screen.getDisplayMatching(capture).workArea;
     const inset = 16;
@@ -30,9 +40,11 @@ function recordingToolbar(commands) {
     };
   }
   const win = new BrowserWindow({
-    ...(preview && target
-      ? origin(target)
-      : { x: area.x + 18, y: area.y + area.height - height - 18 }),
+    ...(commands.initialBounds
+      ? clampBounds(commands.initialBounds, height)
+      : target
+        ? origin(target)
+        : { x: area.x + 18, y: area.y + area.height - height - 18 }),
     width,
     height,
     type: "panel",
@@ -71,12 +83,26 @@ function recordingToolbar(commands) {
     clock: "0:00",
     paused: false,
     position: !preview && commands.position ? layout : null,
+    cameraTools,
   };
+  function resize() {
+    const next = state.position && cameraTools ? 136 : 52;
+    if (win.isDestroyed() || next === height) return;
+    height = next;
+    win.setBounds(clampBounds(win.getBounds(), height));
+  }
   let visible = false;
   let loaded = false;
   const receive = (event, action, point) => {
     if (win.isDestroyed() || event.senderFrame !== win.webContents.mainFrame)
       return;
+    if (action === "cameraTools" && typeof point === "boolean") {
+      cameraTools = !!state.position && point;
+      state = { ...state, cameraTools };
+      resize();
+      if (loaded) win.webContents.send("toolbarState", state);
+      return;
+    }
     if (
       action === "position" &&
       state.position &&
@@ -119,27 +145,27 @@ function recordingToolbar(commands) {
     if (visible) win.showInactive();
   });
   ready.catch(() => {
+    clearInterval(portraitTimer);
+    bubble?.close();
+    bubble = null;
     if (!win.isDestroyed()) win.destroy();
   });
 
   return {
     ready,
+    getBounds: () => (win.isDestroyed() ? null : win.getBounds()),
     setArea(next) {
-      if (preview && !win.isDestroyed() && target) {
+      if (!win.isDestroyed() && target) {
         const oldOrigin = origin(target);
         const nextOrigin = origin(next);
         const point = win.getBounds();
-        const workArea = screen.getDisplayMatching(next).workArea;
-        win.setPosition(
-          clamp(
-            point.x + nextOrigin.x - oldOrigin.x,
-            workArea.x,
-            workArea.x + workArea.width - width,
-          ),
-          clamp(
-            point.y + nextOrigin.y - oldOrigin.y,
-            workArea.y,
-            workArea.y + workArea.height - height,
+        win.setBounds(
+          clampBounds(
+            {
+              x: point.x + nextOrigin.x - oldOrigin.x,
+              y: point.y + nextOrigin.y - oldOrigin.y,
+            },
+            height,
           ),
         );
       }
@@ -164,27 +190,12 @@ function recordingToolbar(commands) {
         bubble = null;
       }
       if (preview && next.cameraOn && portraitOptions?.desktop) showCamera();
-      if (preview && !win.isDestroyed()) {
-        const newHeight = next.position ? 188 : 112;
-        if (height !== newHeight) {
-          const bounds = win.getBounds();
-          const workArea = screen.getDisplayMatching(target ?? bounds).workArea;
-          win.setBounds({
-            ...bounds,
-            y: clamp(
-              bounds.y,
-              workArea.y,
-              workArea.y + workArea.height - newHeight,
-            ),
-            height: newHeight,
-          });
-          height = newHeight;
-        }
-      }
+      if (!next.position) cameraTools = false;
+      state = { phase: commands.phase, ...next, cameraTools };
+      resize();
       bubble?.update(layout);
-      state = next;
       if (loaded && !win.isDestroyed())
-        win.webContents.send("toolbarState", next);
+        win.webContents.send("toolbarState", state);
     },
     close() {
       clearInterval(portraitTimer);

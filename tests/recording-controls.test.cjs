@@ -61,17 +61,19 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
       else delete require.cache[key];
     }
   });
+  const toolbarBounds = { x: -850, y: 100, width: 360, height: 52 };
   const controls = require("../src/recording-menu.cjs").recordingMenu(
     () => stops++,
     () => toggles++,
     true,
     () => {},
     { x: 0, y: 0 },
-    { frameSize: { width: 1920, height: 1080 } },
+    { frameSize: { width: 1920, height: 1080 }, toolbarBounds },
   );
   t.after(() => {
     if (!closed) controls.close();
   });
+  assert.deepEqual(toolbarCommands.initialBounds, toolbarBounds);
   menu.find((item) => item.label === "Pause recording").click();
   controls.update(true, 4500);
   now += 10000;

@@ -51,6 +51,7 @@ function recordingMenu(
       position: moveCamera ? place : null,
       initialPosition,
       captureArea: portraitOptions?.area,
+      initialBounds: portraitOptions?.toolbarBounds,
       portraitOptions: moveCamera ? portraitOptions : null,
     });
     if (showToolbar) toolbar.show();
@@ -120,6 +121,7 @@ function recordingMenu(
     tick();
     timer = setInterval(tick, 1000);
     return {
+      ready: toolbar.ready,
       close,
       setArea: (area) => toolbar.setArea(area),
       portrait: (frame) => toolbar.portrait(frame),

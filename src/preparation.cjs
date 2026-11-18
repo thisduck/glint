@@ -86,6 +86,7 @@ function prepareSource(target, settings, send, onLost) {
   return {
     ready,
     close,
+    getToolbarBounds: () => toolbar?.getBounds() ?? null,
     portrait(frame) {
       toolbar?.portrait(frame);
     },

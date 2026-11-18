@@ -22,6 +22,28 @@ window.addEventListener("DOMContentLoaded", () => {
   const mic = document.querySelector("#mic");
   const cameraToggle = document.querySelector("#camera-toggle");
 
+  const toolsButtons = document.querySelectorAll(".tools");
+  const pauseButton = document.querySelector("#pause");
+  const systemAudio = document.querySelector("#system-audio");
+  let toolsOpen = false;
+  let hasPosition = false;
+  function syncTools() {
+    camera.hidden = cameraHelp.hidden = !(hasPosition && toolsOpen);
+    for (const button of toolsButtons) {
+      button.hidden = !hasPosition;
+      button.setAttribute("aria-expanded", String(toolsOpen && hasPosition));
+      const label = (toolsOpen ? "Hide" : "Show") + " camera position and size";
+      button.title = label;
+      button.setAttribute("aria-label", label);
+    }
+  }
+  for (const button of toolsButtons)
+    button.onclick = () => {
+      toolsOpen = !toolsOpen;
+      syncTools();
+      ipcRenderer.send("toolbarCommand", "cameraTools", toolsOpen);
+    };
+
   window.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && !setup.hidden) {
       event.preventDefault();
@@ -121,10 +143,13 @@ window.addEventListener("DOMContentLoaded", () => {
       '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true">' +
       icons[name] +
       (enabled ? "" : '<path d="M2 2l12 12"/>') +
-      "</svg><span>" +
+      '</svg><span class="sr">' +
       name +
       (enabled ? " on" : " off") +
       "</span>";
+    const label = name + (enabled ? " on — click to turn off" : " off — click to turn on");
+    button.title = label;
+    button.setAttribute("aria-label", name + (enabled ? " on" : " off"));
     button.setAttribute("aria-pressed", String(Boolean(enabled)));
   }
 
@@ -140,18 +165,33 @@ window.addEventListener("DOMContentLoaded", () => {
       map.style.height = Math.min(32, 98 / ratio) + "px";
     }
     if (preview) {
-      document.querySelector("#system-audio").textContent = state.systemAudio ? "System audio on" : "System audio off";
+      const audioLabel = state.systemAudio
+        ? "System sound will be recorded"
+        : "System sound off — not captured for this source";
+      systemAudio.className = "tip" + (state.systemAudio ? " on" : "");
+      systemAudio.title = audioLabel;
+      systemAudio.setAttribute("aria-label", audioLabel);
+      systemAudio.innerHTML =
+        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6h2.5l3.5-3v10L5 10H2.5z"/>' +
+        (state.systemAudio
+          ? '<path d="M11 5.5a3.5 3.5 0 0 1 0 5"/>'
+          : '<path d="M11 6l3 4M14 6l-3 4"/>') +
+        "</svg>";
       source.textContent = state.sourceName || "";
-      source.title = source.textContent;
+      source.title = "Recording: " + source.textContent;
       start.disabled =
         mic.disabled =
         cameraToggle.disabled =
           Boolean(state.busy);
-      start.textContent = state.busy ? "Preparing…" : "Start recording";
+      start.textContent = state.busy ? "…" : "Start";
+      start.title = state.busy ? "Preparing…" : "Start recording";
+      start.setAttribute("aria-label", start.title);
       toggleLabel(mic, "Microphone", state.micOn);
       toggleLabel(cameraToggle, "Camera", state.cameraOn);
     }
-    camera.hidden = cameraHelp.hidden = !state.position;
+    hasPosition = Boolean(state.position);
+    if (typeof state.cameraTools === "boolean") toolsOpen = state.cameraTools;
+    syncTools();
     cameraHelp.textContent = preview
       ? "Drag the camera on screen to move it, or use the position control."
       : "Drag the position control or move it with the arrow keys.";
@@ -161,6 +201,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const label = state.notice || (state.paused ? "Paused" : "Recording");
     if (status.textContent !== label) status.textContent = label;
     pause.textContent = state.paused ? "Resume" : "Pause";
+    pauseButton.title = pause.textContent;
+    pauseButton.setAttribute("aria-label", pause.textContent);
     document.body.classList.toggle("paused", state.paused);
   });
 });

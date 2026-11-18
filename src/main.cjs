@@ -56,6 +56,7 @@ app.whenReady().then(() => {
   const listedSources = new Map();
   let selected = null;
   let previewTarget;
+  let toolbarBounds;
   const { Google } = require("./google.cjs");
   const { Uploads } = require("./uploads.cjs");
   const { loadConfig, missing } = require("./google-config.cjs");
@@ -222,12 +223,14 @@ app.whenReady().then(() => {
     }
     const video = selected;
     previewTarget = video;
+    toolbarBounds = undefined;
     selected = null;
     cb(req.audioRequested ? { video, audio: "loopback" } : { video });
   });
   let preparation;
   function closeSetup(restore) {
     if (!preparation) return;
+    toolbarBounds = preparation.getToolbarBounds() ?? toolbarBounds;
     preparation.close();
     preparation = null;
     if (restore && !win.isDestroyed()) win.show();
@@ -329,7 +332,7 @@ app.whenReady().then(() => {
     foregroundStudio();
   }
   handle("showStudio", restoreStudio);
-  handle("recordingMenu", (showToolbar, cameraOn, position, windowCapture, frameSize) => {
+  handle("recordingMenu", async (showToolbar, cameraOn, position, windowCapture, frameSize) => {
     if (!library.open || closeRecordingMenu)
       throw Error("Recording unavailable.");
     closeRecordingMenu = require("./recording-menu.cjs").recordingMenu(
@@ -342,11 +345,20 @@ app.whenReady().then(() => {
       position || { x: 1, y: 1 },
       {
         frameSize,
+        toolbarBounds,
         desktop: windowCapture === true,
         area: recordingArea,
         request: () => win.webContents.send("portraitRequest"),
       },
     );
+    if (showToolbar) {
+      try {
+        await closeRecordingMenu.ready;
+      } catch {
+        restoreStudio();
+        throw Error("The floating controls could not open. Try starting the recording again.");
+      }
+    }
   });
   ipcMain.on("cameraPortrait", (event, frame) => {
     if (

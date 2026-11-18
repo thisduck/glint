@@ -226,51 +226,62 @@
       color: #ded8e7;
       font-size: 11px;
     }
+    /* Compact icon-first single row */
+    body { padding: 8px 8px; overflow: hidden; }
+    .sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .controls { gap: 5px; min-height: 36px; flex-wrap: nowrap; }
+    .status { min-width: 0; gap: 6px; padding: 0 4px; flex: 1; }
+    button { min-height: 32px; min-width: 32px; padding: 0 8px; gap: 4px; }
+    button.icon { width: 32px; padding: 0; }
+    button svg { width: 15px; height: 15px; }
+    #pause { min-width: 32px; }
+    #hide { margin-left: 0; }
+    .tools[aria-expanded="true"] { background: #4e4a59; border-color: #c2cbff; }
+    .tools[aria-expanded="true"] svg { transform: rotate(180deg); }
+    .preview-summary { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1; overflow: hidden; }
+    .preview-summary strong { font-size: 12px; min-width: 0; }
+    .tip { flex: 0 0 auto; display: inline-flex; color: #ded8e7; }
+    .tip svg { width: 14px; height: 14px; }
+    .tip.on { color: #9fe0b4; }
+    #start { padding: 0 10px; }
+    #mic[aria-pressed="true"], #camera-toggle[aria-pressed="true"] { border-color: #9fe0b4; background: #24452f; color: #e6ffee; }
+    #mic[aria-pressed="false"], #camera-toggle[aria-pressed="false"] { border-style: dashed; color: #ded8e7; }
+    .camera, .preview .camera { margin: 8px 0 0; padding: 8px 0 0; border-top: 1px solid #54515f; gap: 10px; flex-wrap: nowrap; min-width: 0; }
+    .camera-control { min-width: 0; }
+    #scale, .preview #scale { width: 100%; max-width: 175px; }
+    .camera-control:last-child { flex: 1; }
   </style>
   <body>
     <main aria-label="Recording controls">
       <div id="preview-controls" hidden>
         <div class="controls">
+          <button id="back" class="icon" data-command="cancel" type="button" title="Back to studio (Esc)" aria-label="Back to studio">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3L5 8l5 5"/></svg>
+          </button>
           <div class="preview-summary">
-            <p>Recording preview</p>
+            <span class="sr">Recording preview</span>
             <strong id="source-name"></strong>
+            <span id="system-audio" class="tip" role="img"></span>
           </div>
-          <button id="back" data-command="cancel" type="button">
-            Back to studio
+          <button id="mic" class="icon" data-command="toggleMic" type="button" aria-pressed="false" aria-label="Microphone off" title="Microphone off"></button>
+          <button id="camera-toggle" class="icon" data-command="toggleCamera" type="button" aria-pressed="false" aria-label="Camera off" title="Camera off"></button>
+          <button class="icon tools" type="button" aria-expanded="false" aria-controls="camera-tools" title="Camera position and size" aria-label="Camera position and size" hidden>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
           </button>
-          <button id="start" data-command="start" type="button">
-            Start recording
+          <button id="start" data-command="start" type="button" title="Start recording" aria-label="Start recording">
+            Start
           </button>
-        </div>
-        <div class="preview-options" aria-label="What to include">
-          <button
-            id="mic"
-            data-command="toggleMic"
-            type="button"
-            aria-pressed="false"
-          >
-            Microphone off
-          </button>
-          <button
-            id="camera-toggle"
-            data-command="toggleCamera"
-            type="button"
-            aria-pressed="false"
-          >
-            Camera off
-          </button>
-          <span id="system-audio" class="help"></span>
         </div>
       </div>
       <div class="controls" id="recording-controls">
         <div class="status">
           <span class="light" aria-hidden="true"></span>
           <div>
-            <strong id="status" role="status">Recording</strong>
+            <strong id="status" class="sr" role="status">Recording</strong>
             <time aria-label="Elapsed recording time">0:00</time>
           </div>
         </div>
-        <button id="pause" data-command="toggle" type="button">
+        <button id="pause" class="icon" data-command="toggle" type="button" title="Pause" aria-label="Pause">
           <svg
             class="pause-icon"
             viewBox="0 0 16 16"
@@ -288,24 +299,22 @@
           >
             <path d="M5 3v10l8-5z" />
           </svg>
-          <span>Pause</span>
+          <span class="sr">Pause</span>
         </button>
-        <button id="stop" data-command="stop" type="button">
+        <button id="stop" class="icon" data-command="stop" type="button" title="Stop recording" aria-label="Stop recording">
           <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
             <rect x="3" y="3" width="10" height="10" rx="2" />
           </svg>
-          Stop recording
+          <span class="sr">Stop recording</span>
         </button>
-        <button
-          id="hide"
-          data-command="hide"
-          type="button"
-          aria-describedby="restore-help"
-        >
-          Hide
+        <button class="icon tools" type="button" aria-expanded="false" aria-controls="camera-tools" title="Camera position and size" aria-label="Camera position and size" hidden>
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>
+        </button>
+        <button id="hide" class="icon" data-command="hide" type="button" aria-describedby="restore-help" title="Hide controls (reopen from the glint menu bar icon)" aria-label="Hide controls">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M3.5 8h9"/></svg>
         </button>
       </div>
-      <section class="camera" aria-label="Camera controls" hidden>
+      <section class="camera" id="camera-tools" aria-label="Camera controls" hidden>
         <div class="camera-control">
           <span class="label">Camera position</span>
           <button
@@ -340,10 +349,10 @@
         </label>
       </section>
     </main>
-    <p class="help" id="restore-help">
+    <p class="help sr" id="restore-help">
       Drag to move · Reopen from the glint menu bar icon.
     </p>
-    <p class="help" id="camera-help" hidden>
+    <p class="help sr" id="camera-help" hidden>
       Drag the camera or use the position control with the arrow keys.
     </p>
   </body>
