@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import { AppWindow, ArrowRight, Check, Monitor } from "lucide-react";
 
+import { SetupSwitch } from "./components/ui/setup-switch";
+
 export type CaptureSource = {
   id: string;
   name: string;
@@ -15,13 +17,19 @@ const sourceTypes = [
 
 export function SourcePicker({
   current,
+  profileId,
   onChoose,
   onCancel,
 }: {
   current: CaptureSource | null;
-  onChoose: (source: CaptureSource) => void;
+  profileId: number;
+  onChoose: (source: CaptureSource, systemAudio: boolean) => void;
   onCancel: () => void;
 }) {
+  const audioKey = "glint.profile." + profileId + ".systemAudio";
+  const [systemAudio, setSystemAudio] = useState(
+    () => localStorage.getItem(audioKey) === "true",
+  );
   const dialog = useRef<HTMLDialogElement>(null);
   const [items, setItems] = useState<CaptureSource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -91,7 +99,7 @@ export function SourcePicker({
         className="flex h-[min(32rem,calc(100dvh-2rem))] flex-col"
         onSubmit={(event) => {
           event.preventDefault();
-          if (selected) onChoose(selected);
+          if (selected) onChoose(selected, systemAudio);
         }}
       >
         <header className="shrink-0 px-5 pb-4 pt-5 sm:px-6">
@@ -216,6 +224,18 @@ export function SourcePicker({
             </Tabs.Content>
           ))}
         </Tabs.Root>
+        <div className="flex shrink-0 items-center justify-between gap-4 border-t border-line px-5 py-3 sm:px-6">
+          <div>
+            <p className="m-0 font-medium">System audio</p>
+            <p className="m-0 text-sm text-muted">Include sound playing on your computer, across apps.</p>
+          </div>
+          <SetupSwitch label="Record system audio" checked={systemAudio} disabled={false}
+            onChange={(enabled) => {
+              localStorage.setItem(audioKey, String(enabled));
+              setSystemAudio(enabled);
+            }}
+          />
+        </div>
         <footer className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-line px-5 py-3 sm:px-6">
           <button
             type="button"

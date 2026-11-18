@@ -40,6 +40,8 @@ for (const missing of [false, true]) {
         return { getAudioTracks: () => [track], getTracks: () => [track] };
       };
       const output = makeStream();
+      const playback = makeStream();
+      const connected = new Set();
       let input,
         closed = false,
         fallback = 0;
@@ -56,20 +58,26 @@ for (const missing of [false, true]) {
         async close() {
           closed = true;
         },
-        createMediaStreamSource: () => ({ connect() {}, disconnect() {} }),
+        createMediaStreamSource: (stream) => ({
+          connect() { connected.add(stream); },
+          disconnect() { connected.delete(stream); },
+        }),
       };
       const mic = await openMicrophone(
         devices,
         "usb",
         () => fallback++,
         assert.fail,
-        context,
+        { context, playback },
       );
       if (!missing) await input.getTracks()[0].onended();
       assert.deepEqual(calls, [{ deviceId: { exact: "usb" } }, true]);
       assert.equal(fallback, 1);
       assert.equal(mic.track, output.getTracks()[0]);
+      assert.deepEqual(connected, new Set([playback, input]));
       mic.close();
+      assert.equal(connected.size, 0);
+      assert.equal(playback.getAudioTracks()[0].readyState, "live");
       assert.equal(input.getTracks()[0].readyState, "ended");
       assert.equal(closed, true);
     },

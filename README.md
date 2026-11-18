@@ -11,7 +11,7 @@ pnpm install --frozen-lockfile
 pnpm start
 ```
 
-Choose a profile, click **Choose screen or window**, select the capture source, and start recording. Allow macOS Screen Recording access for Electron when prompted and relaunch if macOS requests it. Enable microphone access to include narration. Stop the recording to open its video page. Local WebM files and the SQLite library are stored under Electron's user-data directory (normally `~/Library/Application Support/glint` on macOS). Existing installations continue using their original library location.
+Choose a profile, click **Choose screen or window**, select the capture source, and start recording. Allow macOS Screen Recording access for Electron when prompted and relaunch if macOS requests it. In the source picker, turn on **System audio** to include sound playing across apps. glint remembers this choice per profile. Enable the microphone as well to record your commentary alongside playback. Stop the recording to open its video page. Local WebM files and the SQLite library are stored under Electron's user-data directory (normally `~/Library/Application Support/glint` on macOS). Existing installations continue using their original library location.
 
 ### Capture preview and recording
 

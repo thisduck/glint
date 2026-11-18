@@ -343,7 +343,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       previewVideo.current.srcObject =
         composition.current?.stream || capture.current;
   }, [source, phase, cameraOn]);
-  async function selectSource(item: CaptureSource) {
+  async function selectSource(item: CaptureSource, systemAudio: boolean) {
     setPickerOpen(false);
     setPhase("previewing");
     lock(true);
@@ -353,7 +353,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       await api.source(item.id);
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: true,
-        audio: false,
+        audio: systemAudio,
       });
       const track = stream.getVideoTracks()[0];
       if (!mounted.current || !track || track.readyState === "ended") {
@@ -363,6 +363,10 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             "No video arrived from this source. Choose it again or check Screen Recording access.",
           );
         return;
+      }
+      if (systemAudio && stream.getAudioTracks()[0]?.readyState !== "live") {
+        stream.getTracks().forEach((t) => t.stop());
+        throw Error("System audio was unavailable. Check system audio recording permission and reopen glint, or turn off System audio in the picker.");
       }
       releaseCapture();
       capture.current = stream;
@@ -439,6 +443,9 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
           "The selected source is no longer sharing. Choose a screen or window again.",
         );
       tracks.push(...(composition.current?.stream || display).getVideoTracks());
+      const playback = display.getAudioTracks()[0];
+      if (playback && playback.readyState !== "live")
+        throw Error("System audio disconnected. Choose your screen or window again.");
       if (mic) {
         microphone = await openMicrophone(
           navigator.mediaDevices,
@@ -449,9 +456,12 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
             if (recorder.current && recorder.current.state !== "inactive")
               recorder.current.stop();
           },
+          { playback: playback ? display : undefined },
         );
         tracks.push(microphone.track);
         listInputs().catch(() => {});
+      } else if (playback) {
+        tracks.push(playback);
       }
       if (fromSetup && setupActive.current !== fromSetup) {
         microphone?.close();
@@ -589,6 +599,7 @@ export function Studio({ profile, refreshProfile, lock, fail }) {
       {pickerOpen && (
         <SourcePicker
           current={source}
+          profileId={profile.id}
           onCancel={() => setPickerOpen(false)}
           onChoose={selectSource}
         />

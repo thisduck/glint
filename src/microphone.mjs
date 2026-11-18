@@ -4,11 +4,11 @@ export async function openMicrophone(
   preferred,
   onFallback,
   onFailure,
-  context = new AudioContext(),
+  { context = new AudioContext(), playback } = {},
 ) {
   const output = context.createMediaStreamDestination();
   let active = true;
-  let input, source;
+  let input, source, systemSource;
   function releaseInput() {
     source?.disconnect();
     for (const track of input?.getTracks() || []) {
@@ -20,6 +20,7 @@ export async function openMicrophone(
     if (!active) return;
     active = false;
     releaseInput();
+    systemSource?.disconnect();
     output.stream.getTracks().forEach((track) => track.stop());
     context.close().catch(() => {});
   }
@@ -51,6 +52,10 @@ export async function openMicrophone(
   }
   try {
     await context.resume();
+    if (playback) {
+      systemSource = context.createMediaStreamSource(playback);
+      systemSource.connect(output);
+    }
     if (preferred === "default") await attach(true);
     else {
       try {

@@ -219,7 +219,7 @@ app.whenReady().then(() => {
     const video = selected;
     previewTarget = video;
     selected = null;
-    cb({ video });
+    cb(req.audioRequested ? { video, audio: "loopback" } : { video });
   });
   let preparation;
   function closeSetup(restore) {
