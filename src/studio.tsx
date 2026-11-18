@@ -630,7 +630,7 @@ export function Studio({ profile, refreshProfile, lock, fail, error = "" }) {
           profileId={profile.id}
           audioIssue={
             audioRetry
-              ? "Couldn’t preview with system audio. Check screen and audio recording permissions, or try this source without system audio."
+              ? "Couldn’t preview with system audio."
               : ""
           }
           onCancel={() => {

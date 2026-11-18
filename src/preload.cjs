@@ -34,8 +34,10 @@ const methods = [
   "share",
   "driveDetails",
   "reveal",
+  "openCaptureSettings",
 ];
 contextBridge.exposeInMainWorld("desk", {
+  isMac: process.platform === "darwin",
   sendPortrait(frame) {
     ipcRenderer.send("cameraPortrait", frame);
   },

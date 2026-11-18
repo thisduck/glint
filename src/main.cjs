@@ -178,6 +178,10 @@ app.whenReady().then(() => {
       throw Error("Drive has not returned a viewing link yet.");
     return copy ? clipboard.writeText(link) : shell.openExternal(link);
   });
+  handle("openCaptureSettings", () => {
+    if (process.platform !== "darwin") throw Error("Open your system capture permissions.");
+    return shell.openExternal("x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture");
+  });
   handle("sources", async (kind) => {
     const types = kind === undefined ? ["screen", "window"] : [kind];
     if (types.some((type) => type !== "screen" && type !== "window"))

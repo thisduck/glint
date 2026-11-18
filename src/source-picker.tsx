@@ -42,6 +42,7 @@ export function SourcePicker({
   );
   const [selectedId, setSelectedId] = useState(current?.id);
   const [refresh, setRefresh] = useState(0);
+  const [settingsError, setSettingsError] = useState("");
   const selected = items.find((item) => item.id === selectedId);
 
   useEffect(() => {
@@ -240,20 +241,38 @@ export function SourcePicker({
         {!loading && !error && selectedId?.startsWith(tab + ":") && !selected && (
           <p role="status" className="px-5 pb-2 text-sm text-muted">That source is no longer available. Choose another.</p>
         )}
-        {audioIssue && (
-          <div role="alert" className="flex flex-wrap items-center gap-3 border-t border-line px-5 py-3 text-sm sm:px-6">
-            <p className="m-0 flex-1">{audioIssue}</p>
-            <button
-              type="button"
-              disabled={!(selected || current)}
-              onClick={() => {
+        {audioIssue && systemAudio && (
+          <div role="alert" className="m-0 rounded-none border-t border-line px-5 py-3 text-sm sm:px-6">
+            <p className="font-medium">{audioIssue}</p>
+            {window.desk.isMac && (
+              <p className="mt-1 text-muted">
+                In System Settings › Privacy &amp; Security › Screen &amp; System Audio Recording,
+                enable glint (Electron when running from source). Reopen glint if macOS asks.
+              </p>
+            )}
+            <div className="mt-2 flex flex-wrap gap-2">
+              {window.desk.isMac && (
+                <button type="button" onClick={async () => {
+                  setSettingsError("");
+                  try {
+                    await window.desk.openCaptureSettings();
+                  } catch {
+                    setSettingsError("Couldn’t open System Settings. Follow the steps above.");
+                  }
+                }}>
+                  Open System Settings
+                </button>
+              )}
+              <button type="button" disabled={!selected} onClick={() => {
+                if (!selected) return;
                 localStorage.setItem(audioKey, "false");
                 setSystemAudio(false);
-                onChoose((selected || current)!, false);
-              }}
-            >
-              Continue without system audio
-            </button>
+                onChoose(selected, false);
+              }}>
+                Continue without system audio
+              </button>
+            </div>
+            {settingsError && <p className="mt-1">{settingsError}</p>}
           </div>
         )}
         <div className="flex shrink-0 items-center justify-between gap-4 border-t border-line px-5 py-3 sm:px-6">
@@ -281,7 +300,7 @@ export function SourcePicker({
             disabled={!selected}
             className="inline-flex items-center gap-2 border-accent bg-accent font-semibold text-white hover:bg-deep disabled:hover:bg-accent"
           >
-            {tab === "screen" ? "Use this screen" : "Use this window"}
+            {audioIssue && systemAudio ? "Retry preview" : tab === "screen" ? "Use this screen" : "Use this window"}
             <ArrowRight aria-hidden="true" className="size-4" />
           </button>
         </footer>
