@@ -40,3 +40,5 @@ Recordings are stored on your Mac, and nothing leaves it unless you connect Goog
 
 - [Using glint](docs/GUIDE.md): a full walkthrough of recording, the camera, Drive, sharing and editing.
 - [Developing glint](docs/DEVELOPMENT.md): running from source, Google setup, testing, and building releases.
+
+[Privacy policy](PRIVACY.md) · [Terms of service](TERMS.md)
