@@ -2,7 +2,7 @@ const test = require("node:test"),
   assert = require("node:assert/strict");
 test("pause freezes elapsed time, resume restarts it, and stop and cleanup work from either state", (t) => {
   let now = 1000,
-    menu,
+    menu, dispatch, mode, profileId, hides = 0,
     shortcut,
     toolbarState,
     toolbarCommands;
@@ -13,7 +13,16 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
   t.mock.method(Date, "now", () => now);
   const electron = require.resolve("electron"),
     toolbar = require.resolve("../src/toolbar.cjs");
-  const previous = [require.cache[electron], require.cache[toolbar]];
+  const panel = require.resolve("../src/tray-panel.cjs");
+  const previous = [require.cache[electron], require.cache[toolbar], require.cache[panel]];
+  require.cache[panel] = { exports: { trayPanel(_tray, onAction) {
+    dispatch = (id, value) => onAction(mode, id, value, profileId);
+    return {
+      update(state) { menu = state.rows; mode = state.mode; profileId = state.profileId; },
+      hide() { hides++; },
+      destroy() {},
+    };
+  } } };
   require.cache[electron] = {
     exports: {
       Tray: class {
@@ -57,7 +66,7 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
     },
   };
   t.after(() => {
-    for (const [i, key] of [electron, toolbar].entries()) {
+    for (const [i, key] of [electron, toolbar, panel].entries()) {
       if (previous[i]) require.cache[key] = previous[i];
       else delete require.cache[key];
     }
@@ -75,11 +84,12 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
   };
   studio.configure(prefs);
   const camera = menu.find((item) => item.label === "Camera bubble");
-  assert.ok(camera.checked);
-  camera.click({ checked: false });
+  assert.ok(camera.value);
+  dispatch(camera.id, false);
+  assert.equal(hides, 0);
   assert.deepEqual(changed, [[1, "camera", false]]);
 
-  menu.find((item) => item.label === "New recording…").click();
+  dispatch("new");
   const controls = recordingMenu(
     studio,
     () => stops++,
@@ -95,7 +105,7 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
   studio.configure({ ...prefs, camera: false });
   assert.ok(!menu.some((item) => item.label === "New recording…"));
   assert.deepEqual(toolbarCommands.initialBounds, toolbarBounds);
-  menu.find((item) => item.label === "Pause recording").click();
+  dispatch("toggle");
   controls.update(true, 4500);
   now += 10000;
   toolbarCommands.position({ x: 1, y: 1 });
@@ -105,11 +115,11 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
     paused: true,
     position: { x: 1, y: 1 },
   });
-  const cameraMenu = menu.find((item) => item.label === "Camera size");
-  cameraMenu.submenu.find((item) => item.label === "Large").click();
+  dispatch("scale", "0.36");
+  assert.equal(hides, 1);
   toolbarCommands.position({ x: 0.25, y: 0.75 });
   assert.deepEqual(toolbarState.position, { x: 0.25, y: 0.75, scale: 0.36 });
-  menu.find((item) => item.label === "Resume recording").click();
+  dispatch("toggle");
   controls.update(false, 4500);
   now += 2000;
   toolbarCommands.position({ x: 0, y: 1 });
@@ -120,8 +130,8 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
   assert.equal(toggles, 2);
   controls.close();
   assert.ok(!destroyed && closed && !shortcut);
-  assert.equal(menu.find((item) => item.label === "Camera bubble").checked, false);
-  menu.find((item) => item.label === "New recording…").click();
+  assert.equal(menu.find((item) => item.label === "Camera bubble").value, false);
+  dispatch("new");
   assert.equal(starts, 2);
   studio.tray.destroy();
 });

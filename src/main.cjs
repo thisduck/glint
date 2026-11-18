@@ -409,7 +409,7 @@ app.whenReady().then(() => {
   win.webContents.on("will-navigate", (e) => e.preventDefault());
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   const reopenStudio = () => {
-    if (!preparation && !library.open && !outline) foregroundStudio();
+    if (!menu.visible() && !preparation && !library.open && !outline) foregroundStudio();
   };
   const menu = require("./recording-menu.cjs").studioMenu(
     () => {
@@ -444,7 +444,7 @@ app.whenReady().then(() => {
     if (!library.open && !outline && !preparation)
       win.webContents.send("setupCommand", "studioHidden");
   });
-  app.once("will-quit", () => menu.tray.destroy());
+  app.once("will-quit", () => menu.destroy());
   app.on("activate", reopenStudio);
   app.on("second-instance", reopenStudio);
   let lastRendererRecovery = 0;
