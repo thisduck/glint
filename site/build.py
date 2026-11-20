@@ -8,6 +8,8 @@ site = root / "site"
 output = root / "dist" / "pages"
 output.mkdir(parents=True, exist_ok=True)
 layout = Template((site / "layout.html").read_text())
+for token in site.glob("google*.html"):
+    copyfile(token, output / token.name)
 copyfile(site / "style.css", output / "style.css")
 copyfile(root / "build/icon.png", output / "icon.png")
 (output / "index.html").write_text(layout.substitute(
