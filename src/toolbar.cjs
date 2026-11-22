@@ -10,7 +10,7 @@ function recordingToolbar(commands) {
     ? screen.getDisplayMatching(target)
     : screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
   const area = display.workArea;
-  const width = Math.min(area.width, preview ? 360 : 240);
+  const width = Math.min(area.width, preview ? 360 : 280);
   let height = 52;
   let cameraTools = false;
   function clampBounds(b, h) {
@@ -129,7 +129,7 @@ function recordingToolbar(commands) {
     } else if (action === "hide") {
       visible = false;
       win.hide();
-    } else if (action === "stop" || action === "toggle") {
+    } else if (["stop", "toggle", "restart"].includes(action)) {
       commands[action]();
     }
   };

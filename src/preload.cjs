@@ -12,6 +12,7 @@ const methods = [
   "recordingMenu",
   "configureStudioMenu",
   "recordingStatus",
+  "discardRecording",
   "begin",
   "append",
   "end",
@@ -70,6 +71,11 @@ contextBridge.exposeInMainWorld("desk", {
     const listener = () => callback();
     ipcRenderer.on("stopRecording", listener);
     return () => ipcRenderer.removeListener("stopRecording", listener);
+  },
+  onRestartRecording(callback) {
+    const listener = () => callback();
+    ipcRenderer.on("restartRecording", listener);
+    return () => ipcRenderer.removeListener("restartRecording", listener);
   },
   ...Object.fromEntries(
     methods.map((k) => [k, (...args) => ipcRenderer.invoke(k, ...args)]),

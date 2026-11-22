@@ -107,6 +107,12 @@ class Library {
         .run(durationMs, id);
     this.finishRow(id, complete, issue);
   }
+  async discard(id, trashItem) {
+    if (this.open?.id !== id) throw Error("Recording is closed");
+    fs.closeSync(this.open.fd);
+    this.open = null;
+    await this.trash(id, trashItem);
+  }
   list(profile) {
     return this.db
       .prepare(

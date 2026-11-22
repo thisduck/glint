@@ -79,6 +79,7 @@ function recordingMenu(
   studio,
   onStop,
   onToggle,
+  onRestart,
   showToolbar,
   moveCamera,
   initialPosition,
@@ -123,6 +124,7 @@ function recordingMenu(
     }
     toolbar = require("./toolbar.cjs").recordingToolbar({
       toggle: onToggle,
+      restart: onRestart,
       stop: onStop,
       position: moveCamera ? place : null,
       initialPosition,
@@ -145,6 +147,7 @@ function recordingMenu(
         tray.setTitle((paused ? "Ⅱ " : "") + clock);
       const actions = [
         {id: "toggle", label: paused ? "Resume recording" : "Pause recording", kind: "button", apply: onToggle},
+        {id: "restart", label: "Restart recording", kind: "button", dismiss: true, apply: onRestart},
         {id: "stop", label: "Stop recording", primary: true, kind: "button", dismiss: true, apply: onStop},
         {id: "show", label: "Show floating controls", kind: "button", apply: () => toolbar.show()},
       ];
@@ -173,6 +176,7 @@ function recordingMenu(
     return {
       ready: toolbar.ready,
       close,
+      getBounds: () => toolbar.getBounds(),
       setArea: (area) => toolbar.setArea(area),
       portrait: (frame) => toolbar.portrait(frame),
       update(value, ms) {

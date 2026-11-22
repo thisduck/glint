@@ -8,6 +8,7 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
     toolbarCommands;
   let stops = 0,
     toggles = 0,
+    restarts = 0,
     destroyed = false,
     closed = false;
   t.mock.method(Date, "now", () => now);
@@ -94,6 +95,7 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
     studio,
     () => stops++,
     () => toggles++,
+    () => restarts++,
     true,
     () => {},
     { x: 0, y: 0 },
@@ -128,6 +130,12 @@ test("pause freezes elapsed time, resume restarts it, and stop and cleanup work 
   toolbarCommands.stop();
   assert.equal(stops, 2);
   assert.equal(toggles, 2);
+  const hidesBeforeRestart = hides;
+  dispatch("restart");
+  assert.equal(hides, hidesBeforeRestart + 1);
+  toolbarCommands.restart();
+  assert.equal(restarts, 2);
+  assert.equal(stops, 2);
   controls.close();
   assert.ok(!destroyed && closed && !shortcut);
   assert.equal(menu.find((item) => item.label === "Camera bubble").value, false);

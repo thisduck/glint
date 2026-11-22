@@ -177,6 +177,17 @@ export function Studio({ profile, profiles, onProfile, refreshProfile, lock, fai
       }),
     [],
   );
+  const restartRequested = useRef(false);
+  useEffect(
+    () =>
+      api.onRestartRecording?.(() => {
+        if (recorder.current && recorder.current.state !== "inactive") {
+          restartRequested.current = true;
+          recorder.current.stop();
+        }
+      }),
+    [],
+  );
   useEffect(
     () =>
       api.onRecordingToggle?.(() => {
@@ -572,6 +583,26 @@ export function Studio({ profile, profiles, onProfile, refreshProfile, lock, fai
       };
       r.onstop = async () => {
         const duration = elapsed();
+        const restart = restartRequested.current;
+        restartRequested.current = false;
+        // A take that already failed is kept like any other stop: the source
+        // may be gone, so starting over could lose the only copy.
+        if (restart && !failure) {
+          // Only the microphone is per-take; the video and system-audio tracks
+          // belong to the live capture the next take reuses.
+          microphone?.close();
+          recorder.current = null;
+          try {
+            await pending;
+            await api.discardRecording(id);
+          } catch (e) {
+            fail(e.message);
+            reset();
+            return;
+          }
+          start();
+          return;
+        }
         setPhase("saving");
         tracks.forEach((t) => t.stop());
         try {

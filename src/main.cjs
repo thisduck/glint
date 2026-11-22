@@ -352,6 +352,7 @@ app.whenReady().then(() => {
       menu,
       () => win.webContents.send("stopRecording"),
       () => win.webContents.send("toggleRecording"),
+      () => win.webContents.send("restartRecording"),
       showToolbar === true,
       cameraOn
         ? (point) => win.webContents.send("cameraPosition", point)
@@ -388,6 +389,16 @@ app.whenReady().then(() => {
   handle("recordingStatus", (paused, ms) =>
     closeRecordingMenu?.update(paused, ms),
   );
+  // Restart: drop the take (to the Trash, so a stray click is recoverable) and
+  // tear down the recording UI without bringing the studio forward, because the
+  // studio immediately counts down again on the same source.
+  handle("discardRecording", async (id) => {
+    toolbarBounds = closeRecordingMenu?.getBounds() ?? toolbarBounds;
+    closeRecordingMenu?.close();
+    closeRecordingMenu = null;
+    clearOutline();
+    await library.discard(id, (file) => shell.trashItem(file));
+  });
   handle("begin", (id) => library.begin(id));
   handle("append", (id, data) => library.append(id, data));
   handle("filmstrip", (id) =>
