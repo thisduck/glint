@@ -5,6 +5,7 @@ import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
 import config from "../src/google-config.cjs";
+import { createDiskImage } from "./disk-image.mjs";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json");
@@ -83,8 +84,7 @@ try {
   await fs.rename(bundlePath, path.join(imageDir, "glint.app"));
   await fs.symlink("/Applications", path.join(imageDir, "Applications"));
   const image = archive.replace(/\.zip$/, ".dmg");
-  execFileSync("hdiutil", ["create", "-volname", "glint", "-srcfolder",
-    imageDir, "-format", "UDZO", path.join(tmp, image)], { stdio: "inherit" });
+  await createDiskImage({ folder: imageDir, app: "glint.app", volume: "glint", image: path.join(tmp, image), work: tmp });
   await fs.copyFile(path.join(tmp, image), path.join(out, image));
   console.log("Created " + path.join(out, image));
 } finally {
